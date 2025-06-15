@@ -1,0 +1,87 @@
+<!-- profile.wxml - 个人中心页面 -->
+<view class="container">
+  <!-- 个人信息区域 -->
+  <view class="user-section">
+    <image class="user-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" />
+    <view class="user-info">
+      <view class="user-name">{{userInfo.name}}</view>
+      <view class="user-id">学号: {{userInfo.studentId}}</view>
+      <view class="user-stats">
+        <text class="stat-item">动态 {{userStats.posts}}</text>
+        <text class="stat-item">闲置 {{userStats.items}}</text>
+        <text class="stat-item">获赞 {{userStats.likes}}</text>
+      </view>
+    </view>
+    <button class="edit-btn" bindtap="editProfile" size="mini">编辑</button>
+  </view>
+
+  <!-- 交易相关 -->
+  <view class="trade-section">
+    <view class="section-title">我的交易</view>
+    
+    <view class="trade-options">
+      <view class="trade-item" bindtap="navigateToMyPublished">
+        <view class="trade-icon">📝</view>
+        <view class="trade-info">
+          <view class="trade-title">我发布的</view>
+          <view class="trade-count">{{tradeStats.published}}个</view>
+        </view>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+
+      <view class="trade-item" bindtap="navigateToMySold">
+        <view class="trade-icon">💰</view>
+        <view class="trade-info">
+          <view class="trade-title">我卖出的</view>
+          <view class="trade-count">{{tradeStats.sold}}个</view>
+        </view>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+
+      <view class="trade-item" bindtap="navigateToMyBought">
+        <view class="trade-icon">🛍️</view>
+        <view class="trade-info">
+          <view class="trade-title">我买到的</view>
+          <view class="trade-count">{{tradeStats.bought}}个</view>
+        </view>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 其他功能 -->
+  <view class="other-section">
+    <view class="section-title">其他</view>
+    
+    <view class="other-options">
+      <view class="other-item" bindtap="navigateToFavorites">
+        <view class="other-icon">❤️</view>
+        <text class="other-title">我的收藏</text>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+
+      <view class="other-item" bindtap="navigateToSettings">
+        <view class="other-icon">⚙️</view>
+        <text class="other-title">设置</text>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+
+      <view class="other-item" bindtap="navigateToHelp">
+        <view class="other-icon">❓</view>
+        <text class="other-title">帮助中心</text>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+
+      <view class="other-item" bindtap="navigateToAbout">
+        <view class="other-icon">ℹ️</view>
+        <text class="other-title">关于我们</text>
+        <icon class="arrow-icon" type="success" size="16" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="logout">退出登录</button>
+  </view>
+</view>

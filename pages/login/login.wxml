@@ -40,7 +40,7 @@
     
     <view class="test-account">
       <view class="test-title">🧪 测试账号</view>
-      <view class="test-info">学号: 2021001001</view>
+      <view class="test-info">学号: 21001001</view>
       <view class="test-info">密码: 123456</view>
     </view>
   </view>

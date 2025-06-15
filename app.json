@@ -2,14 +2,59 @@
   "pages": [
     "pages/login/login",
     "pages/index/index",
+    "pages/market/market",
+    "pages/publish/publish", 
+    "pages/message/message",
+    "pages/profile/profile",
     "pages/register/register",
-    "pages/logs/logs"
+    "pages/logs/logs",
+    "pages/item-detail/item-detail",
+    "pages/chat/chat",
+    "pages/post-detail/post-detail"
   ],
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#fff",
     "navigationBarTitleText": "校园二手交易",
     "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#667eea", 
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png"
+      },
+      {
+        "pagePath": "pages/market/market",
+        "text": "闲置", 
+        "iconPath": "images/market.png",
+        "selectedIconPath": "images/market-active.png"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "发布",
+        "iconPath": "images/publish.png", 
+        "selectedIconPath": "images/publish-active.png"
+      },
+      {
+        "pagePath": "pages/message/message",
+        "text": "消息",
+        "iconPath": "images/message.png",
+        "selectedIconPath": "images/message-active.png" 
+      },
+      {
+        "pagePath": "pages/profile/profile", 
+        "text": "我的",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile-active.png"
+      }
+    ]
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

@@ -9,24 +9,38 @@ Page({
     loading: false
   },
 
+  onLoad() {
+    console.log('注册页面加载');
+  },
+
   onStudentIdInput(e) {
-    this.setData({ studentId: e.detail.value });
+    this.setData({ 
+      studentId: e.detail.value 
+    });
   },
 
   onNameInput(e) {
-    this.setData({ name: e.detail.value });
+    this.setData({ 
+      name: e.detail.value 
+    });
   },
 
   onPasswordInput(e) {
-    this.setData({ password: e.detail.value });
+    this.setData({ 
+      password: e.detail.value 
+    });
   },
 
   onConfirmPasswordInput(e) {
-    this.setData({ confirmPassword: e.detail.value });
+    this.setData({ 
+      confirmPassword: e.detail.value 
+    });
   },
 
   async register() {
     const { studentId, name, password, confirmPassword } = this.data;
+    
+    console.log('开始注册:', { studentId, name });
     
     // 前端验证
     if (!studentId || !name || !password || !confirmPassword) {
@@ -49,17 +63,22 @@ Page({
 
     try {
       const result = await userManager.register(studentId, name, password);
+      console.log('注册结果:', result);
       
       wx.showToast({
-        title: result.message,
+        title: result.message || '注册成功',
         icon: 'success',
+        duration: 2000,
         success: () => {
           // 注册成功后返回登录页
-          wx.navigateBack();
+          setTimeout(() => {
+            wx.navigateBack();
+          }, 2000);
         }
       });
       
     } catch (error) {
+      console.error('注册失败:', error);
       wx.showToast({
         title: error.message || '注册失败',
         icon: 'error'

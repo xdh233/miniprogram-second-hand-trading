@@ -1,0 +1,134 @@
+<!-- pages/item-detail/item-detail.wxml -->
+<view class="container">
+  <!-- 商品图片轮播 -->
+  <view class="image-section">
+    <swiper class="image-swiper" indicator-dots="{{item.images.length > 1}}" autoplay="{{false}}" interval="5000" duration="500">
+      <swiper-item wx:for="{{item.images}}" wx:key="index">
+        <image class="item-image" src="{{item}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}" />
+      </swiper-item>
+    </swiper>
+    <view class="image-count" wx:if="{{item.images.length > 1}}">
+      {{currentImageIndex + 1}}/{{item.images.length}}
+    </view>
+  </view>
+
+  <!-- 商品基本信息 -->
+  <view class="item-info">
+    <view class="item-title">{{item.title}}</view>
+    <view class="item-price">¥{{item.price}}</view>
+    <view class="item-tags">
+      <view class="tag">{{item.category}}</view>
+      <view class="tag condition-tag">{{item.condition}}</view>
+      <view class="tag" wx:if="{{item.isNegotiable}}">可议价</view>
+    </view>
+    <view class="item-meta">
+      <view class="meta-item">
+        <icon class="meta-icon" type="info" size="12" />
+        <text>发布时间：{{item.publishTime}}</text>
+      </view>
+      <view class="meta-item">
+        <icon class="meta-icon" type="info" size="12" />
+        <text>浏览次数：{{item.viewCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品描述 -->
+  <view class="description-section">
+    <view class="section-title">商品描述</view>
+    <view class="description-content">{{item.description || '暂无描述'}}</view>
+  </view>
+
+  <!-- 卖家信息 -->
+  <view class="seller-section">
+    <view class="section-title">卖家信息</view>
+    <view class="seller-info">
+      <image class="seller-avatar" src="{{seller.avatar || '/images/default-avatar.png'}}" />
+      <view class="seller-details">
+        <view class="seller-name">{{seller.name}}</view>
+        <view class="seller-meta">学号：{{seller.studentId}}</view>
+        <view class="seller-meta">信用评级：{{seller.rating || '暂无评级'}}</view>
+      </view>
+      <button class="contact-btn" bindtap="contactSeller" size="mini">联系卖家</button>
+    </view>
+  </view>
+
+  <!-- 相关推荐 -->
+  <view class="related-section" wx:if="{{relatedItems.length > 0}}">
+    <view class="section-title">相关推荐</view>
+    <scroll-view class="related-scroll" scroll-x>
+      <view class="related-item" wx:for="{{relatedItems}}" wx:key="id" bindtap="goToItem" data-id="{{item.id}}">
+        <image class="related-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+        <view class="related-title">{{item.title}}</view>
+        <view class="related-price">¥{{item.price}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-actions">
+    <view class="action-left">
+      <button class="action-btn like-btn" bindtap="toggleLike" data-liked="{{isLiked}}">
+        <icon type="{{isLiked ? 'success' : 'success_no_circle'}}" size="20" />
+        <text>{{isLiked ? '已收藏' : '收藏'}}</text>
+      </button>
+      <button class="action-btn share-btn" open-type="share">
+        <icon type="success_circle" size="20" />
+        <text>分享</text>
+      </button>
+    </view>
+    <view class="action-right">
+      <button class="contact-seller-btn" bindtap="contactSeller">
+        联系卖家
+      </button>
+      <button class="buy-btn" bindtap="showBuyModal" wx:if="{{!isSeller}}">
+        立即购买
+      </button>
+      <button class="edit-btn" bindtap="editItem" wx:if="{{isSeller}}">
+        编辑商品
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- 购买确认弹窗 -->
+<view class="modal-mask" wx:if="{{showBuyModal}}" bindtap="hideBuyModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-title">确认购买</view>
+    <view class="modal-body">
+      <view class="buy-item-info">
+        <image class="buy-image" src="{{item.images[0]}}" mode="aspectFill" />
+        <view class="buy-details">
+          <view class="buy-title">{{item.title}}</view>
+          <view class="buy-price">¥{{item.price}}</view>
+        </view>
+      </view>
+      <view class="contact-info">
+        <view class="info-item">
+          <text class="info-label">联系方式：</text>
+          <input class="info-input" placeholder="请输入您的联系方式" bindinput="onContactInput" value="{{contactInfo}}" />
+        </view>
+        <view class="info-item">
+          <text class="info-label">留言：</text>
+          <textarea class="message-input" placeholder="向卖家说点什么..." bindinput="onMessageInput" value="{{buyMessage}}" maxlength="200"></textarea>
+        </view>
+      </view>
+    </view>
+    <view class="modal-actions">
+      <button class="modal-btn cancel-btn" bindtap="hideBuyModal">取消</button>
+      <button class="modal-btn confirm-btn" bindtap="confirmBuy">确认购买</button>
+    </view>
+  </view>
+</view>
+
+<!-- 加载状态 -->
+<view class="loading" wx:if="{{loading}}">
+  <view class="loading-text">加载中...</view>
+</view>
+
+<!-- 错误状态 -->
+<view class="error-state" wx:if="{{error}}">
+  <view class="error-icon">😞</view>
+  <view class="error-text">{{error}}</view>
+  <button class="retry-btn" bindtap="loadItemDetail">重试</button>
+</view>

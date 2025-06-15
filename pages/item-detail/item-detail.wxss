@@ -1,0 +1,434 @@
+/* pages/item-detail/item-detail.wxss */
+
+page {
+  background-color: #f5f5f5;
+  padding-bottom: 120rpx;
+}
+
+.container {
+  min-height: 100vh;
+}
+
+/* 图片轮播区域 */
+.image-section {
+  position: relative;
+  background: white;
+}
+
+.image-swiper {
+  width: 100%;
+  height: 500rpx;
+}
+
+.item-image {
+  width: 100%;
+  height: 100%;
+}
+
+.image-count {
+  position: absolute;
+  bottom: 20rpx;
+  right: 20rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+/* 商品基本信息 */
+.item-info {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.item-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 20rpx;
+}
+
+.item-price {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #ff6b6b;
+  margin-bottom: 20rpx;
+}
+
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.tag {
+  background: #f0f0f0;
+  color: #666;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+.condition-tag {
+  background: #e8f5e8;
+  color: #4caf50;
+}
+
+.item-meta {
+  border-top: 1rpx solid #f0f0f0;
+  padding-top: 20rpx;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.meta-icon {
+  margin-right: 8rpx;
+}
+
+/* 商品描述区域 */
+.description-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.description-content {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 卖家信息区域 */
+.seller-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.seller-info {
+  display: flex;
+  align-items: center;
+}
+
+.seller-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: #f0f0f0;
+}
+
+.seller-details {
+  flex: 1;
+  margin-left: 20rpx;
+}
+
+.seller-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.seller-meta {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 4rpx;
+}
+
+.contact-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  font-size: 24rpx;
+}
+
+/* 相关推荐区域 */
+.related-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.related-scroll {
+  white-space: nowrap;
+  padding: 20rpx 0;
+}
+
+.related-item {
+  display: inline-block;
+  width: 200rpx;
+  margin-right: 20rpx;
+  vertical-align: top;
+}
+
+.related-image {
+  width: 100%;
+  height: 150rpx;
+  border-radius: 8rpx;
+  background: #f0f0f0;
+}
+
+.related-title {
+  font-size: 26rpx;
+  color: #333;
+  margin: 12rpx 0 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.related-price {
+  font-size: 28rpx;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+/* 底部操作栏 */
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-left {
+  display: flex;
+  gap: 20rpx;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 10rpx;
+  font-size: 22rpx;
+  color: #666;
+}
+
+.action-btn icon {
+  margin-bottom: 4rpx;
+}
+
+.like-btn[data-liked="true"] {
+  color: #ff6b6b;
+}
+
+.action-right {
+  display: flex;
+  gap: 15rpx;
+}
+
+.contact-seller-btn {
+  background: #f0f0f0;
+  color: #333;
+  border: 1rpx solid #ddd;
+  padding: 15rpx 30rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+}
+
+.buy-btn, .edit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 15rpx 40rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+}
+
+.edit-btn {
+  background: #ffa726;
+}
+
+/* 购买确认弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  width: 600rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  text-align: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.modal-body {
+  padding: 30rpx;
+}
+
+.buy-item-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.buy-image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  background: #f0f0f0;
+}
+
+.buy-details {
+  flex: 1;
+  margin-left: 20rpx;
+}
+
+.buy-title {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buy-price {
+  font-size: 32rpx;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.contact-info {
+  gap: 20rpx; /* ✅ 修正：原来是 space: 20rpx */
+}
+
+.info-item {
+  margin-bottom: 20rpx;
+}
+
+.info-label {
+  display: block;
+  font-size: 26rpx;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.info-input {
+  width: 100%;
+  height: 60rpx;
+  border: 1rpx solid #e5e5e5;
+  border-radius: 8rpx;
+  padding: 0 15rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.message-input {
+  width: 100%;
+  height: 120rpx;
+  border: 1rpx solid #e5e5e5;
+  border-radius: 8rpx;
+  padding: 15rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.modal-actions {
+  display: flex;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 80rpx;
+  border: none;
+  font-size: 28rpx;
+}
+
+.cancel-btn {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.confirm-btn {
+  background: #667eea;
+  color: white;
+}
+
+/* 加载和错误状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400rpx;
+  color: #999;
+}
+
+.loading-text {
+  font-size: 28rpx;
+}
+
+.error-state {
+  text-align: center;
+  padding: 100rpx 40rpx;
+  color: #999; /* ✅ 修正：添加了缺失的空格 */
+}
+
+.error-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.error-text {
+  font-size: 28rpx;
+  margin-bottom: 30rpx;
+}
+
+.retry-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 15rpx 40rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+}

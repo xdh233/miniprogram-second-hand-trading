@@ -55,29 +55,33 @@ Page({
         wx.showToast({
           title: '登录成功',
           icon: 'success',
-          success: () => {
-            console.log('Toast显示成功，开始跳转');
-            // 尝试多种跳转方式
-            wx.switchTab({
-              url: '/pages/index/index',
-              success: () => {
-                console.log('switchTab 成功');
-              },
-              fail: (error) => {
-                console.log('switchTab 失败，尝试 redirectTo:', error);
-                wx.redirectTo({
-                  url: '/pages/index/index',
-                  success: () => {
-                    console.log('redirectTo 成功');
-                  },
-                  fail: (error2) => {
-                    console.log('redirectTo 也失败:', error2);
-                  }
-                });
-              }
-            });
-          }
+          duration: 1500
         });
+
+        // 延迟跳转，确保toast显示
+        setTimeout(() => {
+          // 使用 switchTab 跳转到 tab 页面
+          wx.switchTab({
+            url: '/pages/index/index',
+            success: () => {
+              console.log('switchTab 成功');
+            },
+            fail: (error) => {
+              console.log('switchTab 失败，尝试 reLaunch:', error);
+              // 如果 switchTab 失败，使用 reLaunch
+              wx.reLaunch({
+                url: '/pages/index/index',
+                success: () => {
+                  console.log('reLaunch 成功');
+                },
+                fail: (error2) => {
+                  console.log('reLaunch 也失败:', error2);
+                }
+              });
+            }
+          });
+        }, 1500);
+
       } else {
         console.log('登录失败:', result.message);
         wx.showToast({
