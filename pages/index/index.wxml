@@ -1,0 +1,154 @@
+<!-- index.wxml - 完整版 -->
+
+<!-- 调试区域 - 开发完成后删除 -->
+<view class="debug-section" wx:if="{{true}}">
+  <view class="debug-info">
+    <text>登录状态: {{userInfo ? '已登录(' + userInfo.name + ')' : '未登录'}}</text>
+  </view>
+  <view class="debug-buttons">
+    <button bindtap="clearDataAndRestart" size="mini" type="warn">清除数据</button>
+    <button bindtap="manualCheckLogin" size="mini">检查登录</button>
+  </view>
+</view>
+
+<view class="container">
+  <!-- 用户信息区域 -->
+  <view class="user-section" wx:if="{{userInfo}}">
+    <view class="user-avatar">
+      <image class="avatar" src="/images/default-avatar.png" mode="aspectFill" />
+    </view>
+    <view class="user-info">
+      <view class="welcome">欢迎回来</view>
+      <view class="username">{{userInfo.name}} ({{userInfo.studentId}})</view>
+    </view>
+    <button class="logout-btn" bindtap="logout" size="mini">退出</button>
+  </view>
+
+  <!-- 如果没有用户信息，显示提示 -->
+  <view class="no-user-section" wx:if="{{!userInfo}}">
+    <view class="no-user-text">未登录或登录已过期</view>
+    <button bindtap="manualCheckLogin" size="mini">重新登录</button>
+  </view>
+
+  <!-- 搜索栏 -->
+  <view class="search-section">
+    <view class="search-box">
+      <icon class="search-icon" type="search" size="16" />
+      <input 
+        placeholder="搜索你想要的商品..." 
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+    </view>
+  </view>
+
+  <!-- 快捷功能 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="navigateToPublish">
+      <view class="action-icon">📱</view>
+      <view class="action-text">发布商品</view>
+    </view>
+    <view class="action-item" bindtap="navigateToMyItems">
+      <view class="action-icon">📦</view>
+      <view class="action-text">我的发布</view>
+    </view>
+    <view class="action-item" bindtap="navigateToFavorites">
+      <view class="action-icon">❤️</view>
+      <view class="action-text">收藏夹</view>
+    </view>
+    <view class="action-item" bindtap="navigateToProfile">
+      <view class="action-icon">👤</view>
+      <view class="action-text">个人中心</view>
+    </view>
+  </view>
+
+  <!-- 商品分类 -->
+  <view class="category-section">
+    <view class="section-title">商品分类</view>
+    <view class="category-grid">
+      <view 
+        class="category-item" 
+        wx:for="{{categories}}" 
+        wx:key="id" 
+        bindtap="navigateToCategory" 
+        data-id="{{item.id}}"
+        data-name="{{item.name}}"
+      >
+        <view class="category-icon">{{item.icon}}</view>
+        <view class="category-name">{{item.name}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最新商品 -->
+  <view class="latest-section">
+    <view class="section-title">
+      <text>最新发布</text>
+      <text class="more-link" bindtap="navigateToAllItems">查看更多 ></text>
+    </view>
+    <scroll-view class="items-scroll" scroll-x wx:if="{{latestItems.length > 0}}">
+      <view 
+        class="item-card" 
+        wx:for="{{latestItems}}" 
+        wx:key="id" 
+        bindtap="navigateToDetail" 
+        data-id="{{item.id}}"
+      >
+        <image class="item-image" src="{{item.image || '/images/placeholder.png'}}" mode="aspectFill" />
+        <view class="item-info">
+          <view class="item-title">{{item.title}}</view>
+          <view class="item-price">¥{{item.price}}</view>
+        </view>
+      </view>
+    </scroll-view>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{latestItems.length === 0}}">
+      <view class="empty-icon">📦</view>
+      <view class="empty-text">暂无最新商品</view>
+      <view class="empty-desc">快来发布第一个商品吧</view>
+    </view>
+  </view>
+
+  <!-- 热门商品 -->
+  <view class="hot-section">
+    <view class="section-title">
+      <text>热门推荐</text>
+      <text class="more-link" bindtap="navigateToHotItems">查看更多 ></text>
+    </view>
+    <view class="hot-grid" wx:if="{{hotItems.length > 0}}">
+      <view 
+        class="hot-item" 
+        wx:for="{{hotItems}}" 
+        wx:key="id" 
+        bindtap="navigateToDetail" 
+        data-id="{{item.id}}"
+      >
+        <image class="hot-image" src="{{item.image || '/images/placeholder.png'}}" mode="aspectFill" />
+        <view class="hot-info">
+          <view class="hot-title">{{item.title}}</view>
+          <view class="hot-price">¥{{item.price}}</view>
+          <view class="hot-likes">❤️ {{item.likes || 0}}</view>
+        </view>
+      </view>
+    </view>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{hotItems.length === 0}}">
+      <view class="empty-icon">🔥</view>
+      <view class="empty-text">暂无热门商品</view>
+    </view>
+  </view>
+
+  <!-- 公告区域 -->
+  <view class="notice-section">
+    <view class="notice-title">📢 平台公告</view>
+    <view class="notice-content">
+      <view wx:for="{{notices}}" wx:key="index" class="notice-item">
+        • {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部占位 -->
+  <view class="bottom-space"></view>
+</view>
