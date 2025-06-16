@@ -139,14 +139,21 @@ Page({
         id: 1,
         name: '张三',
         studentId: '2021001001',
-        avatar: '/images/avatar1.jpg',
+        avatar: '/images/default-avatar.jpg',
         rating: '信用良好'
       },
       {
         id: 2,
         name: '李四',
         studentId: '2021001002',
-        avatar: '/images/avatar2.jpg',
+        avatar: '/images/default-avatar.jpg',
+        rating: '信用优秀'
+      },
+      {
+        id: 3,
+        name: '牛大果',
+        studentId: '22074304',
+        avatar: '/images/default-avatar.jpg',
         rating: '信用优秀'
       }
     ];

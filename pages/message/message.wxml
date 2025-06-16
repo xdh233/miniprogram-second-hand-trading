@@ -1,142 +1,55 @@
-<!-- pages/message/message.wxml -->
 <view class="container">
   <!-- 搜索栏 -->
-  <view class="search-section">
-    <view class="search-box">
-      <icon class="search-icon" type="search" size="16" />
-      <input 
-        placeholder="搜索联系人或消息内容..." 
-        bindinput="onSearchInput"
-        value="{{searchKeyword}}"
-      />
-      <view class="clear-btn" wx:if="{{searchKeyword}}" bindtap="clearSearch">
-        <icon type="cancel" size="14" />
+  <view class="search-container">
+    <view class="search-bar">
+      <icon type="search" size="32rpx" color="#999"/>
+      <input class="search-input" placeholder="搜索联系人或消息内容" placeholder-class="search-placeholder"/>
+    </view>
+  </view>
+
+  <!-- 消息分类组 -->
+  <view class="message-group">
+    <view class="message-types">
+      <view class="type-item" bindtap="navigateToMentions">
+        <view class="type-icon mention">@</view>
+        <text class="type-text">提到我的</text>
+        <view class="badge" wx:if="{{mentionCount > 0}}">{{mentionCount}}</view>
+      </view>
+      <view class="type-item" bindtap="navigateToComments">
+        <view class="type-icon comment">💬</view>
+        <text class="type-text">评论</text>
+        <view class="badge" wx:if="{{commentCount > 0}}">{{commentCount}}</view>
+      </view>
+      <view class="type-item" bindtap="navigateToLikes">
+        <view class="type-icon like">❤️</view>
+        <text class="type-text">点赞</text>
+        <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
       </view>
     </view>
   </view>
 
-  <!-- 消息分类标签 -->
-  <view class="message-tabs">
-    <view class="tab-item {{currentTab === 0 ? 'active' : ''}}" bindtap="switchTab" data-index="0">
-      <text>全部消息</text>
-      <view class="tab-badge" wx:if="{{totalUnread > 0}}">{{totalUnread}}</view>
-    </view>
-    <view class="tab-item {{currentTab === 1 ? 'active' : ''}}" bindtap="switchTab" data-index="1">
-      <text>交易消息</text>
-      <view class="tab-badge" wx:if="{{tradeUnread > 0}}">{{tradeUnread}}</view>
-    </view>
-    <view class="tab-item {{currentTab === 2 ? 'active' : ''}}" bindtap="switchTab" data-index="2">
-      <text>系统通知</text>
-      <view class="tab-badge" wx:if="{{systemUnread > 0}}">{{systemUnread}}</view>
-    </view>
-  </view>
-
-  <!-- 消息列表 -->
-  <view class="message-list" wx:if="{{filteredMessages.length > 0}}">
-    <view class="message-item" 
-          wx:for="{{filteredMessages}}" 
-          wx:key="id" 
-          bindtap="openChat" 
-          data-chat-id="{{item.chatId}}"
-          data-user-id="{{item.userId}}">
-      
-      <!-- 左滑删除 -->
-      <movable-area class="movable-area">
-        <movable-view class="movable-view" direction="horizontal" x="{{item.offsetX || 0}}">
-          <view class="message-content">
-            <!-- 用户头像 -->
-            <view class="avatar-section">
-              <image class="user-avatar" src="{{item.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
-              <view class="online-status {{item.isOnline ? 'online' : 'offline'}}"></view>
-              <view class="unread-badge" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</view>
-            </view>
-
-            <!-- 消息信息 -->
-            <view class="message-info">
-              <view class="message-header">
-                <view class="user-name">{{item.userName}}</view>
-                <view class="message-time">{{item.lastMessageTime}}</view>
-              </view>
-              
-              <view class="message-preview">
-                <view class="message-text">{{item.lastMessage}}</view>
-                <view class="message-type" wx:if="{{item.messageType === 'image'}}">
-                  <icon type="success_circle" size="12" />
-                  <text>[图片]</text>
-                </view>
-                <view class="message-type" wx:if="{{item.messageType === 'item'}}">
-                  <icon type="success_circle" size="12" />
-                  <text>[商品]</text>
-                </view>
-              </view>
-
-              <!-- 商品信息 -->
-              <view class="related-item" wx:if="{{item.relatedItem}}">
-                <image class="item-image" src="{{item.relatedItem.image}}" mode="aspectFill" />
-                <view class="item-info">
-                  <view class="item-title">{{item.relatedItem.title}}</view>
-                  <view class="item-price">¥{{item.relatedItem.price}}</view>
-                </view>
-              </view>
-            </view>
-
-            <!-- 消息状态 -->
-            <view class="message-status">
-              <view class="status-indicator {{item.status}}" wx:if="{{item.status}}"></view>
-              <view class="message-actions">
-                <icon type="success_no_circle" size="16" color="#ccc" />
-              </view>
-            </view>
+  <!-- 聊天列表组 -->
+  <view class="message-group">
+    <view class="section-title">最近聊天</view>
+    <view class="chat-list">
+      <view class="chat-item" 
+        wx:for="{{chatList}}" 
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="navigateToChat"
+      >
+        <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
+        <view class="chat-info">
+          <view class="chat-header">
+            <text class="name">{{item.name}}</text>
+            <text class="time">{{item.time}}</text>
           </view>
-        </movable-view>
-        
-        <!-- 删除按钮 -->
-        <view class="delete-btn" bindtap="deleteMessage" data-id="{{item.id}}" catchtap="">
-          <icon type="cancel" size="20" color="white" />
-          <text>删除</text>
+          <view class="chat-footer">
+            <text class="last-message">{{item.lastMessage}}</text>
+            <view class="unread" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount}}</view>
+          </view>
         </view>
-      </movable-area>
+      </view>
     </view>
-  </view>
-
-  <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{filteredMessages.length === 0 && !loading}}">
-    <view class="empty-icon">💬</view>
-    <view class="empty-text">
-      {{searchKeyword ? '没有找到相关消息' : (currentTab === 0 ? '暂无消息' : (currentTab === 1 ? '暂无交易消息' : '暂无系统通知'))}}
-    </view>
-    <view class="empty-desc" wx:if="{{!searchKeyword && currentTab === 0}}">
-      去市场逛逛，找些感兴趣的商品吧
-    </view>
-    <button class="go-market-btn" wx:if="{{!searchKeyword && currentTab === 0}}" bindtap="goToMarket">
-      去逛逛
-    </button>
-  </view>
-
-  <!-- 加载状态 -->
-  <view class="loading" wx:if="{{loading}}">
-    <view class="loading-text">加载中...</view>
-  </view>
-
-  <!-- 下拉加载更多 -->
-  <view class="load-more" wx:if="{{hasMore && !loading}}" bindtap="loadMore">
-    <view class="load-more-text">点击加载更多</view>
-  </view>
-
-  <!-- 底部占位 -->
-  <view class="bottom-space"></view>
-</view>
-
-<!-- 操作菜单 -->
-<view class="action-sheet" wx:if="{{showActionSheet}}" bindtap="hideActionSheet">
-  <view class="action-content" catchtap="">
-    <view class="action-title">选择操作</view>
-    <view class="action-list">
-      <view class="action-item" bindtap="markAsRead">标记为已读</view>
-      <view class="action-item" bindtap="pinChat">{{selectedMessage.isPinned ? '取消置顶' : '置顶会话'}}</view>
-      <view class="action-item" bindtap="muteChat">{{selectedMessage.isMuted ? '取消免打扰' : '消息免打扰'}}</view>
-      <view class="action-item danger" bindtap="deleteChat">删除会话</view>
-    </view>
-    <view class="action-cancel" bindtap="hideActionSheet">取消</view>
   </view>
 </view>

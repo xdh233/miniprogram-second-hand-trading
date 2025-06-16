@@ -31,7 +31,7 @@ class PostManager {
           userName: '李四',
           userAvatar: '/images/default-avatar.png',
           content: '图书馆新到了很多好书，推荐大家去借阅～',
-          images: ['/images/placeholder.png'],
+          images: [],
           likes: 8,
           comments: 3,
           isLiked: false,
@@ -41,6 +41,20 @@ class PostManager {
         },
         {
           id: 3,
+          userId: 3,
+          userName: '牛大果',
+          userAvatar: '/images/default-avatar.png',
+          content: '我要快点写完软工课设！！！！！',
+          images: [],
+          likes: 8,
+          comments: 3,
+          isLiked: false,
+          tag: '学习',
+          createTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5小时前
+          timeAgo: '1秒前'
+        },
+        {
+          id: 4,
           userId: 1,
           userName: '张三',
           userAvatar: '/images/default-avatar.png',

@@ -1,0 +1,192 @@
+.container {
+  padding: 0;
+  background: #f5f5f5;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+/* 搜索栏样式 */
+.search-container {
+  padding: 20rpx 30rpx;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0;
+  flex-shrink: 0;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 20rpx;
+  height: 72rpx;
+  background: #f5f5f5;
+  border-radius: 36rpx;
+  box-sizing: border-box;
+}
+
+.search-bar icon {
+  margin-right: 10rpx;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.search-placeholder {
+  color: #999;
+}
+
+/* 消息分类 */
+.message-types {
+  display: flex;
+  padding: 20rpx 0;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.type-item {
+  flex:1;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 10rpx 0;
+  box-sizing: border-box;
+}
+
+.type-icon {
+  width: 80rpx;
+  height: 80rpx;
+  background: #f0f0f0;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  margin-bottom: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.type-icon.mention {
+  background: #e8f3ff;
+  color: #3a7bff;
+}
+
+.type-icon.comment {
+  background: #e6f7ff;
+  color: #36cfc9;
+}
+
+.type-icon.like {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.type-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.badge {
+  position: absolute;
+  top: -4rpx;
+  right: 20%;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 20rpx;
+  padding: 0 10rpx;
+  height: 32rpx;
+  min-width: 32rpx;
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 修改列表样式 */
+.chat-list {
+  background: #fff;
+  margin-top: 0;  /* 移除顶部间距 */
+}
+/* 添加分组样式 */
+.message-group {
+  margin-top: 10rpx;
+  background: #fff;
+  width: 100%;
+}
+.section-title {
+  padding: 16rpx 30rpx;  /* 减少内边距 */
+  font-size: 28rpx;
+  color: #999;
+  background: #fff;
+  margin-top: 10rpx;  /* 减少与上方的间距 */
+}
+
+.chat-item {
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #eee;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  margin-right: 20rpx;
+}
+
+.chat-info {
+  flex: 1;
+}
+
+.chat-header {
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6rpx;
+}
+
+.name {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.chat-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.last-message {
+  font-size: 26rpx;
+  color: #666;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread {
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 20rpx;
+  padding: 0 10rpx;
+  height: 32rpx;
+  min-width: 32rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10rpx;
+}

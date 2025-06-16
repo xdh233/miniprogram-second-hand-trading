@@ -1,0 +1,92 @@
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <!-- 帖子详情 -->
+  <block wx:if="{{!loading && post}}">
+    <!-- 帖子内容 -->
+    <view class="post-detail">
+      <!-- 用户信息 -->
+      <view class="user-info">
+        <image class="avatar" src="{{post.userAvatar}}" mode="aspectFill"/>
+        <view class="user-meta">
+          <text class="username">{{post.userName}}</text>
+          <text class="post-time">{{post.timeAgo}}</text>
+        </view>
+      </view>
+
+      <!-- 正文内容 -->
+      <view class="content">
+        <text class="text">{{post.content}}</text>
+      </view>
+
+      <!-- 图片展示 -->
+      <view class="images" wx:if="{{post.images.length > 0}}">
+        <image 
+          wx:for="{{post.images}}" 
+          wx:key="*this"
+          src="{{item}}"
+          mode="widthFix"
+          class="post-image"
+          bindtap="previewImage"
+          data-images="{{post.images}}"
+          data-index="{{index}}"
+        />
+      </view>
+
+      <!-- 互动数据 -->
+      <view class="interaction-bar">
+        <view class="interaction-item" bindtap="onLikePost">
+          <icon type="{{post.isLiked ? 'success' : 'success_no_circle'}}" 
+                size="20" 
+                color="{{post.isLiked ? '#ff6b6b' : '#999'}}"
+          />
+          <text class="count {{post.isLiked ? 'active' : ''}}">
+            {{post.likes || '点赞'}}
+          </text>
+        </view>
+        <button class="share-btn" open-type="share">
+          <icon type="success_no_circle" size="20" color="#999"/>
+          <text class="count">分享</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 评论区 -->
+    <view class="comments-section">
+      <view class="section-title">评论 {{post.comments || 0}}</view>
+      
+      <!-- 评论列表 -->
+      <view class="comments-list">
+        <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+          <image class="comment-avatar" src="{{item.userAvatar}}" mode="aspectFill"/>
+          <view class="comment-content">
+            <text class="comment-username">{{item.userName}}</text>
+            <text class="comment-text">{{item.content}}</text>
+            <text class="comment-time">{{item.timeAgo}}</text>
+          </view>
+        </view>
+        
+        <!-- 加载更多 -->
+        <view class="loading-more" wx:if="{{loadingMore}}">加载中...</view>
+        <view class="no-more" wx:if="{{!hasMore && comments.length > 0}}">没有更多评论</view>
+        <view class="empty-comment" wx:if="{{comments.length === 0}}">
+          暂无评论，快来说说你的看法吧
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 评论输入框 -->
+  <view class="comment-input-wrapper">
+    <input 
+      class="comment-input"
+      placeholder="说点什么..."
+      value="{{commentContent}}"
+      bindinput="onCommentInput"
+    />
+    <button class="submit-btn" bindtap="submitComment">发送</button>
+  </view>
+</view>

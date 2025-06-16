@@ -1,269 +1,120 @@
-<!-- pages/index/index.wxml - 优化版 -->
-
-<!-- 调试区域 - 生产环境删除 -->
-<view class="debug-section" wx:if="{{false}}">
-  <view class="debug-info">
-    <text>登录状态: {{userInfo ? '已登录(' + userInfo.name + ')' : '未登录'}}</text>
-  </view>
-  <view class="debug-buttons">
-    <button bindtap="debugClearData" size="mini" type="warn">清除所有数据</button>
-  </view>
-</view>
-
+<!-- pages/index/index.wxml - 纯帖子流版本 -->
 <view class="container">
-  <!-- 用户信息栏 -->
-  <view class="user-header" wx:if="{{userInfo}}">
-    <view class="user-info">
-      <image class="user-avatar" src="/images/default-avatar.png" mode="aspectFill" />
-      <view class="user-details">
-        <view class="greeting">{{timeGreeting}}，{{userInfo.name}}</view>
-        <view class="user-desc">今天想找点什么好东西？</view>
-      </view>
-    </view>
-    <view class="header-actions">
-      <view class="message-btn" bindtap="navigateToMessages">
-        <icon type="success_circle" size="18" color="#667eea" />
-        <view class="message-badge" wx:if="{{unreadCount > 0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 搜索栏 -->
-  <view class="search-section">
+  <!-- 顶部搜索栏 - 在导航栏下方 -->
+  <view class="search-header">
     <view class="search-container">
       <view class="search-box">
-        <icon class="search-icon" type="search" size="16" />
+        <icon class="search-icon" type="search" size="14" />
         <input 
           class="search-input"
-          placeholder="搜索你想要的商品..." 
+          placeholder="搜索" 
           value="{{searchKeyword}}"
           bindinput="onSearchInput"
           bindconfirm="onSearchConfirm"
-          bindfocus="onSearchFocus"
-          bindblur="onSearchBlur"
         />
-        <view class="search-btn" bindtap="onSearchConfirm">搜索</view>
       </view>
-      
-      <!-- 搜索建议 -->
-      <view class="search-suggestions" wx:if="{{showSearchSuggestions}}">
-        <view class="suggestions-header">
-          <text>搜索历史</text>
-          <text class="clear-history" bindtap="clearSearchHistory" wx:if="{{searchHistory.length > 0}}">清除</text>
+    </view>
+  </view>
+
+  <!-- 帖子列表 -->
+  <view class="posts-wrapper">
+    <scroll-view 
+      class="posts-container"
+      scroll-y
+      enable-back-to-top
+      refresher-enabled
+      refresher-triggered="{{refreshing}}"
+      bindrefresherrefresh="onPullDownRefresh"
+      bindscrolltolower="onReachBottom"
+    >
+    <!-- 帖子卡片 -->
+    <view class="post-card" wx:for="{{posts}}" wx:key="id">
+      <!-- 用户信息栏 -->
+      <view class="post-header">
+        <image class="user-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="user-info">
+          <view class="user-name">{{item.userName}}</view>
+          <view class="post-time">{{item.timeAgo}}</view>
         </view>
-        <view class="suggestion-tags" wx:if="{{searchHistory.length > 0}}">
-          <view class="suggestion-tag" 
-                wx:for="{{searchHistory}}" 
-                wx:key="index"
-                bindtap="onQuickSearch"
-                data-keyword="{{item}}">
-            {{item}}
-          </view>
+      </view>
+
+      <!-- 帖子内容 -->
+      <view class="post-content">
+        <text class="post-text">{{item.content}}</text>
+      </view>
+
+      <!-- 图片内容 -->
+      <view class="post-images" wx:if="{{item.images && item.images.length > 0}}">
+        <!-- 单图 -->
+        <view class="single-image" wx:if="{{item.images.length === 1}}">
+          <image 
+            class="post-image" 
+            src="{{item.images[0]}}" 
+            mode="widthFix"
+            bindtap="previewImage"
+            data-images="{{item.images}}"
+            data-index="0"
+          />
         </view>
-        <view class="no-history" wx:else>暂无搜索历史</view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 轮播图 -->
-  <view class="banner-section">
-    <swiper 
-      class="banner-swiper" 
-      indicator-dots="{{true}}" 
-      autoplay="{{true}}" 
-      interval="4000" 
-      duration="300"
-      bindchange="onBannerChange">
-      <swiper-item wx:for="{{banners}}" wx:key="id">
-        <view class="banner-item" bindtap="onBannerTap" data-index="{{index}}">
-          <image class="banner-image" src="{{item.image || '/images/placeholder-banner.jpg'}}" mode="aspectFill" />
-          <view class="banner-overlay">
-            <view class="banner-title">{{item.title}}</view>
-            <view class="banner-desc">{{item.desc}}</view>
-          </view>
+        
+        <!-- 多图网格 -->
+        <view class="images-grid {{item.images.length === 2 ? 'grid-2' : item.images.length === 4 ? 'grid-4' : 'grid-3'}}" wx:else>
+          <image 
+            class="grid-image" 
+            wx:for="{{item.images}}" 
+            wx:for-item="image"
+            wx:for-index="imgIndex"
+            wx:key="imgIndex"
+            src="{{image}}" 
+            mode="aspectFill"
+            bindtap="previewImage"
+            data-images="{{item.images}}"
+            data-index="{{imgIndex}}"
+          />
         </view>
-      </swiper-item>
-    </swiper>
-  </view>
-
-  <!-- 滚动公告 -->
-  <view class="notice-section">
-    <view class="notice-icon">📢</view>
-    <swiper class="notice-swiper" vertical="{{true}}" autoplay="{{true}}" interval="3000" duration="500">
-      <swiper-item wx:for="{{notices}}" wx:key="index">
-        <view class="notice-item">{{item}}</view>
-      </swiper-item>
-    </swiper>
-  </view>
-
-  <!-- 统计信息 -->
-  <view class="stats-section">
-    <view class="stat-item">
-      <view class="stat-number">{{stats.totalItems}}</view>
-      <view class="stat-label">商品总数</view>
-    </view>
-    <view class="stat-item">
-      <view class="stat-number">{{stats.totalUsers}}</view>
-      <view class="stat-label">用户总数</view>
-    </view>
-    <view class="stat-item">
-      <view class="stat-number">{{stats.todayItems}}</view>
-      <view class="stat-label">今日新增</view>
-    </view>
-  </view>
-
-  <!-- 快捷功能 -->
-  <view class="quick-actions">
-    <view class="action-item" bindtap="navigateToPublish">
-      <view class="action-icon" style="background: #ff6b6b;">📱</view>
-      <view class="action-text">发布商品</view>
-    </view>
-    <view class="action-item" bindtap="navigateToMyItems">
-      <view class="action-icon" style="background: #4ecdc4;">📦</view>
-      <view class="action-text">我的发布</view>
-    </view>
-    <view class="action-item" bindtap="navigateToFavorites">
-      <view class="action-icon" style="background: #fd79a8;">❤️</view>
-      <view class="action-text">我的收藏</view>
-    </view>
-    <view class="action-item" bindtap="navigateToProfile">
-      <view class="action-icon" style="background: #6c5ce7;">👤</view>
-      <view class="action-text">个人中心</view>
-    </view>
-  </view>
-
-  <!-- 商品分类 -->
-  <view class="category-section">
-    <view class="section-header">
-      <view class="section-title">
-        <icon type="success_circle" size="16" color="#667eea" />
-        <text>商品分类</text>
       </view>
-    </view>
-    
-    <view class="category-grid">
-      <view class="category-item" 
-            wx:for="{{categories}}" 
-            wx:key="id" 
-            bindtap="navigateToCategory" 
-            data-category="{{item}}">
-        <view class="category-icon" style="background: {{item.color}};">{{item.icon}}</view>
-        <view class="category-name">{{item.name}}</view>
-      </view>
-    </view>
-  </view>
 
-  <!-- 最新发布 -->
-  <view class="items-section">
-    <view class="section-header">
-      <view class="section-title">
-        <icon type="success_circle" size="16" color="#4ecdc4" />
-        <text>最新发布</text>
-      </view>
-      <view class="section-more" bindtap="navigateToAllItems" data-type="latest">
-        查看更多 <text class="arrow">></text>
-      </view>
-    </view>
-    
-    <scroll-view class="items-scroll" scroll-x wx:if="{{latestItems.length > 0}}">
-      <view class="item-card" 
-            wx:for="{{latestItems}}" 
-            wx:key="id" 
-            bindtap="navigateToDetail" 
-            data-id="{{item.id}}">
-        <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-        <view class="item-overlay">
-          <view class="item-title">{{item.title}}</view>
-          <view class="item-price">¥{{item.price}}</view>
+      <!-- 互动栏 -->
+      <view class="post-actions">
+        <view class="action-item" bindtap="onSharePost" data-id="{{item.id}}">
+          <icon type="success_no_circle" size="18" color="#999" />
+          <text class="action-text">转发</text>
         </view>
-        <view class="item-tag">{{item.condition}}</view>
+        
+        <view class="action-item" bindtap="onCommentPost" data-id="{{item.id}}">
+          <icon type="success_no_circle" size="18" color="#999" />
+          <text class="action-text">评论{{item.comments > 0 ? ' ' + item.comments : ''}}</text>
+        </view>
+        
+        <view class="action-item" bindtap="onLikePost" data-id="{{item.id}}" data-index="{{index}}">
+          <icon type="{{item.isLiked ? 'success' : 'success_no_circle'}}" size="18" color="{{item.isLiked ? '#ff6b6b' : '#999'}}" />
+          <text class="action-text {{item.isLiked ? 'liked' : ''}}">赞{{item.likes > 0 ? ' ' + item.likes : ''}}</text>
+        </view>
       </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="loading-more" wx:if="{{loading && posts.length > 0}}">
+      <text>加载中...</text>
+    </view>
+
+    <!-- 没有更多 -->
+    <view class="no-more" wx:if="{{!hasMore && posts.length > 0}}">
+      <text>没有更多内容了</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{posts.length === 0 && !loading}}">
+      <icon type="info" size="60" color="#ccc" />
+      <text class="empty-text">暂无动态</text>
+      <text class="empty-desc">快去发布第一条动态吧</text>
+    </view>
     </scroll-view>
-    
-    <view class="empty-state" wx:else>
-      <view class="empty-icon">📦</view>
-      <view class="empty-text">暂无最新商品</view>
-    </view>
   </view>
 
-  <!-- 热门推荐 -->
-  <view class="items-section">
-    <view class="section-header">
-      <view class="section-title">
-        <icon type="success_circle" size="16" color="#ff6b6b" />
-        <text>热门推荐</text>
-      </view>
-      <view class="section-more" bindtap="navigateToAllItems" data-type="hot">
-        查看更多 <text class="arrow">></text>
-      </view>
-    </view>
-    
-    <view class="hot-grid" wx:if="{{hotItems.length > 0}}">
-      <view class="hot-item" 
-            wx:for="{{hotItems}}" 
-            wx:key="id" 
-            bindtap="navigateToDetail" 
-            data-id="{{item.id}}">
-        <image class="hot-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-        <view class="hot-info">
-          <view class="hot-title">{{item.title}}</view>
-          <view class="hot-price">¥{{item.price}}</view>
-          <view class="hot-meta">
-            <text class="hot-views">👁 {{item.viewCount || 0}}</text>
-            <text class="hot-likes">❤️ {{item.likeCount || 0}}</text>
-          </view>
-        </view>
-        <view class="hot-badge">🔥</view>
-      </view>
-    </view>
-    
-    <view class="empty-state" wx:else>
-      <view class="empty-icon">🔥</view>
-      <view class="empty-text">暂无热门商品</view>
-    </view>
-  </view>
-
-  <!-- 为你推荐 -->
-  <view class="items-section" wx:if="{{recommendItems.length > 0}}">
-    <view class="section-header">
-      <view class="section-title">
-        <icon type="success_circle" size="16" color="#f9ca24" />
-        <text>为你推荐</text>
-      </view>
-    </view>
-    
-    <view class="recommend-grid">
-      <view class="recommend-item" 
-            wx:for="{{recommendItems}}" 
-            wx:key="id" 
-            bindtap="navigateToDetail" 
-            data-id="{{item.id}}">
-        <image class="recommend-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-        <view class="recommend-info">
-          <view class="recommend-title">{{item.title}}</view>
-          <view class="recommend-price">¥{{item.price}}</view>
-          <view class="recommend-seller">@{{item.sellerName}}</view>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 底部占位 -->
-  <view class="bottom-space"></view>
-</view>
-
-<!-- 加载状态 -->
-<view class="loading-overlay" wx:if="{{loading}}">
-  <view class="loading-content">
+  <!-- 初始加载状态 -->
+  <view class="initial-loading" wx:if="{{loading && posts.length === 0}}">
     <view class="loading-spinner"></view>
-    <view class="loading-text">加载中...</view>
-  </view>
-</view>
-
-<!-- 刷新提示 -->
-<view class="refresh-tip" wx:if="{{refreshing}}">
-  <view class="refresh-content">
-    <icon type="success" size="16" />
-    <text>刷新中...</text>
+    <text class="loading-text">加载中...</text>
   </view>
 </view>

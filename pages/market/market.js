@@ -8,13 +8,13 @@ Page({
     items: [],
     categories: [
       { id: 'all', name: '全部' },
-      { id: '数码电子', name: '数码电子' },
-      { id: '学习用品', name: '学习用品' },
-      { id: '生活用品', name: '生活用品' },
-      { id: '服装配饰', name: '服装配饰' },
-      { id: '运动器材', name: '运动器材' },
-      { id: '化妆护肤', name: '化妆护肤' },
-      { id: '其他', name: '其他' }
+      { id: 1, name: '数码电子' },
+      { id: 2, name: '生活用品' },
+      { id: 3, name: '学习用品' },
+      { id: 4, name: '服装配饰' },
+      { id: 5, name: '运动器材' },
+      { id: 6, name: '化妆护肤' },
+      { id: 7, name: '其他' }
     ],
     currentCategory: 'all',
     refreshing: false,
@@ -50,26 +50,38 @@ Page({
   },
 
   // 加载商品列表
-  async loadItems(refresh = false) {
+  loadItems(refresh = false) {
     try {
       const page = refresh ? 1 : this.data.currentPage;
       console.log('加载商品，页码:', page, '分类:', this.data.currentCategory);
       
-      const result = await itemManager.getItems({
-        page: page,
-        limit: 10,
-        category: this.data.currentCategory,
-        status: 'available'
-      });
+      // 构建筛选条件
+      const filters = {};
+      if (this.data.currentCategory !== 'all') {
+        filters.categoryId = this.data.currentCategory;
+      }
       
-      let items = refresh ? result.items : [...this.data.items, ...result.items];
+      // 使用 searchItems 方法获取所有符合条件的商品
+      const allItems = itemManager.searchItems('', filters);
+      console.log('获取到商品总数:', allItems.length);
+      
+      // 手动实现分页
+      const pageSize = 10;
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedItems = allItems.slice(startIndex, endIndex);
+      
+      // 处理数据
+      let items = refresh ? paginatedItems : [...this.data.items, ...paginatedItems];
       
       this.setData({
         items: items,
-        hasMore: result.hasMore,
+        hasMore: endIndex < allItems.length,
         currentPage: refresh ? 2 : page + 1,
         refreshing: false
       });
+      
+      console.log('当前显示商品数:', items.length);
       
     } catch (error) {
       console.error('加载商品失败:', error);
@@ -106,7 +118,7 @@ Page({
   // 上拉加载更多
   loadMore() {
     console.log('上拉加载更多');
-    if (this.data.hasMore) {
+    if (this.data.hasMore && !this.data.refreshing) {
       this.loadItems(false);
     }
   },
@@ -118,7 +130,7 @@ Page({
   },
 
   // 执行搜索
-  async onSearch(e) {
+  onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
     if (!keyword.trim()) {
       return;
@@ -127,7 +139,7 @@ Page({
     console.log('搜索商品:', keyword);
     
     try {
-      const results = await itemManager.searchItems(keyword);
+      const results = itemManager.searchItems(keyword);
       this.setData({
         items: results,
         hasMore: false,
@@ -153,30 +165,26 @@ Page({
   navigateToItemDetail(e) {
     const itemId = e.currentTarget.dataset.id;
     console.log('查看商品详情:', itemId);
-    wx.showToast({
-      title: '商品详情开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: `/pages/item-detail/item-detail?id=${itemId}`
     });
-    // wx.navigateTo({
-    //   url: `/pages/item-detail/item-detail?id=${itemId}`
-    // });
   },
 
   // 收藏商品
-  async toggleLike(e) {
+  toggleLike(e) {
     const itemId = e.currentTarget.dataset.id;
+    const userId = this.data.userInfo.id;
     console.log('收藏商品:', itemId);
     
     try {
-      const result = await itemManager.toggleLike(itemId);
+      const isLiked = itemManager.toggleLike(itemId, userId);
       
       // 更新页面数据
       const items = this.data.items.map(item => {
         if (item.id === itemId) {
           return {
             ...item,
-            isLiked: result.isLiked,
-            likes: result.likes
+            likeCount: (item.likeCount || 0) + (isLiked ? 1 : -1)
           };
         }
         return item;
@@ -185,7 +193,7 @@ Page({
       this.setData({ items });
       
       wx.showToast({
-        title: result.isLiked ? '已收藏' : '已取消收藏',
+        title: isLiked ? '已收藏' : '已取消收藏',
         icon: 'success'
       });
       

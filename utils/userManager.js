@@ -17,6 +17,12 @@ class UserManager {
           studentId: '21001001',
           name: '张三',
           password: '123456',
+          avatar: '/images/default-avatar.png',
+          college: '计算机学院',
+          major: '软件工程',
+          phone: '13800138000',
+          email: 'zhangsan@example.com',
+          rating: '信用优秀',
           createdAt: new Date().toISOString()
         },
         {
@@ -24,6 +30,25 @@ class UserManager {
           studentId: '21001002',
           name: '李四',
           password: '123456',
+          avatar: '/images/default-avatar.png',
+          college: '信息工程学院',
+          major: '通信工程',
+          phone: '13800138001',
+          email: 'lisi@example.com',
+          rating: '信用良好',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 3,
+          studentId: '22074304',
+          name: '牛大果',
+          password: '123456',
+          avatar: '/images/default-avatar.png',
+          college: '计算机学院',
+          major: '软件工程',
+          phone: '13800138002',
+          email: 'niudaguo@example.com',
+          rating: '信用优秀',
           createdAt: new Date().toISOString()
         }
       ];
@@ -55,17 +80,19 @@ class UserManager {
   }
 
   // 用户注册
-  register(studentId, name, password) {
+  register(userData) {
     return new Promise((resolve, reject) => {
-      // 参数验证
+      const { studentId, name, password, college, major, phone, email } = userData;
+
+      // 基本参数验证
       if (!studentId || !name || !password) {
-        reject({ code: 400, message: '请填写完整信息' });
+        reject({ code: 400, message: '请填写必要信息' });
         return;
       }
 
       // 学号格式验证
       if (!/^\d{8,12}$/.test(studentId)) {
-        reject({ code: 400, message: '学号格式不正确，应为10-12位数字' });
+        reject({ code: 400, message: '学号格式不正确，应为8-12位数字' });
         return;
       }
 
@@ -75,35 +102,52 @@ class UserManager {
         return;
       }
 
+      // 手机号格式验证
+      if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+        reject({ code: 400, message: '手机号格式不正确' });
+        return;
+      }
+
+      // 邮箱格式验证
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        reject({ code: 400, message: '邮箱格式不正确' });
+        return;
+      }
+
       const users = this.getAllUsers();
       
       // 检查学号是否已存在
-      const existUser = users.find(user => user.studentId === studentId);
-      if (existUser) {
+      if (users.find(user => user.studentId === studentId)) {
         reject({ code: 400, message: '该学号已注册' });
         return;
       }
 
       // 创建新用户
       const newUser = {
-        id: Date.now(), // 用时间戳作为ID
-        studentId: studentId,
-        name: name,
-        password: password, // 真实项目中应该加密
+        id: Date.now(),
+        studentId,
+        name,
+        password,
+        avatar: '/images/default-avatar.png',
+        college: college || '',
+        major: major || '',
+        phone: phone || '',
+        email: email || '',
+        rating: '信用良好',
         createdAt: new Date().toISOString()
       };
 
       users.push(newUser);
       
       if (this.saveUsers(users)) {
+        // 返回安全的用户信息（不包含密码）
+        const safeUserInfo = { ...newUser };
+        delete safeUserInfo.password;
+        
         resolve({
           code: 200,
           message: '注册成功',
-          data: {
-            id: newUser.id,
-            studentId: newUser.studentId,
-            name: newUser.name
-          }
+          data: { userInfo: safeUserInfo }
         });
       } else {
         reject({ code: 500, message: '注册失败，请重试' });
@@ -114,32 +158,28 @@ class UserManager {
   // 用户登录
   login(studentId, password) {
     return new Promise((resolve, reject) => {
-      // 参数验证
       if (!studentId || !password) {
         reject({ code: 400, message: '请填写学号和密码' });
         return;
       }
 
       const users = this.getAllUsers();
-      
-      // 查找用户
       const user = users.find(u => u.studentId === studentId);
-      if (!user) {
+      
+      if (!user || user.password !== password) {
         reject({ code: 401, message: '学号或密码错误' });
         return;
       }
 
-      // 验证密码
-      if (user.password !== password) {
-        reject({ code: 401, message: '学号或密码错误' });
-        return;
-      }
-
-      // 保存登录状态
+      // 构建登录信息（不包含密码）
       const loginInfo = {
         id: user.id,
         studentId: user.studentId,
         name: user.name,
+        avatar: user.avatar,
+        college: user.college,
+        major: user.major,
+        rating: user.rating,
         loginTime: new Date().toISOString()
       };
 
@@ -148,9 +188,7 @@ class UserManager {
         resolve({
           code: 200,
           message: '登录成功',
-          data: {
-            userInfo: loginInfo
-          }
+          data: { userInfo: loginInfo }
         });
       } catch (error) {
         reject({ code: 500, message: '登录失败，请重试' });
@@ -168,20 +206,71 @@ class UserManager {
     }
   }
 
-  // 检查是否已登录
-  isLoggedIn() {
-    return this.getCurrentUser() !== null;
+  // 获取指定用户信息
+  getUserInfo(userId) {
+    return new Promise((resolve, reject) => {
+      const users = this.getAllUsers();
+      const user = users.find(u => u.id === userId);
+      
+      if (!user) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      // 返回安全的用户信息（不包含密码等敏感信息）
+      const safeUserInfo = { ...user };
+      delete safeUserInfo.password;
+      
+      resolve({
+        code: 200,
+        data: { userInfo: safeUserInfo }
+      });
+    });
   }
 
-  // 退出登录
-  logout() {
-    try {
-      wx.removeStorageSync(this.CURRENT_USER_KEY);
-      return true;
-    } catch (error) {
-      console.error('退出登录失败:', error);
-      return false;
-    }
+  // 更新用户信息
+  updateUserInfo(updates) {
+    return new Promise((resolve, reject) => {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser) {
+        reject({ code: 401, message: '请先登录' });
+        return;
+      }
+
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(u => u.id === currentUser.id);
+      
+      if (userIndex === -1) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      // 更新用户信息
+      const updatedUser = {
+        ...users[userIndex],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+      users[userIndex] = updatedUser;
+
+      if (this.saveUsers(users)) {
+        // 更新登录状态
+        const loginInfo = {
+          ...currentUser,
+          ...updates,
+          updateTime: new Date().toISOString()
+        };
+        wx.setStorageSync(this.CURRENT_USER_KEY, loginInfo);
+        
+        resolve({
+          code: 200,
+          message: '更新成功',
+          data: { userInfo: loginInfo }
+        });
+      } else {
+        reject({ code: 500, message: '更新失败' });
+      }
+    });
   }
 
   // 修改密码
@@ -201,19 +290,16 @@ class UserManager {
         return;
       }
 
-      // 验证旧密码
       if (users[userIndex].password !== oldPassword) {
         reject({ code: 400, message: '原密码错误' });
         return;
       }
 
-      // 新密码验证
       if (newPassword.length < 6) {
         reject({ code: 400, message: '新密码至少6位' });
         return;
       }
 
-      // 修改密码
       users[userIndex].password = newPassword;
       users[userIndex].updatedAt = new Date().toISOString();
 
@@ -225,12 +311,54 @@ class UserManager {
     });
   }
 
-  // 获取所有用户（仅用于调试）
+  // 检查是否已登录
+  isLoggedIn() {
+    return this.getCurrentUser() !== null;
+  }
+
+  // 退出登录
+  logout() {
+    try {
+      wx.removeStorageSync(this.CURRENT_USER_KEY);
+      return true;
+    } catch (error) {
+      console.error('退出登录失败:', error);
+      return false;
+    }
+  }
+
+  // 更新用户信用评级
+  updateUserRating(userId, rating) {
+    return new Promise((resolve, reject) => {
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(u => u.id === userId);
+      
+      if (userIndex === -1) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      users[userIndex].rating = rating;
+      users[userIndex].updatedAt = new Date().toISOString();
+
+      if (this.saveUsers(users)) {
+        resolve({ 
+          code: 200, 
+          message: '信用评级更新成功',
+          data: { rating }
+        });
+      } else {
+        reject({ code: 500, message: '更新失败' });
+      }
+    });
+  }
+
+  // 调试方法：获取所有用户
   debugGetAllUsers() {
     return this.getAllUsers();
   }
 
-  // 清空所有数据（仅用于调试）
+  // 调试方法：清空所有数据
   debugClearAll() {
     try {
       wx.removeStorageSync(this.USERS_KEY);

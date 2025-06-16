@@ -24,7 +24,7 @@ class MessageManager {
         chatId: 'chat_1_2',
         userId: 2,
         userName: '李四',
-        userAvatar: '/images/avatar2.jpg',
+        userAvatar: '/images/default-avatar.jpg',
         lastMessage: '这个台灯还在吗？我想要',
         lastMessageTime: this.formatTime(new Date(Date.now() - 30 * 60 * 1000)),
         lastMessageType: 'text',
