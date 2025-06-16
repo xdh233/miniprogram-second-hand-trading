@@ -1,84 +1,128 @@
 <!-- market.wxml - 闲置市场页面 -->
 <view class="container">
-  <!-- 顶部搜索栏 -->
-  <view class="search-header">
-    <view class="search-box">
-      <icon class="search-icon" type="search" size="16" />
-      <input placeholder="搜索闲置商品..." confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearch" />
-    </view>
-  </view>
-
-  <!-- 分类标签栏 -->
-  <view class="category-section">
-    <scroll-view class="category-tabs" scroll-x>
-      <view 
-        class="category-tab {{currentCategory === item.id ? 'active' : ''}}" 
-        wx:for="{{categories}}" 
-        wx:key="id"
-        bindtap="switchCategory"
-        data-id="{{item.id}}"
-      >
-        {{item.name}}
+  <!-- 完全模仿message页面的结构 -->
+  <view class="content-container">
+    <!-- 顶部搜索栏 - 学习message页面 -->
+    <view class="search-header">
+      <view class="search-box">
+        <icon class="search-icon" type="search" size="14" />
+        <input 
+          class="search-input"
+          placeholder="搜索闲置商品..." 
+          placeholder-class="search-placeholder"
+          confirm-type="search" 
+          bindinput="onSearchInput" 
+          bindconfirm="onSearch" 
+        />
       </view>
-    </scroll-view>
-  </view>
+    </view>
 
-  <!-- 商品列表 - 双列布局 -->
-  <scroll-view class="content-area" scroll-y refresher-enabled bindrefresherrefresh="onRefresh" refresher-triggered="{{refreshing}}" bindscrolltolower="loadMore">
-    <view class="items-grid">
-      <view 
-        class="item-card" 
-        wx:for="{{items}}" 
-        wx:key="id" 
-        bindtap="navigateToItemDetail" 
-        data-id="{{item.id}}"
-      >
-        <!-- 商品图片 -->
-        <view class="item-image-container">
-          <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-          <!-- 商品状态标签 -->
-          <view class="status-tag" wx:if="{{item.status !== 'available'}}">
-            <text wx:if="{{item.status === 'sold'}}">已售出</text>
-            <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+    <!-- 分类标签栏 -->
+    <view class="category-section">
+      <scroll-view class="category-tabs" scroll-x>
+        <view 
+          class="category-tab {{currentCategory === item.id ? 'active' : ''}}" 
+          wx:for="{{categories}}" 
+          wx:key="id"
+          bindtap="switchCategory"
+          data-id="{{item.id}}"
+        >
+          {{item.name}}
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 商品列表 - 双列布局 -->
+    <scroll-view class="content-area" scroll-y refresher-enabled bindrefresherrefresh="onRefresh" refresher-triggered="{{refreshing}}" bindscrolltolower="loadMore">
+      
+      <view class="items-grid">
+        <!-- 左列 -->
+        <view class="column left-column">
+          <view 
+            class="item-card" 
+            wx:for="{{leftItems}}" 
+            wx:key="id" 
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
+          >
+            <!-- 商品图片 -->
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <!-- 商品状态标签 -->
+              <view class="status-tag" wx:if="{{item.status !== 'available'}}">
+                <text wx:if="{{item.status === 'sold'}}">已售出</text>
+                <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+              </view>
+            </view>
+            
+            <!-- 商品信息 -->
+            <view class="item-info">
+              <!-- 商品标题 -->
+              <view class="item-title">{{item.title}}</view>
+              
+              <!-- 商品价格 -->
+              <view class="item-price">¥{{item.price}}</view>
+              
+              <!-- 发布人信息 -->
+              <view class="seller-info">
+                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
+                <text class="seller-name">{{item.sellerName}}</text>
+                <!-- 卖/收标签 -->
+                <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
+                  {{item.tradeType === 'sell' ? '卖' : '收'}}
+                </view>
+              </view>
+            </view>
           </view>
         </view>
-        
-        <!-- 商品信息 -->
-        <view class="item-info">
-          <!-- 商品标题 -->
-          <view class="item-title">{{item.title}}</view>
-          
-          <!-- 商品价格 -->
-          <view class="item-price">¥{{item.price}}</view>
-          
-          <!-- 发布人信息 -->
-          <view class="seller-info">
-            <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
-            <text class="seller-name">{{item.sellerName}}</text>
-            <!-- 卖/收标签 -->
-            <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
-              {{item.tradeType === 'sell' ? '卖' : '收'}}
+
+        <!-- 右列 -->
+        <view class="column right-column">
+          <view 
+            class="item-card" 
+            wx:for="{{rightItems}}" 
+            wx:key="id" 
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
+          >
+            <!-- 商品图片 -->
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <!-- 商品状态标签 -->
+              <view class="status-tag" wx:if="{{item.status !== 'available'}}">
+                <text wx:if="{{item.status === 'sold'}}">已售出</text>
+                <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+              </view>
+            </view>
+            
+            <!-- 商品信息 -->
+            <view class="item-info">
+              <!-- 商品标题 -->
+              <view class="item-title">{{item.title}}</view>
+              
+              <!-- 商品价格 -->
+              <view class="item-price">¥{{item.price}}</view>
+              
+              <!-- 发布人信息 -->
+              <view class="seller-info">
+                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
+                <text class="seller-name">{{item.sellerName}}</text>
+                <!-- 卖/收标签 -->
+                <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
+                  {{item.tradeType === 'sell' ? '卖' : '收'}}
+                </view>
+              </view>
             </view>
           </view>
         </view>
       </view>
-    </view>
 
-    <!-- 加载更多 -->
-    <view class="loading-more" wx:if="{{hasMore}}">
-      <text>加载中...</text>
-    </view>
-    
-    <!-- 没有更多 -->
-    <view class="no-more" wx:if="{{!hasMore && items.length > 0}}">
-      <text>没有更多商品了</text>
-    </view>
-
-    <!-- 空状态 -->
-    <view class="empty-state" wx:if="{{items.length === 0}}">
-      <view class="empty-icon">📦</view>
-      <view class="empty-text">暂无闲置商品</view>
-      <view class="empty-desc">快来发布第一个商品吧</view>
-    </view>
-  </scroll-view>
+      <!-- 空状态 -->
+      <view class="empty-state" wx:if="{{items.length === 0}}">
+        <view class="empty-icon">📦</view>
+        <view class="empty-text">暂无闲置商品</view>
+        <view class="empty-desc">快来发布第一个商品吧</view>
+      </view>
+    </scroll-view>
+  </view>
 </view>

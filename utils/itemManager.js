@@ -75,7 +75,7 @@ class ItemManager {
         isNegotiable: false,
         sellerId: 2,
         sellerName: '李四',
-        sellerAvatar: '/images/dafault-avatar.jpg',
+        sellerAvatar: '/images/default-avatar.jpg',
         status: 'active',
         publishTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         viewCount: 12,
