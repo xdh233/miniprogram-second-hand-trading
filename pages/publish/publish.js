@@ -3,7 +3,8 @@ const userManager = require('../../utils/userManager');
 
 Page({
   data: {
-    userInfo: null
+    userInfo: null,
+    isVisible: false
   },
 
   onLoad() {
@@ -14,6 +15,18 @@ Page({
   onShow() {
     console.log('发布页面显示');
     this.checkLoginStatus();
+    
+    // 重置动画状态
+    this.setData({ isVisible: false });
+    
+    // 延迟显示动画效果，确保每次都有动画
+    setTimeout(() => {
+      this.setData({ isVisible: true });
+    }, 100);
+  },
+
+  onHide() {
+    this.setData({ isVisible: false });
   },
 
   // 检查登录状态
@@ -32,10 +45,28 @@ Page({
   // 发布动态
   publishPost() {
     console.log('发布动态');
-    wx.showToast({
-      title: '发布动态功能开发中',
-      icon: 'none'
+    
+    // 触感反馈
+    wx.vibrateShort({
+      type: 'light'
     });
+
+    // 显示加载提示
+    wx.showLoading({
+      title: '正在跳转...',
+      mask: true
+    });
+
+    setTimeout(() => {
+      wx.hideLoading();
+      wx.showToast({
+        title: '发布动态功能开发中',
+        icon: 'none',
+        duration: 2000
+      });
+    }, 800);
+
+    // 未来启用时使用
     // wx.navigateTo({
     //   url: '/pages/publish-post/publish-post'
     // });
@@ -44,10 +75,28 @@ Page({
   // 发布商品
   publishItem() {
     console.log('发布商品');
-    wx.showToast({
-      title: '发布商品功能开发中',
-      icon: 'none'
+    
+    // 触感反馈
+    wx.vibrateShort({
+      type: 'light'
     });
+
+    // 显示加载提示
+    wx.showLoading({
+      title: '正在跳转...',
+      mask: true
+    });
+
+    setTimeout(() => {
+      wx.hideLoading();
+      wx.showToast({
+        title: '发布闲置功能开发中',
+        icon: 'none',
+        duration: 2000
+      });
+    }, 800);
+
+    // 未来启用时使用
     // wx.navigateTo({
     //   url: '/pages/publish-item/publish-item'
     // });
@@ -56,9 +105,20 @@ Page({
   // 关闭选择器
   closePicker() {
     console.log('关闭发布选择器');
-    // 返回上一个tab页面
-    wx.switchTab({
-      url: '/pages/index/index'
-    });
+    
+    // 先隐藏动画
+    this.setData({ isVisible: false });
+    
+    // 延迟跳转，等待动画结束
+    setTimeout(() => {
+      wx.switchTab({
+        url: '/pages/index/index'
+      });
+    }, 250);
+  },
+
+  // 阻止事件冒泡
+  preventBubble() {
+    // 空函数，仅用于阻止事件冒泡
   }
 });

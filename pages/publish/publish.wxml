@@ -1,28 +1,28 @@
 <!-- publish.wxml - 发布选择页面 -->
 <view class="container">
   <!-- 发布选择遮罩 -->
-  <view class="publish-mask" bindtap="closePicker">
-    <view class="publish-picker" catchtap>
-      <view class="picker-header">
-        <text class="picker-title">选择发布类型</text>
-        <icon class="close-btn" type="cancel" size="20" bindtap="closePicker" />
+  <view class="publish-mask {{isVisible ? 'show' : ''}}" bindtap="closePicker">
+    <!-- 直接显示选项列表 -->
+    <view class="picker-options {{isVisible ? 'show' : ''}}" catchtap="preventBubble">
+      <!-- 发布动态 -->
+      <view class="option-item" bindtap="publishPost">
+        <view class="option-icon">
+          <text class="icon-emoji">✨</text>
+        </view>
+        <view class="option-info">
+          <view class="option-title">发布动态</view>
+          <view class="option-desc">分享校园生活、学习心得</view>
+        </view>
       </view>
       
-      <view class="picker-options">
-        <view class="option-item" bindtap="publishPost">
-          <view class="option-icon">📝</view>
-          <view class="option-info">
-            <view class="option-title">发布动态</view>
-            <view class="option-desc">分享生活、学习、校园趣事</view>
-          </view>
+      <!-- 发布闲置 -->
+      <view class="option-item" bindtap="publishItem">
+        <view class="option-icon">
+          <text class="icon-emoji">🛍️</text>
         </view>
-        
-        <view class="option-item" bindtap="publishItem">
-          <view class="option-icon">📦</view>
-          <view class="option-info">
-            <view class="option-title">发布闲置</view>
-            <view class="option-desc">出售二手商品、学习用品等</view>
-          </view>
+        <view class="option-info">
+          <view class="option-title">发布闲置</view>
+          <view class="option-desc">出售二手物品、学习用品</view>
         </view>
       </view>
     </view>
