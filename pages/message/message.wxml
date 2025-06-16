@@ -1,55 +1,71 @@
 <view class="container">
-  <!-- 搜索栏 -->
-  <view class="search-container">
-    <view class="search-bar">
-      <icon type="search" size="32rpx" color="#999"/>
-      <input class="search-input" placeholder="搜索联系人或消息内容" placeholder-class="search-placeholder"/>
-    </view>
-  </view>
-
-  <!-- 消息分类组 -->
-  <view class="message-group">
-    <view class="message-types">
-      <view class="type-item" bindtap="navigateToMentions">
-        <view class="type-icon mention">@</view>
-        <text class="type-text">提到我的</text>
-        <view class="badge" wx:if="{{mentionCount > 0}}">{{mentionCount}}</view>
-      </view>
-      <view class="type-item" bindtap="navigateToComments">
-        <view class="type-icon comment">💬</view>
-        <text class="type-text">评论</text>
-        <view class="badge" wx:if="{{commentCount > 0}}">{{commentCount}}</view>
-      </view>
-      <view class="type-item" bindtap="navigateToLikes">
-        <view class="type-icon like">❤️</view>
-        <text class="type-text">点赞</text>
-        <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
+  <!-- 完全模仿首页的结构 -->
+  <view class="content-container">
+    <!-- 搜索栏 - 和首页一样固定 -->
+    <view class="search-header">
+      <view class="search-box">
+        <icon class="search-icon" type="search" size="14" />
+        <input 
+          class="search-input"
+          placeholder="搜索联系人或消息内容" 
+          placeholder-class="search-placeholder"
+        />
       </view>
     </view>
-  </view>
 
-  <!-- 聊天列表组 -->
-  <view class="message-group">
-    <view class="section-title">最近聊天</view>
-    <view class="chat-list">
-      <view class="chat-item" 
-        wx:for="{{chatList}}" 
-        wx:key="id"
-        data-id="{{item.id}}"
-        bindtap="navigateToChat"
-      >
-        <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
-        <view class="chat-info">
-          <view class="chat-header">
-            <text class="name">{{item.name}}</text>
-            <text class="time">{{item.time}}</text>
-          </view>
-          <view class="chat-footer">
-            <text class="last-message">{{item.lastMessage}}</text>
-            <view class="unread" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount}}</view>
+    <!-- 消息容器 - 模仿首页的 posts-container -->
+    <scroll-view 
+      class="messages-container"
+      scroll-y
+      enable-back-to-top
+      refresher-enabled
+      refresher-triggered="{{refreshing}}"
+      bindrefresherrefresh="onPullDownRefresh"
+    >
+      <!-- 消息分类 -->
+      <view class="message-types">
+        <view class="type-item" bindtap="navigateToMentions">
+          <view class="type-icon mention">@</view>
+          <text class="type-text">提到我的</text>
+          <view class="badge" wx:if="{{mentionCount > 0}}">{{mentionCount}}</view>
+        </view>
+        <view class="type-item" bindtap="navigateToComments">
+          <view class="type-icon comment">💬</view>
+          <text class="type-text">评论</text>
+          <view class="badge" wx:if="{{commentCount > 0}}">{{commentCount}}</view>
+        </view>
+        <view class="type-item" bindtap="navigateToLikes">
+          <view class="type-icon like">❤️</view>
+          <text class="type-text">点赞</text>
+          <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
+        </view>
+      </view>
+
+      <!-- 分隔线 -->
+      <view class="divider"></view>
+
+      <!-- 聊天列表 -->
+      <view class="section-title">最近聊天</view>
+      <view class="chat-list">
+        <view class="chat-item" 
+          wx:for="{{chatList}}" 
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="navigateToChat"
+        >
+          <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
+          <view class="chat-info">
+            <view class="chat-header">
+              <text class="name">{{item.name}}</text>
+              <text class="time">{{item.time}}</text>
+            </view>
+            <view class="chat-footer">
+              <text class="last-message">{{item.lastMessage}}</text>
+              <view class="unread" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount}}</view>
+            </view>
           </view>
         </view>
       </view>
-    </view>
+    </scroll-view>
   </view>
 </view>

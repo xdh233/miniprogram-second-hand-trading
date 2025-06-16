@@ -1,0 +1,239 @@
+/* market.wxss - 闲置市场页面样式 */
+
+.container {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部搜索栏 */
+.search-header {
+  background-color: #fff;
+  padding: 10rpx 20rpx 10rpx 20rpx;
+  border-bottom: 1rpx solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: #f8f8f8;
+  border-radius: 50rpx;
+  padding: 20rpx 30rpx;
+  height: 70rpx;
+}
+
+.search-icon {
+  color: #999;
+  margin-right: 20rpx;
+}
+
+.search-box input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.search-box input::placeholder {
+  color: #999;
+}
+
+/* 分类标签栏 */
+.category-section {
+  background-color: #fff;
+  border-bottom: 1rpx solid #e5e5e5;
+}
+
+.category-tabs {
+  white-space: nowrap;
+  padding: 20rpx 0;
+}
+
+.category-tab {
+  display: inline-block;
+  padding: 16rpx 32rpx;
+  margin: 0 20rpx;
+  font-size: 28rpx;
+  color: #666;
+  border-radius: 50rpx;
+  transition: all 0.3s;
+}
+
+.category-tab.active {
+  color: #007aff;
+  background-color: #e8f4ff;
+}
+
+.category-tab:first-child {
+  margin-left: 20rpx;
+}
+
+.category-tab:last-child {
+  margin-right: 20rpx;
+}
+
+/* 内容区域 */
+.content-area {
+  flex: 1;
+  padding: 20rpx;
+}
+
+/* 商品网格 */
+.items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.item-card {
+  width: 48%;
+  background-color: #fff;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 商品图片容器 */
+.item-image-container {
+  position: relative;
+  width: 100%;
+  height: 300rpx;
+}
+
+.item-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 16rpx 16rpx 0 0;
+}
+
+.status-tag {
+  position: absolute;
+  top: 16rpx;
+  left: 16rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 20rpx;
+}
+
+/* 商品信息 */
+.item-info {
+  padding: 20rpx;
+}
+
+.item-title {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-price {
+  font-size: 32rpx;
+  color: #ff6b35;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+
+/* 卖家信息 */
+.seller-info {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.seller-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+
+.seller-name {
+  font-size: 24rpx;
+  color: #666;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-type {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: bold;
+  margin-left: 12rpx;
+}
+
+.trade-type.sell {
+  background-color: #ff6b35;
+}
+
+.trade-type.buy {
+  background-color: #007aff;
+}
+
+/* 加载状态 */
+.loading-more {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.no-more {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 120rpx 40rpx;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 40rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.empty-desc {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 响应式调整 */
+@media (max-width: 400px) {
+  .item-card {
+    width: 100%;
+  }
+  
+  .items-grid {
+    display: block;
+  }
+}

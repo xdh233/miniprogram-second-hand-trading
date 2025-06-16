@@ -1,40 +1,49 @@
-/* pages/index/index.wxss - 纯帖子流版本 */
+/* pages/index/index.wxss - 优化版帖子流 */
 
 page {
-  background-color: #f5f5f5;  /*页面背景颜色；占满整个页面*/
+  background-color: #fff;
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .container {              
+  background: #fff;
+  margin: 0;
+  padding: 0;
+  position: absolute; /* 绝对定位 */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 统一内容容器 */
+.content-container {
+  background: #fff;
+  width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }
 
 /* 顶部搜索栏 */
 .search-header {
-  background: #f5f5f5;
-  padding: 15rpx;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  border-bottom: 1rpx solid #f0f0f0; /* 添加一条分割线 */
-}
-
-.search-container {
-  padding: 0;
+  background: #fff;
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .search-box {
   display: flex;
   align-items: center;
-  background: white;
+  background: #f5f5f5;
   border-radius: 25rpx;
   padding: 12rpx 20rpx;
   height: 56rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 }
 
 .search-icon {
@@ -48,57 +57,37 @@ page {
   color: #333;
 }
 
-/* 帖子容器包装 */
-.posts-wrapper {
-  flex: 1;
-  margin-top: 87rpx; /* 为固定的搜索栏留出空间，这个值是你search-header的高度 */
-}
-
 /* 帖子容器 */
 .posts-container {
-  height: 100%;
+  flex: 1;
+  background: #fff; /* 改为白色背景 */
 }
 
 /* 帖子卡片 */
 .post-card {
   background: white;
-  padding: 20rpx;
-  margin: 0 0 20rpx 0;  /* 添加外边距 */
-}
-
-.post-card:not(:last-child) {
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.loading-more,
-.no-more {
-  text-align: center;
   padding: 30rpx;
-  color: #999;
-  font-size: 26rpx;
+  margin: 0 0 20rpx 0; /* 增加底部间距，用白色背景分隔 */
+  border-bottom: 20rpx solid #f5f5f5; /* 用边框创建分隔效果 */
 }
+
+.post-card:last-child {
+  border-bottom: none; /* 最后一个卡片不需要分隔 */
+}
+
 /* 用户信息栏 */
 .post-header {
   display: flex;
   align-items: center;
-  margin-bottom: 15rpx;
+  margin-bottom: 20rpx;
 }
 
 .user-avatar {
-  width: 70rpx;
-  height: 70rpx;
+  width: 80rpx;
+  height: 80rpx;
   border-radius: 50%;
   margin-right: 20rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-text {
-  font-size: 30rpx;
-  color: white;
-  font-weight: bold;
 }
 
 .user-info {
@@ -106,10 +95,10 @@ page {
 }
 
 .user-name {
-  font-size: 30rpx;
+  font-size: 32rpx;
   color: #333;
   font-weight: 500;
-  margin-bottom: 5rpx;
+  margin-bottom: 6rpx;
 }
 
 .post-time {
@@ -119,12 +108,11 @@ page {
 
 /* 帖子内容 */
 .post-content {
-  margin-bottom: 15rpx;
-  padding-left: 75rpx; /* 对齐到用户名下方 */
+  margin-bottom: 20rpx;
 }
 
 .post-text {
-  font-size: 30rpx;
+  font-size: 32rpx;
   color: #333;
   line-height: 1.6;
   word-wrap: break-word;
@@ -132,8 +120,7 @@ page {
 
 /* 图片内容 */
 .post-images {
-  margin-bottom: 15rpx;
-  padding-left: 75rpx; /* 对齐到用户名下方 */
+  margin-bottom: 20rpx;
 }
 
 /* 单图显示 */
@@ -143,37 +130,38 @@ page {
 
 .post-image {
   width: 100%;
-  border-radius: 8rpx;
+  max-width: 500rpx;
+  border-radius: 12rpx;
 }
 
 /* 多图网格 */
 .images-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10rpx;
+  gap: 8rpx;
 }
 
 .grid-image {
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   background: #f0f0f0;
 }
 
 /* 2图布局 */
 .grid-2 .grid-image {
-  width: calc(50% - 5rpx);
-  height: 300rpx;
+  width: calc(50% - 4rpx);
+  height: 280rpx;
 }
 
 /* 3图布局（默认） */
 .images-grid:not(.grid-2):not(.grid-4) .grid-image {
-  width: calc(33.33% - 7rpx);
-  height: 200rpx;
+  width: calc(33.33% - 6rpx);
+  height: 180rpx;
 }
 
 /* 4图布局 */
 .grid-4 .grid-image {
-  width: calc(50% - 5rpx);
-  height: 200rpx;
+  width: calc(50% - 4rpx);
+  height: 180rpx;
 }
 
 /* 超过4图的布局 */
@@ -185,8 +173,8 @@ page {
 .post-actions {
   display: flex;
   align-items: center;
-  padding-top: 15rpx;
-  margin-top: 15rpx;
+  padding-top: 20rpx;
+  margin-top: 20rpx;
   border-top: 1rpx solid #f0f0f0;
 }
 
@@ -195,19 +183,19 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10rpx;
+  padding: 12rpx;
   color: #999;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  border-radius: 8rpx;
 }
 
 .action-item:active {
-  background: #f0f0f0;
-  border-radius: 8rpx;
+  background: #f8f8f8;
 }
 
 .action-text {
   font-size: 28rpx;
-  margin-left: 10rpx;
+  margin-left: 8rpx;
   color: #666;
 }
 
@@ -219,9 +207,10 @@ page {
 .loading-more,
 .no-more {
   text-align: center;
-  padding: 30rpx;
+  padding: 40rpx;
   color: #999;
-  font-size: 26rpx;
+  font-size: 28rpx;
+  background: #fff; /* 改为白色背景 */
 }
 
 /* 空状态 */
@@ -230,17 +219,18 @@ page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 200rpx 0;
+  padding: 200rpx 40rpx;
+  background: #fff; /* 改为白色背景 */
 }
 
 .empty-text {
-  font-size: 30rpx;
+  font-size: 32rpx;
   color: #666;
-  margin: 20rpx 0 10rpx;
+  margin: 30rpx 0 10rpx;
 }
 
 .empty-desc {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #999;
 }
 
@@ -251,6 +241,7 @@ page {
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
+  z-index: 10;
 }
 
 .loading-spinner {

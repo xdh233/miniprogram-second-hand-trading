@@ -62,7 +62,16 @@ Page({
       }
       
       // 使用 searchItems 方法获取所有符合条件的商品
-      const allItems = itemManager.searchItems('', filters);
+      let allItems = itemManager.searchItems('', filters);
+      
+      // 为每个商品添加交易类型标识（卖/收）
+      allItems = allItems.map(item => ({
+        ...item,
+        tradeType: item.tradeType || 'sell', // 默认为出售
+        sellerName: item.sellerName || '用户' + item.sellerId,
+        sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
+      }));
+      
       console.log('获取到商品总数:', allItems.length);
       
       // 手动实现分页
@@ -133,13 +142,30 @@ Page({
   onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
     if (!keyword.trim()) {
+      // 如果搜索为空，重新加载所有商品
+      this.setData({
+        items: [],
+        currentPage: 1,
+        hasMore: true,
+        currentCategory: 'all'
+      });
+      this.loadItems(true);
       return;
     }
     
     console.log('搜索商品:', keyword);
     
     try {
-      const results = itemManager.searchItems(keyword);
+      let results = itemManager.searchItems(keyword);
+      
+      // 为搜索结果添加交易类型标识
+      results = results.map(item => ({
+        ...item,
+        tradeType: item.tradeType || 'sell',
+        sellerName: item.sellerName || '用户' + item.sellerId,
+        sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
+      }));
+      
       this.setData({
         items: results,
         hasMore: false,
@@ -172,6 +198,7 @@ Page({
 
   // 收藏商品
   toggleLike(e) {
+    e.stopPropagation(); // 阻止事件冒泡
     const itemId = e.currentTarget.dataset.id;
     const userId = this.data.userInfo.id;
     console.log('收藏商品:', itemId);
@@ -184,7 +211,8 @@ Page({
         if (item.id === itemId) {
           return {
             ...item,
-            likeCount: (item.likeCount || 0) + (isLiked ? 1 : -1)
+            likeCount: (item.likeCount || 0) + (isLiked ? 1 : -1),
+            isLiked: isLiked
           };
         }
         return item;

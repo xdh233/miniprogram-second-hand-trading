@@ -1,16 +1,15 @@
 <!-- market.wxml - 闲置市场页面 -->
 <view class="container">
-  <!-- 搜索栏 -->
-  <view class="search-section">
+  <!-- 顶部搜索栏 -->
+  <view class="search-header">
     <view class="search-box">
       <icon class="search-icon" type="search" size="16" />
       <input placeholder="搜索闲置商品..." confirm-type="search" bindinput="onSearchInput" bindconfirm="onSearch" />
     </view>
   </view>
 
-  <!-- 预留功能区域 -->
-  <view class="function-area">
-    <!-- 这里可以放分类筛选、排序等功能 -->
+  <!-- 分类标签栏 -->
+  <view class="category-section">
     <scroll-view class="category-tabs" scroll-x>
       <view 
         class="category-tab {{currentCategory === item.id ? 'active' : ''}}" 
@@ -25,7 +24,7 @@
   </view>
 
   <!-- 商品列表 - 双列布局 -->
-  <scroll-view class="items-container" scroll-y refresher-enabled bindrefresherrefresh="onRefresh" refresher-triggered="{{refreshing}}" bindscrolltolower="loadMore">
+  <scroll-view class="content-area" scroll-y refresher-enabled bindrefresherrefresh="onRefresh" refresher-triggered="{{refreshing}}" bindscrolltolower="loadMore">
     <view class="items-grid">
       <view 
         class="item-card" 
@@ -35,24 +34,32 @@
         data-id="{{item.id}}"
       >
         <!-- 商品图片 -->
-        <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+        <view class="item-image-container">
+          <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+          <!-- 商品状态标签 -->
+          <view class="status-tag" wx:if="{{item.status !== 'available'}}">
+            <text wx:if="{{item.status === 'sold'}}">已售出</text>
+            <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+          </view>
+        </view>
         
         <!-- 商品信息 -->
         <view class="item-info">
+          <!-- 商品标题 -->
           <view class="item-title">{{item.title}}</view>
+          
+          <!-- 商品价格 -->
           <view class="item-price">¥{{item.price}}</view>
           
           <!-- 发布人信息 -->
           <view class="seller-info">
             <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
             <text class="seller-name">{{item.sellerName}}</text>
+            <!-- 卖/收标签 -->
+            <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
+              {{item.tradeType === 'sell' ? '卖' : '收'}}
+            </view>
           </view>
-        </view>
-
-        <!-- 商品状态标签 -->
-        <view class="item-status" wx:if="{{item.status !== 'available'}}">
-          <text wx:if="{{item.status === 'sold'}}">已售出</text>
-          <text wx:if="{{item.status === 'reserved'}}">已预定</text>
         </view>
       </view>
     </view>
