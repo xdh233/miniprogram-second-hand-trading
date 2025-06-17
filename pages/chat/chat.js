@@ -1,322 +1,468 @@
-const app = getApp()
-const chatManager = require('../../utils/chatManager')
-const userManager = require('../../utils/userManager')
+// pages/chat/chat.js - 聊天页面
+const userManager = require('../../utils/userManager');
+const messageManager = require('../../utils/messageManager');
 
 Page({
   data: {
+    userInfo: null,
+    otherUser: null,
     messages: [],
     inputText: '',
-    scrollTop: 0,
-    scrollIntoView: '',
-    loadingMore: false,
-    showQuickActions: false,
-    showItemModal: false,
-    showImagePreview: false,
-    previewImageUrl: '',
-    recording: false,
-    recordTime: 0,
-    loading: true,
-    currentUser: null,
-    chatUser: null,
+    scrollTop: 999999,
+    page: 1,
+    hasMore: true,
+    loading: false,
+    sending: false,
+    chatId: '',
     relatedItem: null,
-    myItems: [],
-    currentPage: 1,
-    pageSize: 20,
-    hasMore: true
+    showItemCard: false,
+    // 输入框相关
+    inputBottom: 0,
+    keyboardHeight: 0,
+    // 状态栏高度
+    statusBarHeight: 0,
+    navBarHeight: 0
   },
 
   onLoad(options) {
-    // 获取聊天对象ID和相关商品ID
-    const { userId, itemId } = options
+    console.log('聊天页面加载，参数:', options);
+    
+    // 获取状态栏高度
+    const systemInfo = wx.getWindowInfo(); // 获取窗口信息，包含statusBarHeight
+    const itemCardHeight = 91; // 恢复合适的商品卡片高度
+    
+    this.setData({
+      statusBarHeight: systemInfo.statusBarHeight,
+      navBarHeight: systemInfo.statusBarHeight + 44, // 44是导航栏内容高度
+      itemCardHeight: itemCardHeight
+    });
+    
+    // 检查登录状态
+    if (!userManager.isLoggedIn()) {
+      wx.redirectTo({
+        url: '/pages/login/login'
+      });
+      return;
+    }
+
+    const userInfo = userManager.getCurrentUser();
+    this.setData({ userInfo });
+
+    // 获取聊天参数
+    const { userId, itemId } = options;
     
     if (!userId) {
       wx.showToast({
         title: '参数错误',
-        icon: 'error'
-      })
-      setTimeout(() => wx.navigateBack(), 1500)
-      return
+        icon: 'none'
+      });
+      wx.navigateBack();
+      return;
     }
 
-    this.setData({
-      currentUser: userManager.getCurrentUser(),
-      chatUserId: userId
-    })
-
-    // 加载聊天对象信息
-    this.loadChatUserInfo(userId)
-    
-    // 如果有关联商品，加载商品信息
-    if (itemId) {
-      this.loadRelatedItem(itemId)
-    }
-
-    // 加载聊天记录
-    this.loadMessages()
-    
-    // 加载我的商品列表（用于分享商品）
-    this.loadMyItems()
+    this.initChat(parseInt(userId), itemId);
   },
 
-  async loadChatUserInfo(userId) {
-    try {
-      const userInfo = await userManager.getUserInfo(userId)
-      this.setData({ chatUser: userInfo })
-    } catch (error) {
-      console.error('加载用户信息失败:', error)
+  onShow() {
+    // 标记消息为已读
+    if (this.data.chatId) {
+      messageManager.markMessagesAsRead(this.data.chatId, this.data.userInfo.id);
     }
   },
 
-  async loadRelatedItem(itemId) {
-    try {
-      const item = await itemManager.getItemDetail(itemId)
-      this.setData({ relatedItem: item })
-    } catch (error) {
-      console.error('加载商品信息失败:', error)
+  onUnload() {
+    // 页面卸载时也标记为已读
+    if (this.data.chatId) {
+      messageManager.markMessagesAsRead(this.data.chatId, this.data.userInfo.id);
     }
   },
 
-  async loadMessages(refresh = false) {
-    if (this.data.loadingMore && !refresh) return
-
+  // 初始化聊天
+  async initChat(otherUserId, itemId) {
     try {
-      const { currentPage, pageSize, chatUserId } = this.data
-      this.setData({ loadingMore: true })
-
-      const messages = await chatManager.getMessages(chatUserId, currentPage, pageSize)
+      // 获取对方用户信息
+      const result = await userManager.getUserInfo(otherUserId);
+      const otherUser = result.data.userInfo;
       
-      // 处理消息时间显示
-      const processedMessages = this.processMessages(messages)
+      // 获取或创建聊天
+      let relatedItem = null;
+      if (itemId) {
+        // 如果有商品ID，获取商品信息（这里需要你的商品管理模块）
+        relatedItem = await this.getItemInfo(itemId);
+      }
+      
+      const chat = messageManager.getOrCreateChat(
+        this.data.userInfo.id,
+        otherUserId,
+        otherUser,
+        relatedItem
+      );
+
+      // 设置页面标题
+      wx.setNavigationBarTitle({
+        title: otherUser.name
+      });
 
       this.setData({
-        messages: refresh ? processedMessages : [...processedMessages, ...this.data.messages],
-        currentPage: this.data.currentPage + 1,
-        hasMore: messages.length === pageSize,
-        loadingMore: false,
-        loading: false
-      })
+        otherUser,
+        chatId: chat.chatId,
+        relatedItem,
+        showItemCard: !!relatedItem
+      });
 
-      if (refresh) {
-        this.scrollToBottom()
-      }
+      // 加载消息
+      this.loadMessages();
+
     } catch (error) {
-      console.error('加载消息失败:', error)
-      this.setData({ loadingMore: false, loading: false })
+      console.error('初始化聊天失败:', error);
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
     }
   },
 
-  // 处理消息，添加时间显示等
-  processMessages(messages) {
-    let lastTime = 0
-    return messages.map(msg => {
-      const currentTime = new Date(msg.createTime).getTime()
-      const showTime = currentTime - lastTime > 5 * 60 * 1000 // 5分钟显示一次时间
-      lastTime = currentTime
-      return {
-        ...msg,
-        showTime,
-        timeText: showTime ? this.formatMessageTime(currentTime) : ''
+  // 获取商品信息（需要根据你的商品管理模块实现）
+  async getItemInfo(itemId) {
+    // 这里应该调用你的商品管理模块
+    // 暂时返回模拟数据
+    return {
+      id: itemId,
+      title: '护眼台灯 全新未拆封',
+      price: '80',
+      image: '/images/lamp1.jpg',
+      status: 'available'
+    };
+  },
+
+  // 加载消息
+  loadMessages() {
+    if (this.data.loading || !this.data.hasMore) return;
+
+    this.setData({ loading: true });
+
+    const result = messageManager.getChatMessages(
+      this.data.chatId,
+      this.data.page,
+      20
+    );
+
+    let newMessages = result.messages.map(msg => ({
+      ...msg,
+      isSelf: msg.senderId === this.data.userInfo.id
+    }));
+
+    // 添加时间显示逻辑
+    newMessages = this.addTimeDisplays(newMessages);
+
+    this.setData({
+      messages: this.data.page === 1 ? newMessages : [...newMessages, ...this.data.messages],
+      hasMore: result.hasMore,
+      loading: false,
+      page: this.data.page + 1
+    });
+
+    // 滚动到底部（首次加载）
+    if (this.data.page === 2) {
+      this.scrollToBottom();
+    }
+  },
+
+  // 添加时间显示逻辑（类似微信）
+  addTimeDisplays(messages) {
+    if (!messages || messages.length === 0) return [];
+    
+    const processedMessages = [];
+    let lastShowTime = 0;
+    const TIME_INTERVAL = 5 * 60 * 1000; // 5分钟间隔显示时间
+
+    // 按时间顺序处理消息
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(a.timestamp) - new Date(b.timestamp)
+    );
+
+    sortedMessages.forEach((msg, index) => {
+      const currentTime = new Date(msg.timestamp).getTime();
+      
+      // 如果是第一条消息，或者距离上次显示时间超过5分钟，则显示时间
+      if (index === 0 || (currentTime - lastShowTime) > TIME_INTERVAL) {
+        msg.showTime = true;
+        msg.timeDisplay = this.formatDetailTime(msg.timestamp);
+        lastShowTime = currentTime;
+      } else {
+        msg.showTime = false;
       }
-    })
+      
+      processedMessages.push(msg);
+    });
+
+    return processedMessages;
   },
 
-  formatMessageTime(timestamp) {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diff = now - date
+  // 格式化详细时间（用于时间标签）
+  formatDetailTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-    if (diff < 24 * 60 * 60 * 1000) {
-      return date.toTimeString().slice(0, 5)
-    } else if (diff < 48 * 60 * 60 * 1000) {
-      return '昨天 ' + date.toTimeString().slice(0, 5)
+    const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+    if (messageDate.getTime() === today.getTime()) {
+      return timeStr; // 今天只显示时间
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+      return `昨天 ${timeStr}`;
+    } else if (date.getFullYear() === now.getFullYear()) {
+      return `${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
     } else {
-      return `${date.getMonth() + 1}月${date.getDate()}日`
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
     }
+  },
+
+  // 判断是否应该显示时间
+  shouldShowTime(timestamp) {
+    const messages = this.data.messages;
+    if (messages.length === 0) return true;
+    
+    const lastMessage = messages[messages.length - 1];
+    const timeDiff = new Date(timestamp).getTime() - new Date(lastMessage.timestamp).getTime();
+    
+    return timeDiff > 5 * 60 * 1000; // 超过5分钟显示时间
   },
 
   // 发送文本消息
   async sendTextMessage() {
-    const content = this.data.inputText.trim()
-    if (!content) return
+    const content = this.data.inputText.trim();
+    if (!content || this.data.sending) return;
 
-    const message = {
-      id: Date.now(),
-      type: 'text',
-      content,
-      isSelf: true,
-      status: 'sending',
-      createTime: new Date().toISOString()
-    }
-
-    this.addMessage(message)
-    this.setData({ inputText: '' })
+    this.setData({ 
+      sending: true,
+      inputText: ''
+    });
 
     try {
-      await chatManager.sendMessage(this.data.chatUserId, message)
-      this.updateMessageStatus(message.id, 'sent')
+      const result = await messageManager.sendMessage(
+        this.data.userInfo.id,
+        this.data.otherUser.id,
+        {
+          type: 'text',
+          content: content
+        }
+      );
+
+      const newMessage = {
+        ...result.data,
+        isSelf: true,
+        showTime: this.shouldShowTime(result.data.timestamp),
+        timeDisplay: this.formatDetailTime(result.data.timestamp)
+      };
+
+      this.setData({
+        messages: [...this.data.messages, newMessage]
+      });
+
+      // 强制滚动到底部
+      this.scrollToBottom();
+
     } catch (error) {
-      console.error('发送消息失败:', error)
-      this.updateMessageStatus(message.id, 'failed')
+      console.error('发送消息失败:', error);
+      wx.showToast({
+        title: '发送失败',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ sending: false });
     }
   },
 
   // 发送图片消息
-  async sendImageMessage() {
+  sendImageMessage() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const tempFilePath = res.tempFilePaths[0];
+        
+        wx.showLoading({ title: '发送中...' });
+
+        try {
+          // 这里应该上传图片到服务器，暂时使用本地路径
+          const imageUrl = tempFilePath;
+
+          const result = await messageManager.sendMessage(
+            this.data.userInfo.id,
+            this.data.otherUser.id,
+            {
+              type: 'image',
+              content: '[图片]',
+              imageUrl: imageUrl
+            }
+          );
+
+          const newMessage = {
+            ...result.data,
+            isSelf: true,
+            showTime: this.shouldShowTime(result.data.timestamp),
+            timeDisplay: this.formatDetailTime(result.data.timestamp)
+          };
+
+          this.setData({
+            messages: [...this.data.messages, newMessage]
+          });
+
+          // 强制滚动到底部
+          this.scrollToBottom();
+
+        } catch (error) {
+          console.error('发送图片失败:', error);
+          wx.showToast({
+            title: '发送失败',
+            icon: 'none'
+          });
+        } finally {
+          wx.hideLoading();
+        }
+      }
+    });
+  },
+
+  // 发送商品消息
+  async sendItemMessage() {
+    if (!this.data.relatedItem) return;
+
+    this.setData({ sending: true });
+
     try {
-      const res = await wx.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera']
-      })
+      const result = await messageManager.sendMessage(
+        this.data.userInfo.id,
+        this.data.otherUser.id,
+        {
+          type: 'item',
+          content: `[商品] ${this.data.relatedItem.title}`,
+          itemData: this.data.relatedItem
+        }
+      );
 
-      const tempFilePath = res.tempFilePaths[0]
-      const message = {
-        id: Date.now(),
-        type: 'image',
-        imageUrl: tempFilePath,
+      const newMessage = {
+        ...result.data,
         isSelf: true,
-        status: 'sending',
-        createTime: new Date().toISOString()
-      }
+        showTime: this.shouldShowTime(result.data.timestamp),
+        timeDisplay: this.formatDetailTime(result.data.timestamp)
+      };
 
-      this.addMessage(message)
-      this.setData({ showQuickActions: false })
+      this.setData({
+        messages: [...this.data.messages, newMessage]
+      });
 
-      // 上传图片
-      const uploadedUrl = await chatManager.uploadImage(tempFilePath)
-      message.imageUrl = uploadedUrl
-      await chatManager.sendMessage(this.data.chatUserId, message)
-      this.updateMessageStatus(message.id, 'sent')
+      // 强制滚动到底部
+      this.scrollToBottom();
+
     } catch (error) {
-      console.error('发送图片失败:', error)
-      if (message) {
-        this.updateMessageStatus(message.id, 'failed')
-      }
+      console.error('发送商品消息失败:', error);
+      wx.showToast({
+        title: '发送失败',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ sending: false });
     }
-  },
-
-  // 添加消息到列表
-  addMessage(message) {
-    const messages = [...this.data.messages, message]
-    this.setData({ messages })
-    this.scrollToBottom()
-  },
-
-  // 更新消息状态
-  updateMessageStatus(messageId, status) {
-    const messages = this.data.messages.map(msg => {
-      if (msg.id === messageId) {
-        return { ...msg, status }
-      }
-      return msg
-    })
-    this.setData({ messages })
-  },
-
-  // 滚动到底部
-  scrollToBottom() {
-    this.setData({
-      scrollIntoView: 'message_bottom'
-    })
-  },
-
-  // 切换快捷操作面板
-  toggleQuickActions() {
-    this.setData({
-      showQuickActions: !this.data.showQuickActions
-    })
   },
 
   // 输入框内容变化
   onInputChange(e) {
     this.setData({
       inputText: e.detail.value
-    })
+    });
   },
 
-  // 加载更多消息
-  loadMoreMessages() {
-    if (this.data.hasMore && !this.data.loadingMore) {
-      this.loadMessages()
+  // 键盘高度变化
+  onKeyboardHeightChange(e) {
+    this.setData({
+      keyboardHeight: e.detail.height,
+      inputBottom: e.detail.height
+    });
+    
+    // 键盘弹起时滚动到底部
+    if (e.detail.height > 0) {
+      setTimeout(() => {
+        this.scrollToBottom();
+      }, 100);
     }
+  },
+
+  // 滚动到底部
+  scrollToBottom() {
+    // 延迟执行，确保DOM更新完成
+    setTimeout(() => {
+      this.setData({
+        scrollTop: 999999
+      });
+    }, 100);
+  },
+
+  // 下拉加载更多
+  onScrollToUpper() {
+    this.loadMessages();
   },
 
   // 预览图片
   previewImage(e) {
-    const { src } = e.currentTarget.dataset
-    this.setData({
-      showImagePreview: true,
-      previewImageUrl: src
-    })
+    const url = e.currentTarget.dataset.url;
+    const urls = this.data.messages
+      .filter(msg => msg.type === 'image')
+      .map(msg => msg.imageUrl);
+    
+    wx.previewImage({
+      current: url,
+      urls: urls
+    });
   },
 
-  // 隐藏图片预览
-  hideImagePreview() {
-    this.setData({
-      showImagePreview: false,
-      previewImageUrl: ''
-    })
+  // 点击商品卡片
+  onItemCardTap(e) {
+    const itemData = e.currentTarget.dataset.item;
+    // 跳转到商品详情页
+    wx.navigateTo({
+      url: `/pages/item-detail/item-detail?id=${itemData.id}`
+    });
   },
 
-  // 显示商品选择弹窗
-  async shareItem() {
-    this.setData({
-      showItemModal: true,
-      showQuickActions: false
-    })
+  // 长按消息
+  onLongPressMessage(e) {
+    const messageId = e.currentTarget.dataset.id;
+    const message = this.data.messages.find(msg => msg.id === messageId);
+    
+    if (!message || !message.isSelf) return;
+
+    wx.showActionSheet({
+      itemList: ['删除消息'],
+      success: async (res) => {
+        if (res.tapIndex === 0) {
+          try {
+            await messageManager.deleteMessage(messageId, this.data.userInfo.id);
+            
+            const messages = this.data.messages.filter(msg => msg.id !== messageId);
+            this.setData({ messages });
+            
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success'
+            });
+          } catch (error) {
+            wx.showToast({
+              title: error.message || '删除失败',
+              icon: 'none'
+            });
+          }
+        }
+      }
+    });
   },
 
-  // 隐藏商品选择弹窗
-  hideItemModal() {
-    this.setData({
-      showItemModal: false
-    })
-  },
-
-  // 加载我的商品列表
-  async loadMyItems() {
-    try {
-      const items = await itemManager.getMyItems()
-      this.setData({ myItems: items })
-    } catch (error) {
-      console.error('加载商品列表失败:', error)
-    }
-  },
-
-  // 选择并分享商品
-  async selectItem(e) {
-    const { item } = e.currentTarget.dataset
-    const message = {
-      id: Date.now(),
-      type: 'item',
-      itemData: item,
-      isSelf: true,
-      status: 'sending',
-      createTime: new Date().toISOString()
-    }
-
-    this.addMessage(message)
-    this.hideItemModal()
-
-    try {
-      await chatManager.sendMessage(this.data.chatUserId, message)
-      this.updateMessageStatus(message.id, 'sent')
-    } catch (error) {
-      console.error('分享商品失败:', error)
-      this.updateMessageStatus(message.id, 'failed')
-    }
-  },
-
-  // 跳转到商品详情
-  goToItemDetail() {
-    if (this.data.relatedItem) {
-      wx.navigateTo({
-        url: `/pages/item-detail/item-detail?id=${this.data.relatedItem.id}`
-      })
-    }
-  },
-
-  onUnload() {
-    // 页面卸载时的清理工作
+  // 返回上一页
+  onBackTap() {
+    wx.navigateBack();
   }
-})
+});

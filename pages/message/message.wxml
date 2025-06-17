@@ -9,7 +9,13 @@
           class="search-input"
           placeholder="搜索联系人或消息内容" 
           placeholder-class="search-placeholder"
+          value="{{searchText}}"
+          bindinput="onSearchInput"
         />
+      </view>
+      <!-- 全部已读按钮 -->
+      <view class="mark-all-read" bindtap="markAllAsRead" wx:if="{{chatList.length > 0}}">
+        <text>全部已读</text>
       </view>
     </view>
 
@@ -39,32 +45,81 @@
           <text class="type-text">点赞</text>
           <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
         </view>
+        <view class="type-item" bindtap="startNewChat">
+          <view class="type-icon new-chat">+</view>
+          <text class="type-text">新聊天</text>
+        </view>
       </view>
 
       <!-- 分隔线 -->
       <view class="divider"></view>
 
       <!-- 聊天列表 -->
-      <view class="section-title">最近聊天</view>
-      <view class="chat-list">
-        <view class="chat-item" 
+      <view class="section-header" wx:if="{{chatList.length > 0}}">
+        <text class="section-title">最近聊天</text>
+        <text class="chat-count">{{chatList.length}}个会话</text>
+      </view>
+
+      <!-- 聊天列表内容 -->
+      <view class="chat-list" wx:if="{{chatList.length > 0}}">
+        <view class="chat-item {{item.isPinned ? 'pinned' : ''}} {{item.isMuted ? 'muted' : ''}}" 
           wx:for="{{chatList}}" 
           wx:key="id"
-          data-id="{{item.id}}"
+          data-item="{{item}}"
           bindtap="navigateToChat"
+          bindlongpress="onLongPressChat"
         >
-          <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
-          <view class="chat-info">
-            <view class="chat-header">
-              <text class="name">{{item.name}}</text>
-              <text class="time">{{item.time}}</text>
+          <!-- 置顶标识 -->
+          <view class="pin-indicator" wx:if="{{item.isPinned}}">📌</view>
+          
+          <view class="chat-main">
+            <!-- 头像区域 -->
+            <view class="avatar-container">
+              <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
+              <view class="online-dot" wx:if="{{item.isOnline}}"></view>
+              <view class="mute-icon" wx:if="{{item.isMuted}}">🔇</view>
             </view>
-            <view class="chat-footer">
-              <text class="last-message">{{item.lastMessage}}</text>
-              <view class="unread" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount}}</view>
+            
+            <view class="chat-info">
+              <view class="chat-header">
+                <text class="name">{{item.name}}</text>
+                <text class="time">{{item.time}}</text>
+              </view>
+              
+              <view class="chat-footer">
+                <!-- 相关商品标识 -->
+                <view class="item-tag" wx:if="{{item.relatedItem}}">
+                  <text>🏷️ {{item.relatedItem.title}}</text>
+                </view>
+                
+                <text class="last-message" wx:else>{{item.lastMessage}}</text>
+                
+                <view class="message-status">
+                  <view class="unread" wx:if="{{item.unreadCount > 0}}">
+                    {{item.unreadCount > 99 ? '99+' : item.unreadCount}}
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
         </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-state" wx:if="{{chatList.length === 0 && !refreshing}}">
+        <view class="empty-icon">💬</view>
+        <text class="empty-title">暂无聊天记录</text>
+        <text class="empty-subtitle">开始你的第一个对话吧</text>
+        <view class="start-chat-btn" bindtap="startNewChat">
+          <text>开始聊天</text>
+        </view>
+      </view>
+
+      <!-- 搜索无结果 -->
+      <view class="no-results" wx:if="{{searchText && chatList.length === 0}}">
+        <view class="no-results-icon">🔍</view>
+        <text class="no-results-title">没有找到相关聊天</text>
+        <text class="no-results-subtitle">试试其他关键词</text>
       </view>
     </scroll-view>
   </view>

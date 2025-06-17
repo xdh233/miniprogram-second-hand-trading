@@ -1,152 +1,126 @@
-<view class="container">
-  <!-- 商品信息卡片 -->
-  <view class="item-card" wx:if="{{relatedItem}}" bindtap="goToItemDetail">
-    <image class="item-image" src="{{relatedItem.image}}" mode="aspectFill" />
-    <view class="item-info">
-      <view class="item-title">{{relatedItem.title}}</view>
-      <view class="item-price">¥{{relatedItem.price}}</view>
+<view class="chat-container">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-left" bindtap="onBackTap">
+      <text class="back-icon">‹</text>
     </view>
-    <view class="item-arrow">></view>
+    <view class="nav-center">
+      <text class="nav-title">{{otherUser.name}}</text>
+      <text class="nav-subtitle" wx:if="{{otherUser.isOnline}}">在线</text>
+    </view>
+    <view class="nav-right">
+      <text class="nav-more">⋯</text>
+    </view>
   </view>
 
-  <!-- 消息列表 -->
-  <scroll-view 
-    class="message-list" 
-    scroll-y
-    scroll-top="{{scrollTop}}"
-    scroll-into-view="{{scrollIntoView}}"
-    bindscrolltoupper="loadMoreMessages"
-    enhanced="{{true}}"
-    show-scrollbar="{{false}}"
-  >
-    <!-- 加载更多提示 -->
-    <view class="loading-more" wx:if="{{loadingMore}}">
-      <view class="loading-dot"></view>
-      <text>加载更多...</text>
+  <!-- 内容容器 - 模仿消息页面结构 -->
+  <view class="content-container" style="padding-top: {{navBarHeight}}px;">
+    
+    <!-- 商品卡片 - 不再fixed，使用普通流布局 -->
+    <view class="item-card-fixed" wx:if="{{showItemCard && relatedItem}}" 
+          data-item="{{relatedItem}}" bindtap="onItemCardTap">
+      <image class="item-image" src="{{relatedItem.image}}" mode="aspectFill"/>
+      <view class="item-info">
+        <text class="item-title">{{relatedItem.title}}</text>
+        <text class="item-price">￥{{relatedItem.price}}</text>
+      </view>
     </view>
 
-    <!-- 消息内容 -->
-    <block wx:for="{{messages}}" wx:key="id">
-      <!-- 时间分割线 -->
-      <view class="time-divider" wx:if="{{item.showTime}}">
-        <text>{{item.timeText}}</text>
+    <!-- 消息列表 - 使用flex布局，不再fixed -->
+    <scroll-view 
+      class="messages-scroll"
+      scroll-y
+      scroll-top="{{scrollTop}}"
+      bindscrolltoupper="onScrollToUpper"
+      enable-back-to-top
+    >
+      <!-- 加载更多提示 -->
+      <view class="load-more" wx:if="{{loading}}">
+        <text>加载中...</text>
       </view>
 
-      <!-- 消息项 -->
-      <view class="chat-message {{item.isSelf ? 'self' : ''}}">
-        <image 
-          class="message-avatar" 
-          src="{{item.isSelf ? currentUser.avatar : chatUser.avatar}}" 
-          mode="aspectFill"
-        />
+      <!-- 消息列表 -->
+      <view class="message-item {{item.isSelf ? 'self' : 'other'}}" 
+            wx:for="{{messages}}" 
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindlongpress="onLongPressMessage">
         
-        <!-- 文本消息 -->
-        <view class="message-content" wx:if="{{item.type === 'text'}}">
-          <view class="text-message">{{item.content}}</view>
-        </view>
-        
-        <!-- 图片消息 -->
-        <view class="message-content" wx:elif="{{item.type === 'image'}}">
-          <image 
-            class="image-message" 
-            src="{{item.imageUrl}}" 
-            mode="widthFix" 
-            bindtap="previewImage"
-            data-src="{{item.imageUrl}}"
-          />
+        <!-- 时间显示 -->
+        <view class="message-time" wx:if="{{item.showTime}}">
+          <text>{{item.timeDisplay}}</text>
         </view>
 
-        <!-- 商品消息 -->
-        <view class="message-content" wx:elif="{{item.type === 'item'}}">
-          <view class="shared-item" bindtap="goToItemDetail" data-id="{{item.itemData.id}}">
-            <image class="shared-image" src="{{item.itemData.image}}" mode="aspectFill"/>
-            <view class="shared-info">
-              <view class="shared-title">{{item.itemData.title}}</view>
-              <view class="shared-price">¥{{item.itemData.price}}</view>
+        <view class="message-content">
+          <!-- 头像 -->
+          <image class="message-avatar" 
+                 src="{{item.isSelf ? userInfo.avatar : otherUser.avatar}}" 
+                 mode="aspectFill"/>
+          
+          <!-- 消息气泡 -->
+          <view class="message-bubble {{item.type}}">
+            <!-- 文本消息 -->
+            <text wx:if="{{item.type === 'text'}}" class="message-text">{{item.content}}</text>
+            
+            <!-- 图片消息 -->
+            <image wx:elif="{{item.type === 'image'}}" 
+                   class="message-image" 
+                   src="{{item.imageUrl}}" 
+                   mode="aspectFill"
+                   data-url="{{item.imageUrl}}"
+                   bindtap="previewImage"/>
+            
+            <!-- 商品消息 -->
+            <view wx:elif="{{item.type === 'item'}}" class="message-item-card"
+                  data-item="{{item.itemData}}" bindtap="onItemCardTap">
+              <image class="item-card-image" src="{{item.itemData.image}}" mode="aspectFill"/>
+              <view class="item-card-info">
+                <text class="item-card-title">{{item.itemData.title}}</text>
+                <text class="item-card-price">￥{{item.itemData.price}}</text>
+              </view>
             </view>
+            
+            <!-- 系统消息 -->
+            <text wx:elif="{{item.type === 'system'}}" class="system-message">{{item.content}}</text>
           </view>
         </view>
       </view>
-    </block>
 
-    <!-- 底部留白，用于新消息时自动滚动 -->
-    <view id="message_bottom" style="height: 20rpx;"></view>
-  </scroll-view>
+      <!-- 空消息提示 -->
+      <view class="empty-messages" wx:if="{{messages.length === 0 && !loading}}">
+        <text>暂无消息，开始聊天吧~</text>
+      </view>
 
-  <!-- 输入区域 -->
-  <view class="input-section">
-    <view class="input-bar">
-      <view class="input-left">
-        <button class="action-btn" bindtap="toggleQuickActions">+</button>
-      </view>
-      <view class="input-center">
-        <input 
-          class="message-input"
-          type="text"
-          value="{{inputText}}"
-          bindinput="onInputChange"
-          placeholder="输入消息..."
-          confirm-type="send"
-          bindconfirm="sendTextMessage"
-        />
-      </view>
-      <view class="input-right">
-        <button 
-          class="send-btn {{inputText.trim() ? 'active' : ''}}" 
-          bindtap="sendTextMessage"
-        >发送</button>
-      </view>
-    </view>
-
-    <!-- 快捷操作面板 -->
-    <view class="quick-actions" wx:if="{{showQuickActions}}">
-      <view class="quick-item" bindtap="sendImageMessage">
-        <view class="quick-icon">🖼️</view>
-        <view class="quick-text">图片</view>
-      </view>
-      <view class="quick-item" bindtap="shareItem">
-        <view class="quick-icon">📦</view>
-        <view class="quick-text">商品</view>
-      </view>
-    </view>
-  </view>
-</view>
-
-<!-- 商品选择弹窗 -->
-<view class="modal-mask" wx:if="{{showItemModal}}" bindtap="hideItemModal">
-  <view class="modal-content item-modal" catchtap="stopEvent">
-    <view class="modal-title">选择要分享的商品</view>
-    <scroll-view class="item-list" scroll-y>
-      <view 
-        class="selectable-item"
-        wx:for="{{myItems}}"
-        wx:key="id"
-        bindtap="selectItem"
-        data-item="{{item}}"
-      >
-        <image class="item-image" src="{{item.image}}" mode="aspectFill"/>
-        <view class="item-info">
-          <view class="item-title">{{item.title}}</view>
-          <view class="item-price">¥{{item.price}}</view>
-        </view>
-      </view>
+      <!-- 底部占位 -->
+      <view class="bottom-placeholder"></view>
     </scroll-view>
-    <view class="modal-actions">
-      <button class="modal-btn cancel-btn" bindtap="hideItemModal">取消</button>
-    </view>
   </view>
-</view>
 
-<!-- 图片预览 -->
-<view class="image-preview" wx:if="{{showImagePreview}}" bindtap="hideImagePreview">
-  <image class="preview-image" src="{{previewImageUrl}}" mode="aspectFit"/>
-  <view class="preview-close">✕</view>
-</view>
-
-<!-- 加载状态 -->
-<view class="loading-mask" wx:if="{{loading}}">
-  <view class="loading-content">
-    <view class="loading-spinner"></view>
-    <text class="loading-text">加载中...</text>
+  <!-- 输入栏 - 保持fixed -->
+  <view class="input-bar" style="bottom: {{inputBottom}}px">
+    <view class="input-container">
+      <!-- 附加功能按钮 -->
+      <view class="input-extra">
+        <text class="extra-btn" bindtap="sendImageMessage">📷</text>
+        <text class="extra-btn" wx:if="{{relatedItem}}" bindtap="sendItemMessage">🏷️</text>
+      </view>
+      
+      <!-- 文本输入框 -->
+      <input class="text-input"
+             placeholder="输入消息..."
+             placeholder-class="input-placeholder"
+             value="{{inputText}}"
+             bindinput="onInputChange"
+             bindconfirm="sendTextMessage"
+             adjust-position="{{false}}"
+             bindkeyboardheightchange="onKeyboardHeightChange"
+             confirm-type="send"/>
+      
+      <!-- 发送按钮 -->
+      <view class="send-btn {{inputText ? 'active' : ''}}" 
+            bindtap="sendTextMessage">
+        <text>发送</text>
+      </view>
+    </view>
   </view>
 </view>
