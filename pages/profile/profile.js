@@ -14,7 +14,7 @@ Page({
     tradeStats: {
       published: 0,
       sold: 0,
-      bought: 0
+      bought: 5
     }
   },
 
@@ -66,7 +66,7 @@ Page({
         tradeStats: {
           published: published,
           sold: sold,
-          bought: 3 // 模拟购买数量
+          bought: 5 // 模拟购买数量
         }
       };
       
@@ -77,17 +77,19 @@ Page({
     }
   },
 
-  // 编辑个人资料
-  editProfile() {
-    console.log('编辑个人资料');
+  // 设置
+  navigateToSettings() {
+    console.log('打开设置');
     wx.showToast({
-      title: '编辑资料功能开发中',
+      title: '设置功能开发中',
       icon: 'none'
     });
     // wx.navigateTo({
-    //   url: '/pages/edit-profile/edit-profile'
+    //   url: '/pages/settings/settings'
     // });
   },
+
+
 
   // 我发布的
   navigateToMyPublished() {
@@ -137,41 +139,44 @@ Page({
     // });
   },
 
-  // 设置
-  navigateToSettings() {
-    console.log('打开设置');
+  // 收货地址
+  navigateToDeliveryAddress() {
+    console.log('管理收货地址');
     wx.showToast({
-      title: '设置功能开发中',
+      title: '收货地址功能开发中',
       icon: 'none'
     });
     // wx.navigateTo({
-    //   url: '/pages/settings/settings'
+    //   url: '/pages/address/address'
     // });
   },
 
-  // 帮助中心
-  navigateToHelp() {
-    console.log('打开帮助中心');
+
+
+  // 意见反馈
+  navigateToFeedback() {
+    console.log('意见反馈');
     wx.showToast({
-      title: '帮助中心功能开发中',
+      title: '意见反馈功能开发中',
       icon: 'none'
     });
     // wx.navigateTo({
-    //   url: '/pages/help/help'
+    //   url: '/pages/feedback/feedback'
     // });
   },
 
-  // 关于我们
+  // 关于开发者
   navigateToAbout() {
-    console.log('查看关于我们');
-    wx.showToast({
-      title: '关于我们功能开发中',
-      icon: 'none'
+    console.log('关于开发者');
+    wx.showModal({
+      title: '关于开发者',
+      content: '校园二手物品交易系统\n开发者：您的开发团队\n版本：1.0.0\n\n感谢您的使用！',
+      showCancel: false,
+      confirmText: '知道了'
     });
-    // wx.navigateTo({
-    //   url: '/pages/about/about'
-    // });
   },
+
+
 
   // 退出登录
   logout() {
