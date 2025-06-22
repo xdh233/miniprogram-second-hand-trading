@@ -168,9 +168,10 @@ Page({
   // 关于开发者
   navigateToAbout() {
     console.log('关于开发者');
+    
     wx.showModal({
       title: '关于开发者',
-      content: '校园二手物品交易系统\n开发者：您的开发团队\n版本：1.0.0\n\n感谢您的使用！',
+      content: '校园二手物品交易系统\r\n开发者：牛大果\n版本：1.0.0\n\n感谢您的使用！',
       showCancel: false,
       confirmText: '知道了'
     });

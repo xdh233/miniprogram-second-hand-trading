@@ -16,6 +16,7 @@ Page({
   onLoad() {
     console.log('=== 首页加载 ===');
     this.checkLoginStatus();
+    
   },
 
   onShow() {
@@ -25,7 +26,13 @@ Page({
       this.loadPosts(true);
     }
   },
-
+  onShareAppMessage() {
+    return {
+      title: this.data.post?.content.substring(0, 20) || '校园动态',
+      path: `/pages/post-detail/post-detail?id=${this.data.postId}`,
+      imageUrl: this.data.post?.images?.[0] || '/images/default-share.jpg'
+    };
+  },
   // 检查登录状态
   checkLoginStatus() {
     console.log('检查登录状态...');
@@ -131,15 +138,39 @@ Page({
       url: `/pages/search/search?keyword=${encodeURIComponent(keyword)}`
     });
   },
-
-  // 转发帖子
+  // 转发帖子 - 设置分享数据
   onSharePost(e) {
     const postId = e.currentTarget.dataset.id;
-    console.log('转发帖子:', postId);
-    wx.showToast({
-      title: '转发功能开发中',
-      icon: 'none'
-    });
+    const post = this.data.posts.find(p => p.id == postId);
+    
+    if (!post) {
+      wx.showToast({
+        title: '帖子不存在',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    console.log('要分享的帖子:', post);
+    // 只需要设置当前要分享的帖子，供 onShareAppMessage 使用
+    this.setData({ sharePost: post });
+  },
+
+  // 格式化分享标题
+  formatShareTitle(post) {
+      // 添加参数检查
+      if (!post) {
+        return '校园动态分享';
+      }
+      
+    const authorName = post.userNickname || post.userName || '校园用户';
+    if (post.content && post.content.length > 0) {
+      const contentPreview = post.content.length > 30 
+        ? post.content.substring(0, 30) + '...' 
+        : post.content;
+      return `${authorName}: ${contentPreview}`;
+    }
+    return `${authorName}的校园动态`;
   },
 
   // 评论帖子
@@ -166,9 +197,6 @@ Page({
       
       this.setData({ posts });
       
-      // 删除了振动反馈
-      // wx.vibrateShort();
-      
     } catch (error) {
       wx.showToast({
         title: error.message || '操作失败',
@@ -177,6 +205,18 @@ Page({
     }
   },
 
+  // 查看详情
+  onPostTap(e) {
+    const postId = e.currentTarget.dataset.id;
+    console.log('点击帖子，跳转到详情页:', postId);
+    wx.navigateTo({
+      url: `/pages/post-detail/post-detail?id=${postId}`
+    });
+  },
+  // 防止事件冒泡的空方法
+  preventBubble() {
+    // 什么都不做，只是阻止事件冒泡
+  },
   // 查看图片
   previewImage(e) {
     const { images, index } = e.currentTarget.dataset;
@@ -194,9 +234,9 @@ Page({
       title: '用户主页开发中',
       icon: 'none'
     });
-    // wx.navigateTo({
-    //   url: `/pages/user-profile/user-profile?id=${userId}`
-    // });
+    wx.navigateTo({
+      url: `/pages/user-profile/user-profile?id=${userId}`
+    });
   },
 
   // 下拉刷新

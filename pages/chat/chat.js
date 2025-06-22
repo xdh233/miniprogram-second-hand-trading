@@ -80,45 +80,45 @@ Page({
   // 初始化聊天
   async initChat(otherUserId, itemId) {
     try {
-      // 获取对方用户信息
-      const result = await userManager.getUserInfo(otherUserId);
-      const otherUser = result.data.userInfo;
+      const otherUser = await userManager.getUserInfo(otherUserId);
       
-      // 获取或创建聊天
-      let relatedItem = null;
-      if (itemId) {
-        // 如果有商品ID，获取商品信息（这里需要你的商品管理模块）
-        relatedItem = await this.getItemInfo(itemId);
-      }
-      
-      const chat = messageManager.getOrCreateChat(
+      // 检查是否已存在聊天
+      const existingChat = messageManager.findExistingChat(
         this.data.userInfo.id,
-        otherUserId,
-        otherUser,
-        relatedItem
+        otherUserId
       );
-
-      // 设置页面标题
-      wx.setNavigationBarTitle({
-        title: otherUser.nickname
-      });
-
+      
+      let chatData;
+      if (existingChat) {
+        // 如果已存在聊天，使用原有的聊天信息
+        chatData = existingChat;
+        console.log('使用已存在的聊天:', chatData);
+      } else {
+        // 如果不存在，创建新聊天
+        let relatedItem = null;
+        if (itemId) {
+          relatedItem = await this.getItemInfo(itemId);
+        }
+        
+        chatData = messageManager.getOrCreateChat(
+          this.data.userInfo.id,
+          otherUserId,
+          otherUser.data.userInfo,
+          relatedItem
+        );
+      }
+  
       this.setData({
-        otherUser,
-        chatId: chat.chatId,
-        relatedItem,
-        showItemCard: !!relatedItem
+        otherUser: otherUser.data.userInfo,
+        chatId: chatData.chatId,
+        relatedItem: chatData.relatedItem, // 使用原有的商品信息
+        showItemCard: !!chatData.relatedItem
       });
-
-      // 加载消息
+  
       this.loadMessages();
-
+  
     } catch (error) {
       console.error('初始化聊天失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
     }
   },
 

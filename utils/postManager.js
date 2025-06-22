@@ -3,6 +3,7 @@
 class PostManager {
   constructor() {
     this.POSTS_KEY = 'campus_posts';
+    this.COMMENTS_KEY = 'campus_comments';
     this.init();
   }
 
@@ -18,7 +19,7 @@ class PostManager {
           userNickname: '三张',          
           userAvatar: '/images/default-avatar.png',
           content: '新开的铁锅炖的小酥肉很好吃，但是阿姨和小哥们都呆呆的。',
-          images: ["../images/default-avatar.png"],
+          images: [],
           likes: 5,
           comments: 2,
           isLiked: false,
@@ -64,13 +65,56 @@ class PostManager {
           likes: 12,
           comments: 6,
           isLiked: true,
-          tag: '考试',
           createTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1天前
           timeAgo: '1天前'
         }
       ];
       this.savePosts(testPosts);
+      this.initTestComments();
     }
+  }
+
+  // 初始化测试评论数据
+  initTestComments() {
+    const testComments = [
+      {
+        id: 1,
+        postId: 1,
+        userId: 2,
+        userName: '李四',
+        userNickname: '四李',
+        userAvatar: '/images/default-avatar.png',
+        content: '确实很好吃！我上次也去了',
+        isAuthor: false,
+        createTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '1小时前'
+      },
+      {
+        id: 2,
+        postId: 1,
+        userId: 3,
+        userName: '牛大果',
+        userNickname: '蛋黄',
+        userAvatar: '/images/default-avatar.png',
+        content: '在哪里啊？求地址',
+        isAuthor: false,
+        createTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        timeAgo: '30分钟前'
+      },
+      {
+        id: 3,
+        postId: 2,
+        userId: 1,
+        userName: '张三',
+        userNickname: '三张',
+        userAvatar: '/images/default-avatar.png',
+        content: '哈哈哈，我也遇到过',
+        isAuthor: false,
+        createTime: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '3小时前'
+      }
+    ];
+    this.saveComments(testComments);
   }
 
   // 获取所有动态
@@ -90,6 +134,27 @@ class PostManager {
       return true;
     } catch (error) {
       console.error('保存动态失败:', error);
+      return false;
+    }
+  }
+
+  // 获取所有评论
+  getAllComments() {
+    try {
+      return wx.getStorageSync(this.COMMENTS_KEY) || [];
+    } catch (error) {
+      console.error('获取评论失败:', error);
+      return [];
+    }
+  }
+
+  // 保存评论
+  saveComments(comments) {
+    try {
+      wx.setStorageSync(this.COMMENTS_KEY, comments);
+      return true;
+    } catch (error) {
+      console.error('保存评论失败:', error);
       return false;
     }
   }
@@ -119,7 +184,7 @@ class PostManager {
   }
 
   // 发布动态
-  publishPost(content, images = [], tag = '') {
+  publishPost(content, images = []) {
     return new Promise((resolve, reject) => {
       if (!content.trim()) {
         reject({ message: '动态内容不能为空' });
@@ -140,14 +205,13 @@ class PostManager {
         id: Date.now(),
         userId: currentUser.id,
         userName: currentUser.name,
-        userNickname: currentUser.Nickname || currentUser.name,
+        userNickname: currentUser.nickname || currentUser.name,
         userAvatar: '/images/default-avatar.png',
         content: content,
         images: images,
         likes: 0,
         comments: 0,
         isLiked: false,
-        tag: tag,
         createTime: new Date().toISOString(),
         timeAgo: '刚刚'
       };
@@ -166,7 +230,7 @@ class PostManager {
   toggleLike(postId) {
     return new Promise((resolve, reject) => {
       const posts = this.getAllPosts();
-      const postIndex = posts.findIndex(p => p.id === postId);
+      const postIndex = posts.findIndex(p => p.id == postId);
       
       if (postIndex === -1) {
         reject({ message: '动态不存在' });
@@ -196,15 +260,131 @@ class PostManager {
   // 获取单个动态详情
   getPostDetail(postId) {
     return new Promise((resolve, reject) => {
+      console.log('getPostDetail 被调用，postId:', postId, '类型:', typeof postId);
+      
       const posts = this.getAllPosts();
-      const post = posts.find(p => p.id === postId);
+      console.log('所有帖子:', posts);
+      console.log('帖子ID列表:', posts.map(p => ({ id: p.id, type: typeof p.id })));
+      
+      // 确保类型匹配
+      const post = posts.find(p => p.id == postId);
+      console.log('找到的帖子:', post);
       
       if (post) {
+        // 更新时间显示
+        post.timeAgo = this.formatTimeAgo(post.createTime);
         resolve(post);
       } else {
+        console.log('未找到帖子，postId:', postId);
         reject({ message: '动态不存在' });
       }
     });
+  }
+
+  // 获取帖子评论列表
+  getPostComments(postId, page = 1, limit = 20) {
+    return new Promise((resolve) => {
+      const allComments = this.getAllComments();
+      const postComments = allComments.filter(comment => comment.postId == postId);
+      
+      // 按时间正序排列（最早的在前面）
+      postComments.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+      
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const comments = postComments.slice(startIndex, endIndex);
+      
+      // 更新时间显示
+      comments.forEach(comment => {
+        comment.timeAgo = this.formatTimeAgo(comment.createTime);
+      });
+      
+      setTimeout(() => {
+        resolve(comments);
+      }, 300);
+    });
+  }
+
+  // 添加评论
+  addComment(postId, content) {
+    return new Promise((resolve, reject) => {
+      if (!content.trim()) {
+        reject({ message: '评论内容不能为空' });
+        return;
+      }
+
+      // 获取当前用户信息
+      const userManager = require('./userManager');
+      const currentUser = userManager.getCurrentUser();
+
+      if (!currentUser) {
+        reject({ message: '请先登录' });
+        return;
+      }
+      // 获取帖子作者信息
+      const posts = this.getAllPosts();
+      const post = posts.find(p => p.id == postId);
+      const isAuthor = post && post.userId === currentUser.id;
+
+      const comments = this.getAllComments();
+      const newComment = {
+        id: Date.now(),
+        postId: parseInt(postId),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userNickname: currentUser.nickname || currentUser.name,
+        userAvatar: '/images/default-avatar.png',
+        content: content.trim(),
+        isAuthor: isAuthor, // 标识是否为楼主
+        createTime: new Date().toISOString(),
+        timeAgo: '刚刚'
+      };
+
+      comments.push(newComment);
+      
+      if (this.saveComments(comments)) {
+        // 更新帖子的评论数
+        this.updatePostCommentsCount(postId);
+        resolve(newComment);
+      } else {
+        reject({ message: '评论失败，请重试' });
+      }
+    });
+  }
+
+  // 更新帖子评论数
+  updatePostCommentsCount(postId) {
+    const posts = this.getAllPosts();
+    const postIndex = posts.findIndex(p => p.id == postId);
+    
+    if (postIndex !== -1) {
+      const comments = this.getAllComments();
+      const commentsCount = comments.filter(c => c.postId == postId).length;
+      posts[postIndex].comments = commentsCount;
+      this.savePosts(posts);
+    }
+  }
+
+  // 格式化时间显示
+  formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = now - time;
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diff < minute) {
+      return '刚刚';
+    } else if (diff < hour) {
+      return Math.floor(diff / minute) + '分钟前';
+    } else if (diff < day) {
+      return Math.floor(diff / hour) + '小时前';
+    } else if (diff < 7 * day) {
+      return Math.floor(diff / day) + '天前';
+    } else {
+      return time.toLocaleDateString();
+    }
   }
 
   // 搜索动态
@@ -213,8 +393,7 @@ class PostManager {
       const allPosts = this.getAllPosts();
       const results = allPosts.filter(post => 
         post.content.includes(keyword) || 
-        post.userNickname.includes(keyword) ||
-        (post.tag && post.tag.includes(keyword))
+        post.userNickname.includes(keyword)
       );
       
       setTimeout(() => {
@@ -227,6 +406,7 @@ class PostManager {
   clearAllPosts() {
     try {
       wx.removeStorageSync(this.POSTS_KEY);
+      wx.removeStorageSync(this.COMMENTS_KEY);
       return true;
     } catch (error) {
       return false;

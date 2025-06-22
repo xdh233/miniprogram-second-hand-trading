@@ -27,7 +27,12 @@
       bindscrolltolower="onReachBottom"
     >
       <!-- 帖子卡片 -->
-      <view class="post-card" wx:for="{{posts}}" wx:key="id">
+      <view class="post-card" 
+          wx:for="{{posts}}" 
+          wx:key="id"
+          bindtap="onPostTap"
+          data-id="{{item.id}}">
+
         <!-- 用户信息栏 -->
         <view class="post-header">
           <image class="user-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
@@ -74,17 +79,29 @@
         </view>
 
         <!-- 互动栏 -->
-        <view class="post-actions">
-          <view class="action-item" bindtap="onSharePost" data-id="{{item.id}}">
+        <view class="post-actions" catchtap="preventBubble" >
+          <!-- 修改转发按钮 -->
+          <button class="action-item share-button" 
+                  open-type="share" 
+                  data-id="{{item.id}}"
+                  bindtap="onSharePost"
+                  catchtap="onSharePost" >
             <image class="action-icon" src="/images/forward.png" mode="aspectFit" />
-          </view>
+          </button>
           
-          <view class="action-item" bindtap="onCommentPost" data-id="{{item.id}}">
+          <view class="action-item"
+                bindtap="onCommentPost" 
+                data-id="{{item.id}}"
+                catchtap="onCommentPost" >
             <image class="action-icon" src="/images/comment.png" mode="aspectFit" />
             <text class="action-text" wx:if="{{item.comments > 0}}">{{item.comments}}</text>
           </view>
           
-          <view class="action-item" bindtap="onLikePost" data-id="{{item.id}}" data-index="{{index}}">
+          <view class="action-item"
+                bindtap="onLikePost"
+                data-id="{{item.id}}"
+                data-index="{{index}}"
+                catchtap="onLikePost" >
             <image class="action-icon" src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit" />
             <text class="action-text {{item.isLiked ? 'liked' : ''}}" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
           </view>

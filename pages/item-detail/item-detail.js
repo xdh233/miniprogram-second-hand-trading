@@ -138,14 +138,14 @@ Page({
       {
         id: 1,
         nickname: '三张',
-        studentId: '2021001001',
+        studentId: '21001001',
         avatar: '/images/default-avatar.jpg',
         rating: '信用良好'
       },
       {
         id: 2,
         nickname: '四李',
-        studentId: '2021001002',
+        studentId: '21001002',
         avatar: '/images/default-avatar.jpg',
         rating: '信用优秀'
       },

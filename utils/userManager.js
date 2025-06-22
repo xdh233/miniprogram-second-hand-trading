@@ -347,58 +347,57 @@ class UserManager {
     });
   }
 
-  // 更新昵称
   // 更新用户昵称
-updateNickname(newNickname) {
-  return new Promise((resolve, reject) => {
-    const currentUser = this.getCurrentUser();
-    if (!currentUser) {
-      reject({ code: 401, message: '请先登录' });
-      return;
-    }
+  updateNickname(newNickname) {
+    return new Promise((resolve, reject) => {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser) {
+        reject({ code: 401, message: '请先登录' });
+        return;
+      }
 
-    // 昵称验证
-    if (!newNickname || !newNickname.trim()) {
-      reject({ code: 400, message: '昵称不能为空' });
-      return;
-    }
+      // 昵称验证
+      if (!newNickname || !newNickname.trim()) {
+        reject({ code: 400, message: '昵称不能为空' });
+        return;
+      }
 
-    if (newNickname.length > 20) {
-      reject({ code: 400, message: '昵称不能超过20个字符' });
-      return;
-    }
+      if (newNickname.length > 20) {
+        reject({ code: 400, message: '昵称不能超过20个字符' });
+        return;
+      }
 
-    const users = this.getAllUsers();
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    
-    if (userIndex === -1) {
-      reject({ code: 404, message: '用户不存在' });
-      return;
-    }
-
-    // 更新昵称
-    users[userIndex].nickname = newNickname.trim();
-    users[userIndex].updatedAt = new Date().toISOString();
-
-    if (this.saveUsers(users)) {
-      // 更新登录状态中的昵称
-      const updatedLoginInfo = {
-        ...currentUser,
-        nickname: newNickname.trim(),
-        updateTime: new Date().toISOString()
-      };
-      wx.setStorageSync(this.CURRENT_USER_KEY, updatedLoginInfo);
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(u => u.id === currentUser.id);
       
-      resolve({
-        code: 200,
-        message: '昵称更新成功',
-        data: { nickname: newNickname.trim() }
-      });
-    } else {
-      reject({ code: 500, message: '昵称更新失败' });
-    }
-  });
-}
+      if (userIndex === -1) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      // 更新昵称
+      users[userIndex].nickname = newNickname.trim();
+      users[userIndex].updatedAt = new Date().toISOString();
+
+      if (this.saveUsers(users)) {
+        // 更新登录状态中的昵称
+        const updatedLoginInfo = {
+          ...currentUser,
+          nickname: newNickname.trim(),
+          updateTime: new Date().toISOString()
+        };
+        wx.setStorageSync(this.CURRENT_USER_KEY, updatedLoginInfo);
+        
+        resolve({
+          code: 200,
+          message: '昵称更新成功',
+          data: { nickname: newNickname.trim() }
+        });
+      } else {
+        reject({ code: 500, message: '昵称更新失败' });
+      }
+    });
+  }
   // 调试方法：获取所有用户
   debugGetAllUsers() {
     return this.getAllUsers();

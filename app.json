@@ -16,7 +16,8 @@
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#fff",
     "navigationBarTitleText": "校园二手交易",
-    "navigationBarTextStyle": "black"
+    "navigationBarTextStyle": "black",
+    "enableShareAppMessage": true
   },
   "tabBar": {
     "color": "#999999",

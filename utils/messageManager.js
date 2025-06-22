@@ -504,6 +504,21 @@ class MessageManager {
     this.saveMessages(messages);
   }
 
+  //查看两id间是否已存在聊天
+  findExistingChat(userId1, userId2) {
+    const chats = wx.getStorageSync('chats') || {};
+    
+    for (let chatId in chats) {
+      const chat = chats[chatId];
+      if ((chat.user1Id === userId1 && chat.user2Id === userId2) ||
+          (chat.user1Id === userId2 && chat.user2Id === userId1)) {
+        return chat;
+      }
+    }
+    
+    return null;
+  }
+
   // 获取聊天统计信息
   getChatStats(userId) {
     const chats = this.getUserChats(userId);
