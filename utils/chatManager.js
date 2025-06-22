@@ -75,7 +75,7 @@ class ChatManager {
 
     chats[chatKey] = {
       userId: targetUserId,
-      userName: targetUser.name,
+      userName: targetUser.nickname,
       userAvatar: targetUser.avatar,
       lastMessage: {
         content: this.getMessagePreview(lastMessage),

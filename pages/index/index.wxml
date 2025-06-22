@@ -32,7 +32,7 @@
         <view class="post-header">
           <image class="user-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
           <view class="user-info">
-            <view class="user-name">{{item.userName}}</view>
+            <view class="user-name">{{item.userNickname}}</view>
             <view class="post-time">{{item.timeAgo}}</view>
           </view>
         </view>

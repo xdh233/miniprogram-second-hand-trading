@@ -5,7 +5,7 @@
       <text class="back-icon">‹</text>
     </view>
     <view class="nav-center">
-      <text class="nav-title">{{otherUser.name}}</text>
+      <text class="nav-title">{{otherUser.nickname}}</text>
       <text class="nav-subtitle" wx:if="{{otherUser.isOnline}}">在线</text>
     </view>
     <view class="nav-right">

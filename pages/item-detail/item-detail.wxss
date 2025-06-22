@@ -142,7 +142,7 @@ page {
   margin-left: 20rpx;
 }
 
-.seller-name {
+.seller-nickname {
   font-size: 30rpx;
   font-weight: 600;
   color: #333;

@@ -45,7 +45,7 @@
     <view class="seller-info">
       <image class="seller-avatar" src="{{seller.avatar || '/images/default-avatar.png'}}" />
       <view class="seller-details">
-        <view class="seller-name">{{seller.name}}</view>
+        <view class="seller-nickname">{{seller.nickname}}</view>
         <view class="seller-meta">学号：{{seller.studentId}}</view>
         <view class="seller-meta">信用评级：{{seller.rating || '暂无评级'}}</view>
       </view>

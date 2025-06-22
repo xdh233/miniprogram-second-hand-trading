@@ -16,10 +16,9 @@ class UserManager {
           id: 1,
           studentId: '21001001',
           name: '张三',
+          nickname: '三张',
           password: '123456',
           avatar: '/images/default-avatar.png',
-          college: '计算机学院',
-          major: '软件工程',
           phone: '13800138000',
           email: 'zhangsan@example.com',
           rating: '信用优秀',
@@ -29,10 +28,9 @@ class UserManager {
           id: 2,
           studentId: '21001002',
           name: '李四',
+          nickname: '四李',
           password: '123456',
           avatar: '/images/default-avatar.png',
-          college: '信息工程学院',
-          major: '通信工程',
           phone: '13800138001',
           email: 'lisi@example.com',
           rating: '信用良好',
@@ -42,10 +40,9 @@ class UserManager {
           id: 3,
           studentId: '22074304',
           name: '牛大果',
+          nickname: '蛋黄',
           password: '123456',
           avatar: '/images/default-avatar.png',
-          college: '计算机学院',
-          major: '软件工程',
           phone: '13800138002',
           email: 'niudaguo@example.com',
           rating: '信用优秀',
@@ -82,7 +79,7 @@ class UserManager {
   // 用户注册
   register(userData) {
     return new Promise((resolve, reject) => {
-      const { studentId, name, password, college, major, phone, email } = userData;
+      const { studentId, name, password, phone, email } = userData;
 
       // 基本参数验证
       if (!studentId || !name || !password) {
@@ -91,8 +88,8 @@ class UserManager {
       }
 
       // 学号格式验证
-      if (!/^\d{8,12}$/.test(studentId)) {
-        reject({ code: 400, message: '学号格式不正确，应为8-12位数字' });
+      if (!/^[SB]\d{8}$/.test(studentId)) {
+        reject({ code: 400, message: '学号格式不正确，应为8位数字' });
         return;
       }
 
@@ -129,8 +126,6 @@ class UserManager {
         name,
         password,
         avatar: '/images/default-avatar.png',
-        college: college || '',
-        major: major || '',
         phone: phone || '',
         email: email || '',
         rating: '信用良好',
@@ -176,9 +171,8 @@ class UserManager {
         id: user.id,
         studentId: user.studentId,
         name: user.name,
+        nickname: user.nickname,
         avatar: user.avatar,
-        college: user.college,
-        major: user.major,
         rating: user.rating,
         loginTime: new Date().toISOString()
       };
@@ -353,6 +347,58 @@ class UserManager {
     });
   }
 
+  // 更新昵称
+  // 更新用户昵称
+updateNickname(newNickname) {
+  return new Promise((resolve, reject) => {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      reject({ code: 401, message: '请先登录' });
+      return;
+    }
+
+    // 昵称验证
+    if (!newNickname || !newNickname.trim()) {
+      reject({ code: 400, message: '昵称不能为空' });
+      return;
+    }
+
+    if (newNickname.length > 20) {
+      reject({ code: 400, message: '昵称不能超过20个字符' });
+      return;
+    }
+
+    const users = this.getAllUsers();
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    
+    if (userIndex === -1) {
+      reject({ code: 404, message: '用户不存在' });
+      return;
+    }
+
+    // 更新昵称
+    users[userIndex].nickname = newNickname.trim();
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    if (this.saveUsers(users)) {
+      // 更新登录状态中的昵称
+      const updatedLoginInfo = {
+        ...currentUser,
+        nickname: newNickname.trim(),
+        updateTime: new Date().toISOString()
+      };
+      wx.setStorageSync(this.CURRENT_USER_KEY, updatedLoginInfo);
+      
+      resolve({
+        code: 200,
+        message: '昵称更新成功',
+        data: { nickname: newNickname.trim() }
+      });
+    } else {
+      reject({ code: 500, message: '昵称更新失败' });
+    }
+  });
+}
   // 调试方法：获取所有用户
   debugGetAllUsers() {
     return this.getAllUsers();

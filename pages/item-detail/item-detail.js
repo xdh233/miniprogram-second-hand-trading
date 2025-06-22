@@ -137,21 +137,21 @@ Page({
     const mockSellers = [
       {
         id: 1,
-        name: '张三',
+        nickname: '三张',
         studentId: '2021001001',
         avatar: '/images/default-avatar.jpg',
         rating: '信用良好'
       },
       {
         id: 2,
-        name: '李四',
+        nickname: '四李',
         studentId: '2021001002',
         avatar: '/images/default-avatar.jpg',
         rating: '信用优秀'
       },
       {
         id: 3,
-        name: '牛大果',
+        nickname: '蛋黄',
         studentId: '22074304',
         avatar: '/images/default-avatar.jpg',
         rating: '信用优秀'

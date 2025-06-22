@@ -15,13 +15,13 @@ class PostManager {
           id: 1,
           userId: 1,
           userName: '张三',
+          userNickname: '三张',          
           userAvatar: '/images/default-avatar.png',
           content: '新开的铁锅炖的小酥肉很好吃，但是阿姨和小哥们都呆呆的。',
-          images: [],
+          images: ["../images/default-avatar.png"],
           likes: 5,
           comments: 2,
           isLiked: false,
-          tag: '校园',
           createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
           timeAgo: '2小时前'
         },
@@ -29,13 +29,13 @@ class PostManager {
           id: 2,
           userId: 2,
           userName: '李四',
+          userNickname: '四李',
           userAvatar: '/images/default-avatar.png',
           content: '图书馆怎么这么多拍照的，我明年一定要到点就跑路。',
           images: [],
           likes: 8,
           comments: 3,
           isLiked: false,
-          tag: '学习',
           createTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5小时前
           timeAgo: '5小时前'
         },
@@ -43,13 +43,13 @@ class PostManager {
           id: 3,
           userId: 3,
           userName: '牛大果',
+          userNickname: '蛋黄',
           userAvatar: '/images/default-avatar.png',
           content: '我要快点写完软工课设！！！！！',
           images: [],
           likes: 8,
           comments: 3,
           isLiked: false,
-          tag: '学习',
           createTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5小时前
           timeAgo: '1秒前'
         },
@@ -57,6 +57,7 @@ class PostManager {
           id: 4,
           userId: 1,
           userName: '张三',
+          userNickname: '三张',
           userAvatar: '/images/default-avatar.png',
           content: '再也没有期末考试了（本科阶段）',
           images: [],
@@ -139,6 +140,7 @@ class PostManager {
         id: Date.now(),
         userId: currentUser.id,
         userName: currentUser.name,
+        userNickname: currentUser.Nickname || currentUser.name,
         userAvatar: '/images/default-avatar.png',
         content: content,
         images: images,
@@ -211,7 +213,7 @@ class PostManager {
       const allPosts = this.getAllPosts();
       const results = allPosts.filter(post => 
         post.content.includes(keyword) || 
-        post.userName.includes(keyword) ||
+        post.userNickname.includes(keyword) ||
         (post.tag && post.tag.includes(keyword))
       );
       

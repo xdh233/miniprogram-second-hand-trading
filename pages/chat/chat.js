@@ -100,7 +100,7 @@ Page({
 
       // 设置页面标题
       wx.setNavigationBarTitle({
-        title: otherUser.name
+        title: otherUser.nickname
       });
 
       this.setData({
