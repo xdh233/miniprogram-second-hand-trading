@@ -193,6 +193,13 @@ page {
   background: #f8f8f8;
 }
 
+/* 自定义图标样式 */
+.action-icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 8rpx;
+}
+
 .action-text {
   font-size: 28rpx;
   margin-left: 8rpx;
@@ -200,7 +207,7 @@ page {
 }
 
 .action-text.liked {
-  color: #ff6b6b;
+  color: #f993c5;
 }
 
 /* 加载状态 */

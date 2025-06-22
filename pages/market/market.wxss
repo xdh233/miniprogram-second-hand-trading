@@ -254,8 +254,9 @@ page {
 }
 
 .empty-icon {
-  font-size: 120rpx;
-  margin-bottom: 40rpx;
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: 30rpx;
 }
 
 .empty-text {

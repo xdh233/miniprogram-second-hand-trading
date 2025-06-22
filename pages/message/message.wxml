@@ -31,22 +31,22 @@
       <!-- 消息分类 -->
       <view class="message-types">
         <view class="type-item" bindtap="navigateToMentions">
-          <view class="type-icon mention">@</view>
+          <image class="type-icon-image" src="../../images/at-bold.png" mode="aspectFit" />
           <text class="type-text">提到我的</text>
           <view class="badge" wx:if="{{mentionCount > 0}}">{{mentionCount}}</view>
         </view>
         <view class="type-item" bindtap="navigateToComments">
-          <view class="type-icon comment">💬</view>
+          <image class="type-icon-image" src="../../images/comment_fill.png" mode="aspectFit" />
           <text class="type-text">评论</text>
           <view class="badge" wx:if="{{commentCount > 0}}">{{commentCount}}</view>
         </view>
         <view class="type-item" bindtap="navigateToLikes">
-          <view class="type-icon like">❤️</view>
+          <image class="type-icon-image" src="../../images/like_fill.png" mode="aspectFit" />
           <text class="type-text">点赞</text>
           <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
         </view>
         <view class="type-item" bindtap="startNewChat">
-          <view class="type-icon new-chat">+</view>
+          <image class="type-icon-image" src="../../images/add_bold.png" mode="aspectFit" />
           <text class="type-text">新聊天</text>
         </view>
       </view>

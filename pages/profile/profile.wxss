@@ -123,10 +123,9 @@ page {
 }
 
 .function-icon {
-  font-size: 36rpx;
-  margin-right: 30rpx;
-  width: 40rpx;
-  text-align: center;
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 20rpx; 
 }
 
 .function-text {

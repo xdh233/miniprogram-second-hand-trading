@@ -16,7 +16,6 @@ page {
   bottom: 0;
 }
 
-/* 统一内容容器 - 和首页完全一致 */
 .content-container {
   background: #fff;
   width: 100%;
@@ -102,36 +101,39 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40rpx;
   margin-bottom: 12rpx;
   box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
 }
 
 .type-icon.mention {
   background: #e8f3ff;
-  color: #3a7bff;
+  /* color: #3a7bff; */
 }
 
 .type-icon.comment {
-  background: #e6f7ff;
+  background: #36cfc9;
   color: #36cfc9;
 }
 
 .type-icon.like {
   background: #fff2f0;
-  color: #ff4d4f;
+  /* color: #ff4d4f; */
 }
 
 .type-icon.new-chat {
   background: #f6ffed;
-  color: #52c41a;
-  font-size: 50rpx;
-  font-weight: bold;
+  /*color: #52c41a;*/
 }
 
+.type-icon-image {
+  width: 48rpx;
+  height: 48rpx;
+}
 .type-text {
   font-size: 24rpx;
   color: #666;
+  font-weight: bold;
+  margin-top: 16rpx; 
 }
 
 .badge {

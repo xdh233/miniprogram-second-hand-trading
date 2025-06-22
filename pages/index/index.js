@@ -166,8 +166,8 @@ Page({
       
       this.setData({ posts });
       
-      // 振动反馈
-      wx.vibrateShort();
+      // 删除了振动反馈
+      // wx.vibrateShort();
       
     } catch (error) {
       wx.showToast({

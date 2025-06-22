@@ -119,7 +119,7 @@
 
       <!-- 空状态 -->
       <view class="empty-state" wx:if="{{items.length === 0}}">
-        <view class="empty-icon">📦</view>
+        <image class="empty-icon" src="../../images/empty-box.png" mode="aspectFit" />
         <view class="empty-text">暂无闲置商品</view>
         <view class="empty-desc">快来发布第一个商品吧</view>
       </view>

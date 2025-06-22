@@ -76,18 +76,17 @@
         <!-- 互动栏 -->
         <view class="post-actions">
           <view class="action-item" bindtap="onSharePost" data-id="{{item.id}}">
-            <icon type="success_no_circle" size="18" color="#999" />
-            <text class="action-text">转发</text>
+            <image class="action-icon" src="/images/forward.png" mode="aspectFit" />
           </view>
           
           <view class="action-item" bindtap="onCommentPost" data-id="{{item.id}}">
-            <icon type="success_no_circle" size="18" color="#999" />
-            <text class="action-text">评论{{item.comments > 0 ? ' ' + item.comments : ''}}</text>
+            <image class="action-icon" src="/images/comment.png" mode="aspectFit" />
+            <text class="action-text" wx:if="{{item.comments > 0}}">{{item.comments}}</text>
           </view>
           
           <view class="action-item" bindtap="onLikePost" data-id="{{item.id}}" data-index="{{index}}">
-            <icon type="{{item.isLiked ? 'success' : 'success_no_circle'}}" size="18" color="{{item.isLiked ? '#ff6b6b' : '#999'}}" />
-            <text class="action-text {{item.isLiked ? 'liked' : ''}}">赞{{item.likes > 0 ? ' ' + item.likes : ''}}</text>
+            <image class="action-icon" src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit" />
+            <text class="action-text {{item.isLiked ? 'liked' : ''}}" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
           </view>
         </view>
       </view>
