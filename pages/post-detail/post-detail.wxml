@@ -97,7 +97,7 @@
         </view>
         
         <view wx:if="{{comments.length === 0 && !loadingMore}}" class="empty-comments">
-          <text class="empty-icon">💭</text>
+          <image class="empty-comment" src="/images/comment_empty.png" mode="aspectFit" />
           <text class="empty-text">还没有评论，快来抢沙发吧~</text>
         </view>
       </view>

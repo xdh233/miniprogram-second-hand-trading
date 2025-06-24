@@ -34,55 +34,46 @@ Page({
     this.checkLoginStatus();
   },
 
+
+  // 修改 onShow 方法
   onShow() {
     console.log('闲置市场页面显示');
     this.checkLoginStatus();
-    
-    // 加载商品数据
-    this.loadItemsWithFallback();
+    this.loadItemsFromManager(); // 直接从 itemManager 加载
   },
-
-  // 加载商品数据，带回退机制
-  loadItemsWithFallback() {
-    // 暂时直接使用测试数据，方便测试上拉加载功能
-    this.addTestData();
-    
-    /* 
-    // 真实环境下使用这段代码
+  loadItemsFromManager() {
     try {
-      // 首先尝试从itemManager获取数据
+      // 直接从 itemManager 获取所有商品
       const items = itemManager.getAllItems();
+      console.log('从 itemManager 获取商品:', items.length, '个');
       
-      // 如果只有很少的商品（少于5个），使用我们的测试数据
-      if (items.length < 5) {
-        console.log('商品数量较少，使用扩展测试数据');
-        this.addTestData();
+      if (items.length === 0) {
+        console.log('暂无商品数据');
+        this.setData({
+          items: [],
+          leftItems: [],
+          rightItems: []
+        });
         return;
       }
       
-      // 如果有足够的真实数据，使用真实数据
-      const processedItems = items.map(item => ({
-        ...item,
-        tradeType: item.tradeType || 'sell',
-        sellerName: item.sellerName || '用户' + item.sellerId,
-        sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
-      }));
-      
-      const { leftItems, rightItems } = this.distributeItems(processedItems);
+      const { leftItems, rightItems } = this.distributeItems(items);
       
       this.setData({
-        items: processedItems,
+        items: items,
         leftItems: leftItems,
         rightItems: rightItems
       });
       
     } catch (error) {
-      console.error('加载商品数据失败:', error);
-      // 出错时使用测试数据
-      this.addTestData();
+      console.error('加载商品失败:', error);
+      wx.showToast({
+        title: '加载失败',
+        icon: 'error'
+      });
     }
-    */
   },
+  
 
   // 分配商品到左右两列的辅助函数
   distributeItems(items) {
@@ -100,114 +91,8 @@ Page({
     return { leftItems, rightItems };
   },
 
-  // 添加测试数据
-  addTestData() {
-    const testItems = [
-      {
-        id: 1,
-        title: '护眼台灯 全新未拆封',
-        price: 80,
-        images: ['/images/placeholder.png'],
-        sellerName: '李四',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 2,
-        title: 'iPhone 13 Pro 128GB 深空灰色',
-        price: 4500,
-        images: ['/images/placeholder.png'],
-        sellerName: '张三',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 3,
-        title: '小米笔记本电脑 Air 13.3',
-        price: 3200,
-        images: ['/images/placeholder.png'],
-        sellerName: '王五',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 4,
-        title: '索尼耳机 WH-1000XM4',
-        price: 1800,
-        images: ['/images/placeholder.png'],
-        sellerName: '赵六',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 5,
-        title: 'iPad Air 第四代 64GB',
-        price: 3800,
-        images: ['/images/placeholder.png'],
-        sellerName: '钱七',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 6,
-        title: '戴森吹风机 HD08',
-        price: 2200,
-        images: ['/images/placeholder.png'],
-        sellerName: '孙八',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 7,
-        title: '机械键盘 Cherry MX',
-        price: 680,
-        images: ['/images/placeholder.png'],
-        sellerName: '周九',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      },
-      {
-        id: 8,
-        title: 'AirPods Pro 二代',
-        price: 1600,
-        images: ['/images/placeholder.png'],
-        sellerName: '吴十',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available'
-      }
-    ];
-    
-    const { leftItems, rightItems } = this.distributeItems(testItems);
-    
-    console.log('测试数据分配结果：');
-    console.log('左列商品：', leftItems.map(item => item.title));
-    console.log('右列商品：', rightItems.map(item => item.title));
-    
-    this.setData({
-      items: testItems,
-      leftItems: leftItems,
-      rightItems: rightItems
-    });
-  },
-
   // 检查登录状态
   checkLoginStatus() {
-    // 暂时跳过登录检查，专注于调试双列布局
-    const mockUserInfo = {
-      id: 'test_user',
-      username: '测试用户'
-    };
-    this.setData({ userInfo: mockUserInfo });
-    
-    /* 原来的登录检查代码
     if (!userManager.isLoggedIn()) {
       wx.redirectTo({
         url: '/pages/login/login'
@@ -217,69 +102,68 @@ Page({
 
     const userInfo = userManager.getCurrentUser();
     this.setData({ userInfo });
-    */
+    
   },
 
-  // 加载商品列表
-  loadItems(refresh = false) {
-    try {
-      const page = refresh ? 1 : this.data.currentPage;
-      console.log('加载商品，页码:', page, '分类:', this.data.currentCategory);
+  // // 加载商品列表
+  // loadItems(refresh = false) {
+  //   try {
+  //     const page = refresh ? 1 : this.data.currentPage;
+  //     console.log('加载商品，页码:', page, '分类:', this.data.currentCategory);
       
-      // 构建筛选条件
-      const filters = {};
-      if (this.data.currentCategory !== 'all') {
-        filters.categoryId = this.data.currentCategory;
-      }
+  //     // 构建筛选条件
+  //     const filters = {};
+  //     if (this.data.currentCategory !== 'all') {
+  //       filters.categoryId = this.data.currentCategory;
+  //     }
       
-      // 使用 searchItems 方法获取所有符合条件的商品
-      let allItems = itemManager.searchItems('', filters);
+  //     // 使用 searchItems 方法获取所有符合条件的商品
+  //     let allItems = itemManager.searchItems('', filters);
       
-      // 为每个商品添加交易类型标识（卖/收）
-      allItems = allItems.map(item => ({
-        ...item,
-        tradeType: item.tradeType || 'sell', // 默认为出售
-        sellerName: item.sellerName || '用户' + item.sellerId,
-        sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
-      }));
+  //     // 为每个商品添加交易类型标识（卖/收）
+  //     allItems = allItems.map(item => ({
+  //       ...item,
+  //       tradeType: item.tradeType || 'sell', // 默认为出售
+  //       sellerName: item.sellerName || '用户' + item.sellerId,
+  //       sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
+  //     }));
       
-      console.log('获取到商品总数:', allItems.length);
+  //     console.log('获取到商品总数:', allItems.length);
       
-      // 手动实现分页
-      const pageSize = 10;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedItems = allItems.slice(startIndex, endIndex);
+  //     // 手动实现分页
+  //     const pageSize = 10;
+  //     const startIndex = (page - 1) * pageSize;
+  //     const endIndex = startIndex + pageSize;
+  //     const paginatedItems = allItems.slice(startIndex, endIndex);
       
-      // 处理数据
-      let items = refresh ? paginatedItems : [...this.data.items, ...paginatedItems];
+  //     // 处理数据
+  //     let items = refresh ? paginatedItems : [...this.data.items, ...paginatedItems];
       
-      // 使用辅助函数分配到左右两列
-      const { leftItems, rightItems } = this.distributeItems(items);
+  //     // 使用辅助函数分配到左右两列
+  //     const { leftItems, rightItems } = this.distributeItems(items);
       
-      console.log('左列商品数:', leftItems.length, '右列商品数:', rightItems.length);
+  //     console.log('左列商品数:', leftItems.length, '右列商品数:', rightItems.length);
       
-      this.setData({
-        items: items,
-        leftItems: leftItems,
-        rightItems: rightItems,
-        hasMore: endIndex < allItems.length,
-        currentPage: refresh ? 2 : page + 1,
-        refreshing: false
-      });
+  //     this.setData({
+  //       items: items,
+  //       leftItems: leftItems,
+  //       rightItems: rightItems,
+  //       hasMore: endIndex < allItems.length,
+  //       currentPage: refresh ? 2 : page + 1,
+  //       refreshing: false
+  //     });
       
-      console.log('当前显示商品数:', items.length);
+  //     console.log('当前显示商品数:', items.length);
       
-    } catch (error) {
-      console.error('加载商品失败:', error);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'error'
-      });
-      this.setData({ refreshing: false });
-    }
-  },
-
+  //   } catch (error) {
+  //     console.error('加载商品失败:', error);
+  //     wx.showToast({
+  //       title: '加载失败',
+  //       icon: 'error'
+  //     });
+  //     this.setData({ refreshing: false });
+  //   }
+  // },
   // 切换分类
   switchCategory(e) {
     const categoryId = e.currentTarget.dataset.id;
@@ -294,152 +178,166 @@ Page({
       hasMore: true
     });
     
-    // 根据分类加载数据
-    if (categoryId === 'all') {
-      // 显示所有测试数据
-      this.addTestData();
-    } else {
-      // 显示分类数据，这里先用测试数据模拟
-      this.loadCategoryData(categoryId);
+    // 使用 itemManager 的搜索功能
+    this.loadFilteredItems();
+  },
+
+  loadFilteredItems() {
+    try {
+      const filters = {};
+      if (this.data.currentCategory !== 'all') {
+        filters.categoryId = this.data.currentCategory;
+      }
+      
+      const items = itemManager.searchItems('', filters);
+      const { leftItems, rightItems } = this.distributeItems(items);
+      
+      this.setData({
+        items: items,
+        leftItems: leftItems,
+        rightItems: rightItems,
+        hasMore: false
+      });
+      
+    } catch (error) {
+      console.error('筛选商品失败:', error);
     }
   },
 
-  // 加载分类数据
-  loadCategoryData(categoryId) {
-    // 根据分类ID筛选测试数据
-    const allTestItems = [
-      {
-        id: 1,
-        title: '护眼台灯 全新未拆封',
-        price: 80,
-        images: ['/images/placeholder.png'],
-        sellerName: '李四',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 2
-      },
-      {
-        id: 2,
-        title: 'iPhone 13 Pro 128GB 深空灰色',
-        price: 4500,
-        images: ['/images/placeholder.png'],
-        sellerName: '张三',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 3,
-        title: '小米笔记本电脑 Air 13.3',
-        price: 3200,
-        images: ['/images/placeholder.png'],
-        sellerName: '王五',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 4,
-        title: '索尼耳机 WH-1000XM4',
-        price: 1800,
-        images: ['/images/placeholder.png'],
-        sellerName: '赵六',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 5,
-        title: 'iPad Air 第四代 64GB',
-        price: 3800,
-        images: ['/images/placeholder.png'],
-        sellerName: '钱七',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 6,
-        title: '戴森吹风机 HD08',
-        price: 2200,
-        images: ['/images/placeholder.png'],
-        sellerName: '孙八',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 2
-      },
-      {
-        id: 7,
-        title: '机械键盘 Cherry MX',
-        price: 680,
-        images: ['/images/placeholder.png'],
-        sellerName: '周九',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 8,
-        title: 'AirPods Pro 二代',
-        price: 1600,
-        images: ['/images/placeholder.png'],
-        sellerName: '吴十',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 9,
-        title: '任天堂Switch OLED版',
-        price: 2800,
-        images: ['/images/placeholder.png'],
-        sellerName: '郑十一',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      },
-      {
-        id: 10,
-        title: 'MacBook Air M2 8GB',
-        price: 8500,
-        images: ['/images/placeholder.png'],
-        sellerName: '王十二',
-        sellerAvatar: '/images/default-avatar.png',
-        tradeType: 'sell',
-        status: 'available',
-        categoryId: 1
-      }
-    ];
+  // // 加载分类数据
+  // loadCategoryData(categoryId) {
+  //   // 根据分类ID筛选测试数据
+  //   const allTestItems = [
+  //     {
+  //       id: 1,
+  //       title: '护眼台灯 全新未拆封',
+  //       price: 80,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '李四',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 2
+  //     },
+  //     {
+  //       id: 2,
+  //       title: 'iPhone 13 Pro 128GB 深空灰色',
+  //       price: 4500,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '张三',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 3,
+  //       title: '小米笔记本电脑 Air 13.3',
+  //       price: 3200,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '王五',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 4,
+  //       title: '索尼耳机 WH-1000XM4',
+  //       price: 1800,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '赵六',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 5,
+  //       title: 'iPad Air 第四代 64GB',
+  //       price: 3800,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '钱七',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 6,
+  //       title: '戴森吹风机 HD08',
+  //       price: 2200,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '孙八',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 2
+  //     },
+  //     {
+  //       id: 7,
+  //       title: '机械键盘 Cherry MX',
+  //       price: 680,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '周九',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 8,
+  //       title: 'AirPods Pro 二代',
+  //       price: 1600,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '吴十',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 9,
+  //       title: '任天堂Switch OLED版',
+  //       price: 2800,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '郑十一',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     },
+  //     {
+  //       id: 10,
+  //       title: 'MacBook Air M2 8GB',
+  //       price: 8500,
+  //       images: ['/images/placeholder.png'],
+  //       sellerName: '王十二',
+  //       sellerAvatar: '/images/default-avatar.png',
+  //       tradeType: 'sell',
+  //       status: 'available',
+  //       categoryId: 1
+  //     }
+  //   ];
 
-    // 根据分类筛选商品
-    const filteredItems = allTestItems.filter(item => item.categoryId === categoryId);
-    const { leftItems, rightItems } = this.distributeItems(filteredItems);
+  //   // 根据分类筛选商品
+  //   const filteredItems = allTestItems.filter(item => item.categoryId === categoryId);
+  //   const { leftItems, rightItems } = this.distributeItems(filteredItems);
     
-    this.setData({
-      items: filteredItems,
-      leftItems: leftItems,
-      rightItems: rightItems,
-      hasMore: false
-    });
-  },
+  //   this.setData({
+  //     items: filteredItems,
+  //     leftItems: leftItems,
+  //     rightItems: rightItems,
+  //     hasMore: false
+  //   });
+  // },
 
-  // 下拉刷新
   onRefresh() {
     console.log('下拉刷新');
     this.setData({ refreshing: true });
     
-    // 重新加载测试数据，而不是调用loadItems
     setTimeout(() => {
-      this.addTestData();
+      this.loadItemsFromManager();
       this.setData({ refreshing: false });
     }, 1000);
   },
@@ -512,38 +410,18 @@ Page({
     const keyword = e.detail.value;
     this.setData({ searchKeyword: keyword });
   },
-
-  // 执行搜索
+  // 搜索
   onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
     if (!keyword.trim()) {
-      // 如果搜索为空，重新加载所有商品
-      this.setData({
-        items: [],
-        leftItems: [],
-        rightItems: [],
-        currentPage: 1,
-        hasMore: true,
-        currentCategory: 'all'
-      });
-      this.loadItems(true);
+      this.loadItemsFromManager();
       return;
     }
     
     console.log('搜索商品:', keyword);
     
     try {
-      let results = itemManager.searchItems(keyword);
-      
-      // 为搜索结果添加交易类型标识
-      results = results.map(item => ({
-        ...item,
-        tradeType: item.tradeType || 'sell',
-        sellerName: item.sellerName || '用户' + item.sellerId,
-        sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
-      }));
-      
-      // 使用辅助函数分配到左右两列
+      const results = itemManager.searchItems(keyword);
       const { leftItems, rightItems } = this.distributeItems(results);
       
       this.setData({
@@ -578,47 +456,5 @@ Page({
     });
   },
 
-  // 收藏商品
-  toggleLike(e) {
-    e.stopPropagation(); // 阻止事件冒泡
-    const itemId = e.currentTarget.dataset.id;
-    const userId = this.data.userInfo.id;
-    console.log('收藏商品:', itemId);
-    
-    try {
-      const isLiked = itemManager.toggleLike(itemId, userId);
-      
-      // 更新页面数据
-      const items = this.data.items.map(item => {
-        if (item.id === itemId) {
-          return {
-            ...item,
-            likeCount: (item.likeCount || 0) + (isLiked ? 1 : -1),
-            isLiked: isLiked
-          };
-        }
-        return item;
-      });
-      
-      // 使用辅助函数重新分配到左右两列
-      const { leftItems, rightItems } = this.distributeItems(items);
-      
-      this.setData({ 
-        items: items,
-        leftItems: leftItems,
-        rightItems: rightItems
-      });
-      
-      wx.showToast({
-        title: isLiked ? '已收藏' : '已取消收藏',
-        icon: 'success'
-      });
-      
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '操作失败',
-        icon: 'error'
-      });
-    }
-  }
-});
+},
+);

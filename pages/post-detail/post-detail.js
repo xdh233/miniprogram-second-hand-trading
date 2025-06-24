@@ -1,4 +1,5 @@
-const postManager = require('../../utils/postManager')
+const postManager = require('../../utils/postManager');
+const userManager = require('../../utils/userManager');
 
 Page({
   data: {
@@ -182,7 +183,7 @@ Page({
       path: `/pages/post-detail/post-detail?id=${post.id}`
     };
   },
-  // 在你的 Page({}) 中添加这个方法
+  // 私信
   onPrivateChat() {
     const post = this.data.post;
     if (!post) {
@@ -192,7 +193,15 @@ Page({
       });
       return;
     }
-
+    const currentUser = userManager.getCurrentUser(); // 获取当前用户ID
+    const currentUserId =currentUser.id;
+    if (post.userId === currentUserId) {
+      wx.showToast({
+        title: '不能联系自己',
+        icon: 'none'
+      });
+      return;
+    }
     // 方法一：跳转到聊天页面
     wx.navigateTo({
       url: `/pages/chat/chat?userId=${post.userId}&userName=${post.userName || post.nickname}`
@@ -205,6 +214,14 @@ Page({
       current: images[index],
       urls: images
     });
+
+    if (this.data.isSeller) {
+      wx.showToast({
+        title: '不能联系自己',
+        icon: 'none'
+      });
+      return;
+    }
   },
 
   // 评论内容输入

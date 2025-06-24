@@ -295,6 +295,12 @@
   opacity: 0.6;
 }
 
+
+.empty-comment {
+  width: 144rpx;
+  height: rpx;
+}
+
 .empty-text {
   color: #8e8e93;
   font-size: 28rpx;
