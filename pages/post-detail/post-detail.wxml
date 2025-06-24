@@ -70,7 +70,7 @@
       <!-- 评论标题 -->
       <view class="comments-header">
         <text class="comments-title">评论</text>
-        <text class="comments-count">({{comments.length}})</text>
+        <text class="comments-count">({{post.comments}})</text>
       </view>
       
       <!-- 评论列表 -->

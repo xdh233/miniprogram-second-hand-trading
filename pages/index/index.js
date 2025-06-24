@@ -1,6 +1,7 @@
 // pages/index/index.js - 社交帖子流版本
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
+const sharedTools = require('../../utils/sharedTools');
 
 Page({
   data: {
@@ -10,13 +11,13 @@ Page({
     refreshing: false,
     hasMore: true,
     currentPage: 1,
-    searchKeyword: ''
+    searchKeyword: '',
+    sharePostId:''
   },
 
   onLoad() {
     console.log('=== 首页加载 ===');
     this.checkLoginStatus();
-    
   },
 
   onShow() {
@@ -26,10 +27,22 @@ Page({
       this.loadPosts(true);
     }
   },
+
   onShareAppMessage() {
+    const post = this.data.posts.find(p => p.id == this.data.sharePostId);
+    
+    if (!post) {
+      return {
+        title: '校园生活分享',
+        desc: '发现精彩的校园生活',
+        path: '/pages/index/index',
+        imageUrl: '/images/default-share.jpg'
+      };
+    }
+    
     return {
       title: this.data.post?.content.substring(0, 20) || '校园动态',
-      path: `/pages/post-detail/post-detail?id=${this.data.postId}`,
+      path: `/pages/post-detail/post-detail?id=${this.data.sharePostId}`,
       imageUrl: this.data.post?.images?.[0] || '/images/default-share.jpg'
     };
   },
@@ -79,7 +92,7 @@ Page({
       
       // 更新每个帖子的时间显示
       posts.forEach(post => {
-        post.timeAgo = this.formatTimeAgo(post.createTime);
+        post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
       });
       
       this.setData({
@@ -87,7 +100,7 @@ Page({
         hasMore: result.hasMore,
         currentPage: refresh ? 2 : page + 1,
         loading: false,
-        refreshing: false
+        ...(refresh && { refreshing: false })
       });
       
     } catch (error) {
@@ -100,28 +113,6 @@ Page({
         loading: false, 
         refreshing: false 
       });
-    }
-  },
-
-  // 格式化时间显示
-  formatTimeAgo(timestamp) {
-    const now = new Date();
-    const postTime = new Date(timestamp);
-    const diff = now - postTime;
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
-    if (diff < minute) {
-      return '刚刚';
-    } else if (diff < hour) {
-      return Math.floor(diff / minute) + '分钟前';
-    } else if (diff < day) {
-      return Math.floor(diff / hour) + '小时前';
-    } else if (diff < 7 * day) {
-      return Math.floor(diff / day) + '天前';
-    } else {
-      return postTime.toLocaleDateString();
     }
   },
 
@@ -152,25 +143,26 @@ Page({
     }
     
     console.log('要分享的帖子:', post);
-    // 只需要设置当前要分享的帖子，供 onShareAppMessage 使用
-    this.setData({ sharePost: post });
+    // 设置当前要分享的帖子ID，供 onShareAppMessage 使用
+    this.setData({ sharePostId: postId });
   },
 
   // 格式化分享标题
   formatShareTitle(post) {
-      // 添加参数检查
-      if (!post) {
-        return '校园动态分享';
-      }
-      
-    const authorName = post.userNickname || post.userName || '校园用户';
-    if (post.content && post.content.length > 0) {
-      const contentPreview = post.content.length > 30 
-        ? post.content.substring(0, 30) + '...' 
-        : post.content;
-      return `${authorName}: ${contentPreview}`;
+    // 添加参数检查
+    if (!post || !post.content) {
+      return '校园动态';
     }
-    return `${authorName}的校园动态`;
+    
+    const authorName = post.userNickname || post.userName || '校园用户';
+    
+    // 清理内容并截取
+    let contentPreview = post.content.trim();
+    if (contentPreview.length > 30) {
+      contentPreview = contentPreview.substring(0, 30) + '...';
+    }
+    
+    return `${authorName}: ${contentPreview}`;
   },
 
   // 评论帖子
@@ -254,20 +246,4 @@ Page({
       this.loadPosts(false);
     }
   },
-
-  // 页面分享
-  onShareAppMessage() {
-    return {
-      title: '校园生活分享',
-      desc: '发现精彩的校园生活',
-      path: '/pages/index/index'
-    };
-  },
-
-  // 分享到朋友圈
-  onShareTimeline() {
-    return {
-      title: '校园生活分享'
-    };
-  }
 });

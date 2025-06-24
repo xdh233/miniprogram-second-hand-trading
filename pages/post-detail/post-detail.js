@@ -135,7 +135,7 @@ Page({
       this.loadComments(true);
       
       // 更新帖子的评论数显示
-      this.loadPostDetail();
+       this.loadPostDetail();
       
       wx.showToast({
         title: '评论成功',
@@ -171,18 +171,40 @@ Page({
   // 分享
   onShareAppMessage() {
     const post = this.data.post;
+    
     if (!post) {
       return {
         title: '校园动态分享',
-        path: '/pages/index/index'
+        desc: '发现精彩的校园生活',
+        path: '/pages/index/index',
+        imageUrl: '/images/default-share.jpg'
       };
     }
     
     return {
-      title: post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content,
-      path: `/pages/post-detail/post-detail?id=${post.id}`
+      title: this.formatShareTitle(post),
+      path: `/pages/post-detail/post-detail?id=${post.id}`,
+      imageUrl: post.images?.[0] || '/images/default-share.jpg'
     };
   },
+
+  // 格式化分享标题 
+  formatShareTitle(post) {
+    if (!post || !post.content) {
+      return '校园动态分享';
+    }
+    
+    const authorName = post.userNickname || post.userName || '校园用户';
+    
+    // 清理内容并截取
+    let contentPreview = post.content.trim();
+    if (contentPreview.length > 30) {
+      contentPreview = contentPreview.substring(0, 30) + '...';
+    }
+    
+    return `${authorName}: ${contentPreview}`;
+  },
+  
   // 私信
   onPrivateChat() {
     const post = this.data.post;
@@ -202,9 +224,9 @@ Page({
       });
       return;
     }
-    // 方法一：跳转到聊天页面
+
     wx.navigateTo({
-      url: `/pages/chat/chat?userId=${post.userId}&userName=${post.userName || post.nickname}`
+      url: `/pages/chat/chat?userId=${post.userId}&userName=${post.userName || post.userNickname}`
     });
   },
   // 预览图片

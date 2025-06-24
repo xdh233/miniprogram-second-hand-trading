@@ -1,11 +1,13 @@
 // utils/itemManager.js - 商品管理工具类
 
+const sharedTools = require("./sharedTools");
+
 class ItemManager {
   constructor() {
     this.ITEMS_KEY = 'campus_items'; // 存储所有商品的key
     this.CATEGORIES_KEY = 'item_categories'; // 商品分类
     this.LIKED_ITEMS_KEY = 'liked_items'; // 用户收藏的商品
-    this.ITEM_COMMENTS_KEY = 'item_comments'; // 新增：商品评论存储key
+    this.ITEM_COMMENTS_KEY = 'item_comments'; // 商品评论存储key
     this.init();
   }
 
@@ -191,7 +193,7 @@ class ItemManager {
     
     // 更新评论的时间显示
     comments.forEach(comment => {
-      comment.timeAgo = this.formatTimeAgo(comment.createTime);
+      comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
     });
   
     return {
@@ -199,28 +201,6 @@ class ItemManager {
       comments: comments,
       commentsCount: comments.length
     };
-  }
-  
-  // 格式化时间显示（从 postManager 复制过来）
-  formatTimeAgo(timestamp) {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diff = now - time;
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-  
-    if (diff < minute) {
-      return '刚刚';
-    } else if (diff < hour) {
-      return Math.floor(diff / minute) + '分钟前';
-    } else if (diff < day) {
-      return Math.floor(diff / hour) + '小时前';
-    } else if (diff < 7 * day) {
-      return Math.floor(diff / day) + '天前';
-    } else {
-      return time.toLocaleDateString();
-    }
   }
   
   // 初始化时添加一些测试评论数据

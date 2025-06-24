@@ -34,14 +34,13 @@ Page({
     this.checkLoginStatus();
   },
 
-
-  // 修改 onShow 方法
   onShow() {
     console.log('闲置市场页面显示');
     this.checkLoginStatus();
-    this.loadItemsFromManager(); // 直接从 itemManager 加载
+    this.loadItems(); // 直接从 itemManager 加载
   },
-  loadItemsFromManager() {
+
+  loadItems() {
     try {
       // 直接从 itemManager 获取所有商品
       const items = itemManager.getAllItems();
@@ -337,7 +336,7 @@ Page({
     this.setData({ refreshing: true });
     
     setTimeout(() => {
-      this.loadItemsFromManager();
+      this.loadItems();
       this.setData({ refreshing: false });
     }, 1000);
   },
@@ -414,7 +413,7 @@ Page({
   onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
     if (!keyword.trim()) {
-      this.loadItemsFromManager();
+      this.loadItems();
       return;
     }
     

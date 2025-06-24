@@ -34,14 +34,16 @@
           data-id="{{item.id}}">
 
         <!-- 用户信息栏 -->
-        <view class="post-header">
+        <view 
+          class="post-header"
+          catchtap="navigateToUserProfile"
+          data-userid="{{item.userId}}"  >
           <image class="user-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
           <view class="user-info">
             <view class="user-name">{{item.userNickname}}</view>
             <view class="post-time">{{item.timeAgo}}</view>
           </view>
         </view>
-
         <!-- 帖子内容 -->
         <view class="post-content">
           <text class="post-text">{{item.content}}</text>
@@ -55,7 +57,7 @@
               class="post-image" 
               src="{{item.images[0]}}" 
               mode="widthFix"
-              bindtap="previewImage"
+              catchtap="previewImage"
               data-images="{{item.images}}"
               data-index="0"
             />
@@ -71,7 +73,7 @@
               wx:key="imgIndex"
               src="{{image}}" 
               mode="aspectFill"
-              bindtap="previewImage"
+              catchtap="previewImage"
               data-images="{{item.images}}"
               data-index="{{imgIndex}}"
             />

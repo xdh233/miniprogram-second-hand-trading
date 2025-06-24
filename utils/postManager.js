@@ -1,5 +1,7 @@
 // utils/postManager.js - 动态管理工具
 
+const sharedTools = require('./sharedTools');
+
 class PostManager {
   constructor() {
     this.POSTS_KEY = 'campus_posts';
@@ -33,7 +35,7 @@ class PostManager {
           userNickname: '四李',
           userAvatar: '/images/default-avatar.png',
           content: '图书馆怎么这么多拍照的，我明年一定要到点就跑路。',
-          images: [],
+          images: ["/images/default-avatar.png"],
           likes: 8,
           comments: 3,
           isLiked: false,
@@ -272,7 +274,7 @@ class PostManager {
       
       if (post) {
         // 更新时间显示
-        post.timeAgo = this.formatTimeAgo(post.createTime);
+        post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
         resolve(post);
       } else {
         console.log('未找到帖子，postId:', postId);
@@ -288,7 +290,7 @@ class PostManager {
       const postComments = allComments.filter(comment => comment.postId == postId);
       
       // 按时间正序排列（最早的在前面）
-      postComments.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+      postComments.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
       
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
@@ -296,7 +298,7 @@ class PostManager {
       
       // 更新时间显示
       comments.forEach(comment => {
-        comment.timeAgo = this.formatTimeAgo(comment.createTime);
+        comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
       });
       
       setTimeout(() => {
@@ -340,7 +342,7 @@ class PostManager {
         timeAgo: '刚刚'
       };
 
-      comments.push(newComment);
+      comments.unshift(newComment);
       
       if (this.saveComments(comments)) {
         // 更新帖子的评论数
@@ -362,28 +364,6 @@ class PostManager {
       const commentsCount = comments.filter(c => c.postId == postId).length;
       posts[postIndex].comments = commentsCount;
       this.savePosts(posts);
-    }
-  }
-
-  // 格式化时间显示
-  formatTimeAgo(timestamp) {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diff = now - time;
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
-    if (diff < minute) {
-      return '刚刚';
-    } else if (diff < hour) {
-      return Math.floor(diff / minute) + '分钟前';
-    } else if (diff < day) {
-      return Math.floor(diff / hour) + '小时前';
-    } else if (diff < 7 * day) {
-      return Math.floor(diff / day) + '天前';
-    } else {
-      return time.toLocaleDateString();
     }
   }
 
