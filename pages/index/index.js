@@ -28,24 +28,6 @@ Page({
     }
   },
 
-  onShareAppMessage() {
-    const post = this.data.posts.find(p => p.id == this.data.sharePostId);
-    
-    if (!post) {
-      return {
-        title: '校园生活分享',
-        desc: '发现精彩的校园生活',
-        path: '/pages/index/index',
-        imageUrl: '/images/default-share.jpg'
-      };
-    }
-    
-    return {
-      title: this.data.post?.content.substring(0, 20) || '校园动态',
-      path: `/pages/post-detail/post-detail?id=${this.data.sharePostId}`,
-      imageUrl: this.data.post?.images?.[0] || '/images/default-share.jpg'
-    };
-  },
   // 检查登录状态
   checkLoginStatus() {
     console.log('检查登录状态...');
@@ -128,6 +110,25 @@ Page({
     wx.navigateTo({
       url: `/pages/search/search?keyword=${encodeURIComponent(keyword)}`
     });
+  },
+
+  onShareAppMessage() {
+    const post = this.data.posts.find(p => p.id == this.data.sharePostId);
+    
+    if (!post) {
+      return {
+        title: '校园生活分享',
+        desc: '发现精彩的校园生活',
+        path: '/pages/index/index',
+        imageUrl: '/images/default-share.jpg'
+      };
+    }
+    
+    return {
+      title: this.data.post?.content.substring(0, 20) || '校园动态',
+      path: `/pages/post-detail/post-detail?id=${this.data.sharePostId}`,
+      imageUrl: this.data.post?.images?.[0] || '/images/default-share.jpg'
+    };
   },
   // 转发帖子 - 设置分享数据
   onSharePost(e) {
