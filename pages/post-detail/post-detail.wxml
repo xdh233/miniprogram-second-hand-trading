@@ -67,10 +67,31 @@
     <!-- 评论区域 -->
     <view class="comments-container">
       
-      <!-- 评论标题 -->
+      <!-- 评论标题和排序 -->
       <view class="comments-header">
-        <text class="comments-title">评论</text>
-        <text class="comments-count">({{post.comments}})</text>
+        <view class="comments-title-section">
+          <text class="comments-title">评论</text>
+          <text class="comments-count">({{post.comments}})</text>
+        </view>
+        
+        <!-- 排序按钮组 -->
+        <view class="sort-tabs">
+          <view class="sort-tab {{sortType === 'hot' ? 'active' : ''}}" 
+                data-sort="hot" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最热</text>
+          </view>
+          <view class="sort-tab {{sortType === 'time_desc' ? 'active' : ''}}" 
+                data-sort="time_desc" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最新</text>
+          </view>
+          <view class="sort-tab {{sortType === 'time_asc' ? 'active' : ''}}" 
+                data-sort="time_asc" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最早</text>
+          </view>
+        </view>
       </view>
       
       <!-- 评论列表 -->
@@ -79,9 +100,21 @@
           <image class="comment-avatar" src="{{item.userAvatar}}" mode="aspectFill" />
           <view class="comment-main">
             <view class="comment-user-info">
-              <text class="comment-username">{{item.userNickname}}</text>
-              <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
-              <text class="comment-time">{{item.timeAgo}}</text>
+              <view class="comment-user-left">
+                <text class="comment-username">{{item.userNickname}}</text>
+                <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
+                <text class="comment-time">{{item.timeAgo}}</text>
+              </view>
+              <!-- 评论点赞按钮移到右侧 -->
+              <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
+                    bindtap="onLikeComment"
+                    data-id="{{item.id}}"
+                    data-index="{{index}}">
+                <image class="comment-like-icon" 
+                       src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                       mode="aspectFit" />
+                <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
+              </view>
             </view>
             <text class="comment-content">{{item.content}}</text>
           </view>
@@ -110,7 +143,6 @@
   <!-- 底部评论输入框 -->
   <view class="comment-input-bar">
     <view class="input-wrapper">
-            <!-- 文本输入框 -->
       <!-- 文本输入框 -->
       <input class="comment-input"
             placeholder="输入消息..."

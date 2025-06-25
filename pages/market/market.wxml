@@ -1,8 +1,8 @@
-<!-- market.wxml - 闲置市场页面 -->
+<!-- market.wxml - 闲置市场页面，仿照index页面结构 -->
 <view class="container">
-  <!-- 完全模仿message页面的结构 -->
+  <!-- 统一内容容器 -->
   <view class="content-container">
-    <!-- 顶部搜索栏 - 学习message页面 -->
+    <!-- 顶部搜索栏 -->
     <view class="search-header">
       <view class="search-box">
         <icon class="search-icon" type="search" size="14" />
@@ -11,6 +11,7 @@
           placeholder="搜索闲置商品..." 
           placeholder-class="search-placeholder"
           confirm-type="search" 
+          value="{{searchKeyword}}"
           bindinput="onSearchInput" 
           bindconfirm="onSearch" 
         />
@@ -32,9 +33,17 @@
       </scroll-view>
     </view>
 
-    <!-- 商品列表 - 双列布局 -->
-    <scroll-view class="content-area" scroll-y refresher-enabled bindrefresherrefresh="onRefresh" refresher-triggered="{{refreshing}}" bindscrolltolower="loadMore">
-      
+    <!-- 商品列表容器 -->
+    <scroll-view 
+      class="items-container"
+      scroll-y
+      enable-back-to-top
+      refresher-enabled
+      refresher-triggered="{{refreshing}}"
+      bindrefresherrefresh="onPullDownRefresh"
+      bindscrolltolower="onReachBottom"
+    >
+      <!-- 商品列表 - 双列布局 -->
       <view class="items-grid">
         <!-- 左列 -->
         <view class="column left-column">
@@ -117,12 +126,28 @@
         </view>
       </view>
 
+      <!-- 加载更多 -->
+      <view class="loading-more" wx:if="{{loading && items.length > 0}}">
+        <text>加载中...</text>
+      </view>
+
+      <!-- 没有更多 -->
+      <view class="no-more" wx:if="{{!hasMore && items.length > 0}}">
+        <text>没有更多商品了</text>
+      </view>
+
       <!-- 空状态 -->
-      <view class="empty-state" wx:if="{{items.length === 0}}">
+      <view class="empty-state" wx:if="{{items.length === 0 && !loading}}">
         <image class="empty-icon" src="../../images/empty-box.png" mode="aspectFit" />
         <view class="empty-text">暂无闲置商品</view>
         <view class="empty-desc">快来发布第一个商品吧</view>
       </view>
     </scroll-view>
+
+    <!-- 初始加载状态 -->
+    <view class="initial-loading" wx:if="{{loading && items.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
   </view>
 </view>

@@ -11,7 +11,8 @@ Page({
     loadingMore: false,
     hasMore: true,
     currentPage: 1,
-    pageSize: 20
+    pageSize: 20,
+    sortType: 'hot',
   },
 
   onLoad(options) {
@@ -98,7 +99,8 @@ Page({
       const comments = await postManager.getPostComments(
         this.data.postId,
         page,
-        this.data.pageSize
+        this.data.pageSize,
+        this.data.sortType
       );
 
       console.log('获取到的评论:', comments);
@@ -114,7 +116,27 @@ Page({
       this.setData({ loadingMore: false });
     }
   },
-
+  // 选择评论显示方式
+  onSortSelect(e) {
+    const sortType = e.currentTarget.dataset.sort;
+    
+    if (sortType === this.data.sortType) {
+      // 如果选择的是当前排序，不做操作
+      return;
+    }
+    
+    console.log('切换排序方式:', sortType);
+    
+    this.setData({
+      sortType: sortType,
+      comments: [], // 清空现有评论
+      currentPage: 1,
+      hasMore: true
+    });
+    
+    // 重新加载评论
+    this.loadComments(true);
+  },
   // 提交评论
   async submitComment() {
     if (!this.data.commentContent.trim()) {
@@ -150,7 +172,29 @@ Page({
       });
     }
   },
-
+  // 评论点赞/取消点赞
+  async onLikeComment(e) {
+    const commentId = e.currentTarget.dataset.id;
+    const commentIndex = e.currentTarget.dataset.index;
+    
+    try {
+      const result = await postManager.toggleCommentLike(commentId);
+      
+      // 更新评论数据
+      const comments = this.data.comments;
+      comments[commentIndex].isLiked = result.isLiked;
+      comments[commentIndex].likes = result.likes;
+      
+      this.setData({ comments });
+      
+    } catch (error) {
+      console.error('评论点赞操作失败:', error);
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
   // 点赞/取消点赞
   async onLikePost() {
     try {

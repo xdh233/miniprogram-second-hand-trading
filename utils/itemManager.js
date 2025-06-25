@@ -55,20 +55,15 @@ class ItemManager {
         images: ['/images/phone1.jpg', '/images/phone2.jpg'],
         categoryId: 1,
         category: '数码电子',
-        condition: '95成新',
-        isNegotiable: true,
         sellerId: 1,
         sellerName: '张三',
         sellerNickname: '三张',
         sellerAvatar: '/images/default-avatar.jpg',
         status: 'active',
         publishTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '2天前',
         viewCount: 25,
         likeCount: 3,
-        tradeMethods: ['face_to_face', 'express'],
-        tradeLocation: '学校南门',
-        phone: '13812345678',
-        tags: ['苹果', '手机', '数码']
       },
       {
         id: this.generateId(),
@@ -78,20 +73,15 @@ class ItemManager {
         images: ['/images/lamp1.jpg'],
         categoryId: 2,
         category: '生活用品',
-        condition: '全新',
-        isNegotiable: false,
         sellerId: 2,
         sellerName: '李四',
         sellerNickname: '四李',
         sellerAvatar: '/images/default-avatar.jpg',
         status: 'active',
         publishTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '一天前',
         viewCount: 12,
         likeCount: 1,
-        tradeMethods: ['face_to_face'],
-        tradeLocation: '图书馆',
-        phone: '13898765432',
-        tags: ['台灯', '护眼', '学习']
       }
     ];
 
@@ -104,7 +94,30 @@ class ItemManager {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   }
 
-  // 获取所有商品
+  // 获取商品列表
+  getItems(page = 1, limit = 10) {
+    return new Promise((resolve) => {
+      const allItems = this.getAllItems();
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      
+      // 按时间倒序排列
+      allItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+      
+      const items = allItems.slice(startIndex, endIndex);
+      const hasMore = endIndex < allItems.length;
+      
+      // 模拟网络延迟
+      setTimeout(() => {
+        resolve({
+          items: items,
+          hasMore: hasMore,
+          total: allItems.length
+        });
+      }, 500);
+    });
+  }
+
   getAllItems() {
     try {
       return wx.getStorageSync(this.ITEMS_KEY) || [];
@@ -279,8 +292,6 @@ class ItemManager {
           images: itemData.images,
           categoryId: itemData.categoryId,
           category: category ? category.name : '其他',
-          condition: itemData.condition,
-          isNegotiable: itemData.isNegotiable || false,
           sellerId: sellerId,
           sellerName: itemData.sellerName || '',
           sellerNickname: itemData.sellerNickname || itemData.sellerName || '',
@@ -289,11 +300,6 @@ class ItemManager {
           publishTime: new Date().toISOString(),
           viewCount: 0,
           likeCount: 0,
-          tradeMethods: itemData.tradeMethods || ['face_to_face'],
-          tradeLocation: itemData.tradeLocation || '',
-          phone: itemData.phone || '',
-          wechat: itemData.wechat || '',
-          tags: this.generateTags(itemData.title, itemData.description)
         };
 
         items.unshift(newItem);
@@ -386,59 +392,58 @@ class ItemManager {
 
   // 搜索商品
   searchItems(keyword, filters = {}) {
-    const items = this.getAllItems();
-    let filteredItems = items.filter(item => item.status === 'active');
+    return new Promise((resolve) => {
+      const items = this.getAllItems();
+      let filteredItems = items.filter(item => item.status === 'active');
 
-    // 关键词搜索
-    if (keyword && keyword.trim()) {
-      const lowerKeyword = keyword.toLowerCase();
-      filteredItems = filteredItems.filter(item => 
-        item.title.toLowerCase().includes(lowerKeyword) ||
-        item.description.toLowerCase().includes(lowerKeyword) ||
-        item.tags.some(tag => tag.toLowerCase().includes(lowerKeyword))
-      );
-    }
-
-    // 分类筛选
-    if (filters.categoryId) {
-      filteredItems = filteredItems.filter(item => item.categoryId === filters.categoryId);
-    }
-
-    // 价格范围筛选
-    if (filters.minPrice !== undefined) {
-      filteredItems = filteredItems.filter(item => parseFloat(item.price) >= filters.minPrice);
-    }
-    if (filters.maxPrice !== undefined) {
-      filteredItems = filteredItems.filter(item => parseFloat(item.price) <= filters.maxPrice);
-    }
-
-    // 新旧程度筛选
-    if (filters.condition) {
-      filteredItems = filteredItems.filter(item => item.condition === filters.condition);
-    }
-
-    // 排序
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case 'price_asc':
-          filteredItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-          break;
-        case 'price_desc':
-          filteredItems.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-          break;
-        case 'time_desc':
-          filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
-          break;
-        case 'popular':
-          filteredItems.sort((a, b) => (b.viewCount + b.likeCount) - (a.viewCount + a.likeCount));
-          break;
+      // 关键词搜索
+      if (keyword && keyword.trim()) {
+        const lowerKeyword = keyword.toLowerCase();
+        filteredItems = filteredItems.filter(item => 
+          item.title.toLowerCase().includes(lowerKeyword) ||
+          item.description.toLowerCase().includes(lowerKeyword)
+        );
       }
-    } else {
-      // 默认按发布时间倒序
-      filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
-    }
 
-    return filteredItems;
+      // 分类筛选
+      if (filters.categoryId) {
+        filteredItems = filteredItems.filter(item => item.categoryId === filters.categoryId);
+      }
+
+      // 价格范围筛选
+      if (filters.minPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => parseFloat(item.price) >= filters.minPrice);
+      }
+      if (filters.maxPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => parseFloat(item.price) <= filters.maxPrice);
+      }
+
+      // 排序
+      if (filters.sortBy) {
+        switch (filters.sortBy) {
+          case 'price_asc':
+            filteredItems.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+            break;
+          case 'price_desc':
+            filteredItems.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+            break;
+          case 'time_desc':
+            filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+            break;
+          case 'popular':
+            filteredItems.sort((a, b) => (b.viewCount + b.likeCount) - (a.viewCount + a.likeCount));
+            break;
+        }
+      } else {
+        // 默认按发布时间倒序
+        filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+      }
+
+      // 添加延迟，与 getItems 保持一致
+      setTimeout(() => {
+        resolve(filteredItems);
+      }, 300); // 300ms 延迟，可以调整
+    });
   }
 
   // 获取用户发布的商品
@@ -509,17 +514,6 @@ class ItemManager {
         reject({ code: 500, message: '操作失败' });
       }
     });
-  }
-
-  // 生成商品标签
-  generateTags(title, description) {
-    const text = (title + ' ' + description).toLowerCase();
-    const commonTags = [
-      '手机', '电脑', '书籍', '衣服', '鞋子', '包包', '化妆品', '护肤品',
-      '台灯', '文具', '运动', '健身', '零食', '数码', '电子', '生活用品'
-    ];
-    
-    return commonTags.filter(tag => text.includes(tag));
   }
 
   // 获取热门商品

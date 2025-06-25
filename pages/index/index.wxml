@@ -11,7 +11,7 @@
           placeholder="搜索" 
           value="{{searchKeyword}}"
           bindinput="onSearchInput"
-          bindconfirm="onSearchConfirm"
+          bindconfirm="onSearch"
         />
       </view>
     </view>

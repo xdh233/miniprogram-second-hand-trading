@@ -1,4 +1,4 @@
-// market.js - 闲置市场页面
+// market.js - 合并加载方法的版本
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
 
@@ -23,10 +23,12 @@ Page({
       { id: 11, name: '其他' }
     ],
     currentCategory: 'all',
+    loading: false,
     refreshing: false,
     hasMore: true,
     currentPage: 1,
-    searchKeyword: ''
+    searchKeyword: '',
+    confirmKeyword: ''
   },
 
   onLoad() {
@@ -37,31 +39,111 @@ Page({
   onShow() {
     console.log('闲置市场页面显示');
     this.checkLoginStatus();
-    this.loadItems(); // 直接从 itemManager 加载
+    if(this.data.userInfo){
+      this.loadItems(true);
+    }
   },
-
-  loadItems() {
+ 
+  // 检查登录状态
+  checkLoginStatus() {
+    console.log('检查登录状态...');
+    
     try {
-      // 直接从 itemManager 获取所有商品
-      const items = itemManager.getAllItems();
-      console.log('从 itemManager 获取商品:', items.length, '个');
+      const isLoggedIn = userManager.isLoggedIn();
+      console.log('登录状态:', isLoggedIn);
       
-      if (items.length === 0) {
-        console.log('暂无商品数据');
-        this.setData({
-          items: [],
-          leftItems: [],
-          rightItems: []
+      if (!isLoggedIn) {
+        console.log('未登录，跳转到登录页');
+        wx.reLaunch({
+          url: '/pages/login/login'
         });
         return;
       }
+
+      const userInfo = userManager.getCurrentUser();
+      console.log('当前用户:', userInfo);
       
-      const { leftItems, rightItems } = this.distributeItems(items);
+      if (userInfo) {
+        this.setData({ userInfo });
+      } else {
+        console.log('用户信息为空，跳转登录页');
+        wx.reLaunch({
+          url: '/pages/login/login'
+        });
+      }
+    } catch (error) {
+      console.error('检查登录状态出错:', error);
+      wx.reLaunch({
+        url: '/pages/login/login'
+      });
+    }
+  },
+
+  // 统一的加载方法 - 支持分页、搜索、分类筛选
+  async loadItems(refresh = false) {
+    if (this.data.loading) return;  //已经处于加载中 返回 防止重复
+    
+    this.setData({ loading: true });
+    
+    try {
+      const page = refresh ? 1 : this.data.currentPage; // 刷新 / 追加
+      const keyword = this.data.confirmKeyword.trim();  // 搜索的加载
+      const categoryId = this.data.currentCategory;     // 分类的加载
       
+      console.log('加载参数:', { page, keyword, categoryId, refresh });
+      
+      let result;
+      
+      if (keyword || categoryId !== 'all') {
+        // 有搜索词或选择了特定分类，使用搜索方法
+        const filters = {};
+        if (categoryId !== 'all') {
+          filters.categoryId = categoryId;
+        }
+        
+        // 获取所有筛选结果，然后手动分页
+        const allResults = await itemManager.searchItems(keyword, filters);
+        
+        // 手动实现分页
+        const pageSize = 10;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        
+        const currentItems = refresh ? [] : (this.data.items || []);
+        const newItems = allResults.slice(startIndex, endIndex);
+        const items = refresh ? newItems : [...currentItems, ...newItems];
+        
+        result = {
+          items: items,
+          hasMore: endIndex < allResults.length,
+          total: allResults.length
+        };
+        
+      } else {
+        // 无搜索词且在"全部"分类，使用正常分页加载
+        result = await itemManager.getItems(page, 10);
+        const currentItems = refresh ? [] : (this.data.items || []);
+        const items = [...currentItems, ...(result.items || [])];
+        result.items = items;
+      }
+      
+      // 更新显示
+      const { leftItems, rightItems } = this.distributeItems(result.items || []);
+
       this.setData({
-        items: items,
+        items: result.items || [],
         leftItems: leftItems,
-        rightItems: rightItems
+        rightItems: rightItems,
+        hasMore: result.hasMore || false,
+        currentPage: refresh ? 2 : page + 1,
+        loading: false,
+        ...(refresh && { refreshing: false })
+      });
+      
+      console.log('加载完成:', {
+        itemsCount: result.items?.length || 0,
+        hasMore: result.hasMore,
+        currentPage: this.data.currentPage
       });
       
     } catch (error) {
@@ -70,14 +152,21 @@ Page({
         title: '加载失败',
         icon: 'error'
       });
+      this.setData({ 
+        loading: false, 
+        refreshing: false 
+      });
     }
   },
-  
-
+ 
   // 分配商品到左右两列的辅助函数
   distributeItems(items) {
     const leftItems = [];
     const rightItems = [];
+    
+    if (!Array.isArray(items)) {
+      return { leftItems, rightItems };
+    }
     
     items.forEach((item, index) => {
       if (index % 2 === 0) {
@@ -90,80 +179,7 @@ Page({
     return { leftItems, rightItems };
   },
 
-  // 检查登录状态
-  checkLoginStatus() {
-    if (!userManager.isLoggedIn()) {
-      wx.redirectTo({
-        url: '/pages/login/login'
-      });
-      return;
-    }
-
-    const userInfo = userManager.getCurrentUser();
-    this.setData({ userInfo });
-    
-  },
-
-  // // 加载商品列表
-  // loadItems(refresh = false) {
-  //   try {
-  //     const page = refresh ? 1 : this.data.currentPage;
-  //     console.log('加载商品，页码:', page, '分类:', this.data.currentCategory);
-      
-  //     // 构建筛选条件
-  //     const filters = {};
-  //     if (this.data.currentCategory !== 'all') {
-  //       filters.categoryId = this.data.currentCategory;
-  //     }
-      
-  //     // 使用 searchItems 方法获取所有符合条件的商品
-  //     let allItems = itemManager.searchItems('', filters);
-      
-  //     // 为每个商品添加交易类型标识（卖/收）
-  //     allItems = allItems.map(item => ({
-  //       ...item,
-  //       tradeType: item.tradeType || 'sell', // 默认为出售
-  //       sellerName: item.sellerName || '用户' + item.sellerId,
-  //       sellerAvatar: item.sellerAvatar || '/images/default-avatar.png'
-  //     }));
-      
-  //     console.log('获取到商品总数:', allItems.length);
-      
-  //     // 手动实现分页
-  //     const pageSize = 10;
-  //     const startIndex = (page - 1) * pageSize;
-  //     const endIndex = startIndex + pageSize;
-  //     const paginatedItems = allItems.slice(startIndex, endIndex);
-      
-  //     // 处理数据
-  //     let items = refresh ? paginatedItems : [...this.data.items, ...paginatedItems];
-      
-  //     // 使用辅助函数分配到左右两列
-  //     const { leftItems, rightItems } = this.distributeItems(items);
-      
-  //     console.log('左列商品数:', leftItems.length, '右列商品数:', rightItems.length);
-      
-  //     this.setData({
-  //       items: items,
-  //       leftItems: leftItems,
-  //       rightItems: rightItems,
-  //       hasMore: endIndex < allItems.length,
-  //       currentPage: refresh ? 2 : page + 1,
-  //       refreshing: false
-  //     });
-      
-  //     console.log('当前显示商品数:', items.length);
-      
-  //   } catch (error) {
-  //     console.error('加载商品失败:', error);
-  //     wx.showToast({
-  //       title: '加载失败',
-  //       icon: 'error'
-  //     });
-  //     this.setData({ refreshing: false });
-  //   }
-  // },
-  // 切换分类
+  // 切换分类 
   switchCategory(e) {
     const categoryId = e.currentTarget.dataset.id;
     console.log('切换分类:', categoryId);
@@ -174,261 +190,68 @@ Page({
       leftItems: [],
       rightItems: [],
       currentPage: 1,
-      hasMore: true
+      hasMore: true,
+      searchKeyword: '', // 切换分类时清空搜索
+      confirmKeyword:''
     });
     
-    // 使用 itemManager 的搜索功能
-    this.loadFilteredItems();
+    this.loadItems(true);
   },
 
-  loadFilteredItems() {
-    try {
-      const filters = {};
-      if (this.data.currentCategory !== 'all') {
-        filters.categoryId = this.data.currentCategory;
-      }
-      
-      const items = itemManager.searchItems('', filters);
-      const { leftItems, rightItems } = this.distributeItems(items);
-      
-      this.setData({
-        items: items,
-        leftItems: leftItems,
-        rightItems: rightItems,
-        hasMore: false
-      });
-      
-    } catch (error) {
-      console.error('筛选商品失败:', error);
-    }
-  },
-
-  // // 加载分类数据
-  // loadCategoryData(categoryId) {
-  //   // 根据分类ID筛选测试数据
-  //   const allTestItems = [
-  //     {
-  //       id: 1,
-  //       title: '护眼台灯 全新未拆封',
-  //       price: 80,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '李四',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 2
-  //     },
-  //     {
-  //       id: 2,
-  //       title: 'iPhone 13 Pro 128GB 深空灰色',
-  //       price: 4500,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '张三',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 3,
-  //       title: '小米笔记本电脑 Air 13.3',
-  //       price: 3200,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '王五',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 4,
-  //       title: '索尼耳机 WH-1000XM4',
-  //       price: 1800,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '赵六',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 5,
-  //       title: 'iPad Air 第四代 64GB',
-  //       price: 3800,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '钱七',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 6,
-  //       title: '戴森吹风机 HD08',
-  //       price: 2200,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '孙八',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 2
-  //     },
-  //     {
-  //       id: 7,
-  //       title: '机械键盘 Cherry MX',
-  //       price: 680,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '周九',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 8,
-  //       title: 'AirPods Pro 二代',
-  //       price: 1600,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '吴十',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 9,
-  //       title: '任天堂Switch OLED版',
-  //       price: 2800,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '郑十一',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     },
-  //     {
-  //       id: 10,
-  //       title: 'MacBook Air M2 8GB',
-  //       price: 8500,
-  //       images: ['/images/placeholder.png'],
-  //       sellerName: '王十二',
-  //       sellerAvatar: '/images/default-avatar.png',
-  //       tradeType: 'sell',
-  //       status: 'available',
-  //       categoryId: 1
-  //     }
-  //   ];
-
-  //   // 根据分类筛选商品
-  //   const filteredItems = allTestItems.filter(item => item.categoryId === categoryId);
-  //   const { leftItems, rightItems } = this.distributeItems(filteredItems);
-    
-  //   this.setData({
-  //     items: filteredItems,
-  //     leftItems: leftItems,
-  //     rightItems: rightItems,
-  //     hasMore: false
-  //   });
-  // },
-
-  onRefresh() {
+  // 下拉刷新 
+  async onPullDownRefresh() {
     console.log('下拉刷新');
     this.setData({ refreshing: true });
     
-    setTimeout(() => {
-      this.loadItems();
+    try {
+      // 重置状态并刷新
+      this.setData({
+        currentPage: 1,
+        hasMore: true
+      });
+      
+      await this.loadItems(true);
+    } catch (error) {
+      console.error('刷新失败:', error);
+      wx.showToast({
+        title: '刷新失败',
+        icon: 'error'
+      });
+    } finally {
       this.setData({ refreshing: false });
-    }, 1000);
-  },
-
-  // 暂时禁用上拉加载更多
-  loadMore() {
-    // 功能暂时关闭
-    return;
-    
-    /* 原来的上拉加载代码
-    if (!this.data.hasMore || this.data.refreshing) {
-      return;
     }
-
-    console.log('加载更多商品');
+  },
+  
+  // 触底加载更多 - 简化版本
+  onReachBottom() {
+    console.log('=== 触底加载更多 ===');
+    console.log('hasMore:', this.data.hasMore);
+    console.log('loading:', this.data.loading);
     
-    // 显示加载状态
-    wx.showNavigationBarLoading();
-    
-    // 模拟加载延迟
-    setTimeout(() => {
-      try {
-        // 如果有测试数据，从测试数据中加载更多
-        if (this.data.allTestItems) {
-          const currentLength = this.data.items.length;
-          const nextItems = this.data.allTestItems.slice(currentLength, currentLength + 4);
-          
-          if (nextItems.length > 0) {
-            const newItems = [...this.data.items, ...nextItems];
-            const { leftItems, rightItems } = this.distributeItems(newItems);
-            
-            this.setData({
-              items: newItems,
-              leftItems: leftItems,
-              rightItems: rightItems,
-              hasMore: newItems.length < this.data.allTestItems.length
-            });
-            
-            wx.showToast({
-              title: `加载了${nextItems.length}个商品`,
-              icon: 'success',
-              duration: 1500
-            });
-          } else {
-            this.setData({ hasMore: false });
-            wx.showToast({
-              title: '没有更多商品了',
-              icon: 'none'
-            });
-          }
-        } else {
-          // 真实环境中，这里应该调用API加载更多数据
-          this.loadItems(false);
-        }
-      } catch (error) {
-        console.error('加载更多失败:', error);
-        wx.showToast({
-          title: '加载失败，请重试',
-          icon: 'error'
-        });
-      } finally {
-        wx.hideNavigationBarLoading();
-      }
-    }, 800); // 模拟网络延迟
-    */
+    if (this.data.hasMore && !this.data.loading) {
+      console.log('开始加载更多数据');
+      this.loadItems(false);
+    } else {
+      console.log('不满足加载更多的条件');
+    }
   },
 
   // 搜索输入
   onSearchInput(e) {
-    const keyword = e.detail.value;
-    this.setData({ searchKeyword: keyword });
+    this.setData({ searchKeyword: e.detail.value });
   },
-  // 搜索
-  onSearch(e) {
+
+  // 搜索  确认
+  async onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
-    if (!keyword.trim()) {
-      this.loadItems();
-      return;
-    }
     
     console.log('搜索商品:', keyword);
-    
     try {
-      const results = itemManager.searchItems(keyword);
-      const { leftItems, rightItems } = this.distributeItems(results);
+      const results = await itemManager.searchItems(keyword);
       
       this.setData({
         items: results,
-        leftItems: leftItems,
-        rightItems: rightItems,
         hasMore: false,
-        currentCategory: 'all'
       });
       
       if (results.length === 0) {
@@ -437,13 +260,24 @@ Page({
           icon: 'none'
         });
       }
-      
     } catch (error) {
       wx.showToast({
         title: '搜索失败',
         icon: 'error'
       });
     }
+    // 重置分页状态
+    this.setData({
+      searchKeyword: keyword.trim(),
+      confirmKeyword: keyword.trim(),
+      currentPage: 1,
+      hasMore: true,
+      items: [],
+      leftItems: [],
+      rightItems: [],
+    });
+    
+    await this.loadItems(true);
   },
 
   // 跳转到商品详情
@@ -453,7 +287,5 @@ Page({
     wx.navigateTo({
       url: `/pages/item-detail/item-detail?id=${itemId}`
     });
-  },
-
-},
-);
+  }
+});

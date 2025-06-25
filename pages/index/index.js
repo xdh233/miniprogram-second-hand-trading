@@ -24,7 +24,7 @@ Page({
     console.log('=== 首页显示 ===');
     this.checkLoginStatus();
     if (this.data.userInfo) {
-      this.loadPosts(true);
+      this.loadPosts(true); //每次显示都刷新数据
     }
   },
 
@@ -57,6 +57,9 @@ Page({
       }
     } catch (error) {
       console.error('检查登录状态出错:', error);
+      wx.reLaunch({
+        url: '/pages/login/login'
+      });
     }
   },
 
@@ -103,13 +106,35 @@ Page({
     this.setData({ searchKeyword: e.detail.value });
   },
 
-  onSearchConfirm() {
-    const keyword = this.data.searchKeyword.trim();
-    if (!keyword) return;
+  async onSearch(e) {
+    const keyword = e.detail.value || this.data.searchKeyword;
+    if (!keyword.trim()) {
+      this.loadPosts(true);
+      return;
+    }
     
-    wx.navigateTo({
-      url: `/pages/search/search?keyword=${encodeURIComponent(keyword)}`
-    });
+    console.log('搜索帖子:', keyword);
+    
+    try {
+      const results = await postManager.searchPosts(keyword);
+      
+      this.setData({
+        posts: results,
+        hasMore: false,
+      });
+      
+      if (results.length === 0) {
+        wx.showToast({
+          title: '没有找到相关帖子',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      wx.showToast({
+        title: '搜索失败',
+        icon: 'error'
+      });
+    }
   },
 
   onShareAppMessage() {
