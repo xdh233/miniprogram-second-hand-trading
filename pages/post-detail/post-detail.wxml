@@ -84,12 +84,12 @@
           <view class="sort-tab {{sortType === 'time_desc' ? 'active' : ''}}" 
                 data-sort="time_desc" 
                 bindtap="onSortSelect">
-            <text class="sort-tab-text">最新</text>
+            <text class="sort-tab-text">最新↑</text>
           </view>
           <view class="sort-tab {{sortType === 'time_asc' ? 'active' : ''}}" 
                 data-sort="time_asc" 
                 bindtap="onSortSelect">
-            <text class="sort-tab-text">最早</text>
+            <text class="sort-tab-text">最早↓</text>
           </view>
         </view>
       </view>

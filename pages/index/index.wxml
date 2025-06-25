@@ -34,16 +34,25 @@
           data-id="{{item.id}}">
 
         <!-- 用户信息栏 -->
-        <view 
-          class="post-header"
-          catchtap="navigateToUserProfile"
-          data-userid="{{item.userId}}"  >
-          <image class="user-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="post-header">
+          <!-- 头像也可以点击跳转 -->
+          <image class="user-avatar" 
+                 src="{{item.userAvatar || '/images/default-avatar.png'}}" 
+                 mode="aspectFill"
+                 catchtap="navigateToUserProfile"
+                 data-userid="{{item.userId}}" />
           <view class="user-info">
-            <view class="user-name">{{item.userNickname}}</view>
+            <!-- 昵称和时间的容器 -->
+            <view class="user-name-row">
+              <!-- 只有昵称文字区域可点击，使用 text 元素 -->
+              <text class="user-name"
+                    catchtap="navigateToUserProfile"
+                    data-userid="{{item.userId}}">{{item.userNickname}}</text>
+            </view>
             <view class="post-time">{{item.timeAgo}}</view>
           </view>
         </view>
+        
         <!-- 帖子内容 -->
         <view class="post-content">
           <text class="post-text">{{item.content}}</text>

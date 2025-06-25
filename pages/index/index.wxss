@@ -94,17 +94,36 @@ page {
   border-radius: 50%;
   margin-right: 20rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* 头像可点击的视觉提示 */
+  transition: opacity 0.2s ease;
+}
+
+.user-avatar:active {
+  opacity: 0.8;
 }
 
 .user-info {
   flex: 1;
 }
 
+/* 昵称行容器 */
+.user-name-row {
+  margin-bottom: 6rpx;
+}
+
+/* 昵称样式 - 关键修改：使用 display: inline-block */
 .user-name {
   font-size: 32rpx;
   color: #333;
   font-weight: 500;
-  margin-bottom: 6rpx;
+  display: inline-block;
+  margin: 4rpx 8rpx 4rpx 0;
+  border-radius: 6rpx;
+}
+
+.user-name:active {
+  background: rgba(102, 126, 234, 0.1);
+  opacity: 0.8;
 }
 
 .post-time {
