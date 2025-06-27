@@ -1,0 +1,77 @@
+<!-- pages/publish-post/publish-post.wxml -->
+<view class="publish-container">
+  
+  <!-- 内容容器 -->
+  <view class="content-container">
+    
+    <!-- 用户信息 -->
+    <view class="user-info">
+      <image class="user-avatar" src="{{userInfo.avatar}}" />
+      <text class="user-name">{{userInfo.nickname}}</text>
+    </view>
+
+    <!-- 文本输入区 -->
+    <view class="text-input-area">
+      <textarea 
+        class="content-input" 
+        placeholder="分享你的校园生活..."
+        placeholder-class="input-placeholder"
+        value="{{content}}"
+        bindinput="onContentInput"
+        maxlength="500"
+        auto-height
+      />
+      <text class="text-count">{{content.length}}/500</text>
+    </view>
+
+    <!-- 图片区域 -->
+    <view class="image-area">
+      <view class="image-grid">
+        
+        <!-- 已选择的图片 -->
+        <view class="image-item" wx:for="{{images}}" wx:key="index">
+          <image 
+            class="image" 
+            src="{{item.url}}" 
+            mode="aspectFill"
+            bindtap="previewImage"
+            data-index="{{index}}"
+          />
+          <view class="delete-btn" bindtap="deleteImage" data-index="{{index}}">
+            <text class="delete-icon">×</text>
+          </view>
+        </view>
+
+        <!-- 添加图片按钮 -->
+        <view class="add-image-btn" bindtap="chooseImages" wx:if="{{images.length < maxImages}}">
+          <text class="add-icon">+</text>
+          <text class="add-text">添加图片</text>
+        </view>
+      </view>
+      
+      <view class="image-tip">
+        <text>最多可选择{{maxImages}}张图片</text>
+      </view>
+    </view>
+
+    <!-- 发布提示 -->
+    <view class="publish-tips">
+      <text class="tip-text">• 请遵守社区规范，发布积极正面的内容</text>
+      <text class="tip-text">• 禁止发布违法、违规、不当内容</text>
+      <text class="tip-text">• 发布后的内容将展示在校园动态中</text>
+    </view>
+
+  </view>
+
+  <!-- 发布按钮 -->
+  <view class="publish-footer">
+    <button 
+      class="publish-button {{content.length > 0 ? 'active' : ''}}"
+      bindtap="publishPost"
+      disabled="{{publishing}}"
+    >
+      {{publishing ? '发布中...' : '发布'}}
+    </button>
+  </view>
+
+</view>

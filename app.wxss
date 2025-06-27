@@ -8,3 +8,17 @@
   padding: 200rpx 0;
   box-sizing: border-box;
 } 
+/* 针对 picker 弹出层的字体 */
+.wx-picker-group {
+  font-size: 40rpx !important;
+}
+
+.wx-picker-item {
+  font-size: 40rpx !important;
+  height: 90rpx !important;
+  line-height: 90rpx !important;
+}
+
+.wx-picker-text {
+  font-size: 40rpx !important;
+}

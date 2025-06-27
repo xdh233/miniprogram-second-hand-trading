@@ -45,61 +45,19 @@ Page({
   // 发布动态
   publishPost() {
     console.log('发布动态');
-    
-    // 触感反馈
-    wx.vibrateShort({
-      type: 'light'
+  
+    wx.navigateTo({
+      url: '/pages/publish-post/publish-post'
     });
-
-    // 显示加载提示
-    wx.showLoading({
-      title: '正在跳转...',
-      mask: true
-    });
-
-    setTimeout(() => {
-      wx.hideLoading();
-      wx.showToast({
-        title: '发布动态功能开发中',
-        icon: 'none',
-        duration: 2000
-      });
-    }, 800);
-
-    // 未来启用时使用
-    // wx.navigateTo({
-    //   url: '/pages/publish-post/publish-post'
-    // });
   },
 
   // 发布商品
   publishItem() {
     console.log('发布商品');
-    
-    // 触感反馈
-    wx.vibrateShort({
-      type: 'light'
+
+    wx.navigateTo({
+      url: '/pages/publish-item/publish-item'
     });
-
-    // 显示加载提示
-    wx.showLoading({
-      title: '正在跳转...',
-      mask: true
-    });
-
-    setTimeout(() => {
-      wx.hideLoading();
-      wx.showToast({
-        title: '发布闲置功能开发中',
-        icon: 'none',
-        duration: 2000
-      });
-    }, 800);
-
-    // 未来启用时使用
-    // wx.navigateTo({
-    //   url: '/pages/publish-item/publish-item'
-    // });
   },
 
   // 关闭选择器

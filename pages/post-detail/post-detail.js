@@ -275,7 +275,7 @@ Page({
     const currentUserId =currentUser.id;
     if (post.userId === currentUserId) {
       wx.showToast({
-        title: '不能联系自己',
+        title: '不能私信自己',
         icon: 'none'
       });
       return;

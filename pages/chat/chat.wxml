@@ -1,6 +1,7 @@
 <view class="chat-container">
   <!-- 自定义导航栏 -->
-  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+  <!-- <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;"> -->
+  <view class="custom-nav">
     <view class="nav-left" bindtap="onBackTap">
       <text class="back-icon">‹</text>
     </view>
@@ -14,12 +15,13 @@
   </view>
 
   <!-- 内容容器 - 模仿消息页面结构 -->
-  <view class="content-container" style="padding-top: {{navBarHeight}}px;">
-    
+  <!-- <view class="content-container" style="padding-top: {{navBarHeight}}px;"> -->
+  <view class="content-container">
+  
     <!-- 商品卡片 - 不再fixed，使用普通流布局 -->
     <view class="item-card-fixed" wx:if="{{showItemCard && relatedItem}}" 
           data-item="{{relatedItem}}" bindtap="onItemCardTap">
-      <image class="item-image" src="{{relatedItem.image}}" mode="aspectFill"/>
+      <image class="item-image" src="{{relatedItem.images[0]}}" mode="aspectFill"/>
       <view class="item-info">
         <text class="item-title">{{relatedItem.title}}</text>
         <text class="item-price">￥{{relatedItem.price}}</text>

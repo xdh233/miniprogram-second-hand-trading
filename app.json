@@ -10,7 +10,9 @@
     "pages/logs/logs",
     "pages/item-detail/item-detail",
     "pages/chat/chat",
-    "pages/post-detail/post-detail"
+    "pages/post-detail/post-detail",
+    "pages/publish-post/publish-post",
+    "pages/publish-item/publish-item"
   ],
   "window": {
     "backgroundTextStyle": "light",

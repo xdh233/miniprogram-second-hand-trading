@@ -1,6 +1,7 @@
 // pages/chat/chat.js - 聊天页面
 const userManager = require('../../utils/userManager');
 const messageManager = require('../../utils/messageManager');
+const itemManager = require('../../utils/itemManager');
 
 Page({
   data: {
@@ -19,24 +20,11 @@ Page({
     // 输入框相关
     inputBottom: 0,
     keyboardHeight: 0,
-    // 状态栏高度
-    statusBarHeight: 0,
-    navBarHeight: 0
   },
 
   onLoad(options) {
     console.log('聊天页面加载，参数:', options);
-    
-    // 获取状态栏高度
-    const systemInfo = wx.getWindowInfo(); // 获取窗口信息，包含statusBarHeight
-    const itemCardHeight = 91; // 恢复合适的商品卡片高度
-    
-    this.setData({
-      statusBarHeight: systemInfo.statusBarHeight,
-      navBarHeight: systemInfo.statusBarHeight + 44, // 44是导航栏内容高度
-      itemCardHeight: itemCardHeight
-    });
-    
+
     // 检查登录状态
     if (!userManager.isLoggedIn()) {
       wx.redirectTo({
@@ -49,7 +37,7 @@ Page({
     this.setData({ userInfo });
 
     // 获取聊天参数
-    const { userId, itemId } = options;
+    const { userId, itemId, postId } = options;
     
     if (!userId) {
       wx.showToast({
@@ -60,7 +48,7 @@ Page({
       return;
     }
 
-    this.initChat(parseInt(userId), itemId);
+    this.initChat(parseInt(userId), itemId, postId);
   },
 
   onShow() {
@@ -78,7 +66,7 @@ Page({
   },
 
   // 初始化聊天
-  async initChat(otherUserId, itemId) {
+  async initChat(otherUserId, itemId, postId) {
     try {
       const otherUser = await userManager.getUserInfo(otherUserId);
       
@@ -93,6 +81,18 @@ Page({
         // 如果已存在聊天，使用原有的聊天信息
         chatData = existingChat;
         console.log('使用已存在的聊天:', chatData);
+
+        // 如果传入了新的itemId，更新商品卡片
+        if (itemId && itemId != existingChat.relatedItem?.id) {
+          console.log('需要更新商品，原商品ID:', existingChat.relatedItem?.id, '新商品ID:', itemId);
+          const newItem = await this.getItemInfo(itemId);
+          chatData.relatedItem = newItem;
+          
+          // 更新聊天记录中的商品信息
+          const updateResult = messageManager.updateChatItem(chatData.chatId, newItem);
+          console.log('更新结果:', updateResult);
+        }
+
       } else {
         // 如果不存在，创建新聊天
         let relatedItem = null;
@@ -107,14 +107,17 @@ Page({
           relatedItem
         );
       }
-  
+      
       this.setData({
         otherUser: otherUser.data.userInfo,
         chatId: chatData.chatId,
         relatedItem: chatData.relatedItem, // 使用原有的商品信息
         showItemCard: !!chatData.relatedItem
       });
-  
+      // 设置对方名称
+      wx.setNavigationBarTitle({
+        title: otherUser.nickname
+      });
       this.loadMessages();
   
     } catch (error) {
@@ -122,17 +125,13 @@ Page({
     }
   },
 
-  // 获取商品信息（需要根据你的商品管理模块实现）
+  // 获取商品信息
   async getItemInfo(itemId) {
-    // 这里应该调用你的商品管理模块
-    // 暂时返回模拟数据
-    return {
-      id: itemId,
-      title: '护眼台灯 全新未拆封',
-      price: '80',
-      image: '/images/lamp1.jpg',
-      status: 'available'
-    };
+    console.log('获取商品信息, itemId:', itemId);
+    const item = itemManager.getItemById(itemId);
+
+    console.log('返回商品信息:', item);
+    return item;
   },
 
   // 加载消息
@@ -278,7 +277,7 @@ Page({
 
   // 发送图片消息
   sendImageMessage() {
-    wx.chooseImage({
+    wx.chooseMedia({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],

@@ -1,4 +1,5 @@
 {
+  "navigationBarTitleText": "聊天",
   "navigationStyle": "custom",
   "enablePullDownRefresh": false,
   "backgroundTextStyle": "dark"

@@ -33,7 +33,7 @@ class MessageManager {
         isPinned: false,
         isMuted: false,
         relatedItem: {
-          id: 'item_2',
+          id: 3,
           title: '护眼台灯 全新未拆封',
           price: '80',
           image: '/images/lamp1.jpg'
@@ -506,19 +506,28 @@ class MessageManager {
 
   //查看两id间是否已存在聊天
   findExistingChat(userId1, userId2) {
-    const chats = wx.getStorageSync('chats') || {};
-    
-    for (let chatId in chats) {
-      const chat = chats[chatId];
-      if ((chat.user1Id === userId1 && chat.user2Id === userId2) ||
-          (chat.user1Id === userId2 && chat.user2Id === userId1)) {
-        return chat;
-      }
-    }
-    
-    return null;
+    const chats = this.getAllChats(); 
+    const chatId = this.generateChatId(userId1, userId2);
+
+    return chats.find(chat => chat.chatId === chatId) || null;
   }
 
+  //更新商品
+  updateChatItem(chatId, newItem) {
+    const chats = this.getAllChats();
+    const chatIndex = chats.findIndex(chat => chat.chatId === chatId);
+    
+    if (chatIndex !== -1) {
+      chats[chatIndex].relatedItem = newItem;
+      this.saveChats(chats); // 使用现有的保存方法
+      console.log('已更新商品卡片:', newItem); // 添加日志
+      return true;
+    }
+      
+    console.log('未找到聊天，无法更新商品卡片'); // 添加日志
+    return false;
+  }
+  
   // 获取聊天统计信息
   getChatStats(userId) {
     const chats = this.getUserChats(userId);

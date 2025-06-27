@@ -1,205 +1,144 @@
 <!-- pages/publish-item/publish-item.wxml -->
-<view class="container">
-  <!-- 图片上传区域 -->
-  <view class="image-section">
-    <view class="section-title">商品图片 <text class="required">*</text></view>
-    <view class="image-upload">
-      <view class="image-list">
-        <view class="image-item" wx:for="{{images}}" wx:key="index">
-          <image class="uploaded-image" src="{{item}}" mode="aspectFill" />
-          <view class="image-delete" bindtap="deleteImage" data-index="{{index}}">
-            <icon type="cancel" size="16" color="white" />
+<view class="publish-container">
+  
+  <!-- 内容容器 -->
+  <view class="content-container">
+    
+    <!-- 商品图片 -->
+    <view class="form-section">
+      <view class="section-title">商品图片 <text class="required">*</text></view>
+      <view class="image-grid">
+        <!-- 已选择的图片 -->
+        <view class="image-item" 
+              wx:for="{{images}}" 
+              wx:key="index"
+              data-index="{{index}}"
+              bindtap="previewImage">
+          <image class="image" src="{{item.url}}" mode="aspectFill"/>
+          <view class="delete-btn" 
+                data-index="{{index}}" 
+                bindtap="deleteImage">
+            <text class="delete-icon">×</text>
           </view>
         </view>
-        <view class="add-image" wx:if="{{images.length < 6}}" bindtap="chooseImage">
-          <icon type="plus" size="30" color="#ccc" />
+        
+        <!-- 添加图片按钮 -->
+        <view class="add-image-btn" 
+              wx:if="{{images.length < maxImages}}"
+              bindtap="chooseImages">
+          <text class="add-icon">+</text>
           <text class="add-text">添加图片</text>
         </view>
       </view>
-      <view class="image-tip">最多上传6张图片，第一张为封面图</view>
-    </view>
-  </view>
-
-  <!-- 基本信息 -->
-  <view class="form-section">
-    <view class="section-title">基本信息</view>
-    
-    <view class="form-item">
-      <view class="form-label">商品标题 <text class="required">*</text></view>
-      <input 
-        class="form-input" 
-        placeholder="请输入商品标题，不超过50字" 
-        value="{{formData.title}}"
-        bindinput="onTitleInput"
-        maxlength="50"
-      />
-      <view class="char-count">{{formData.title.length}}/50</view>
+      <view class="image-tip">
+        <text>{{images.length}}/{{maxImages}} 张图片，第一张为封面图</text>
+      </view>
     </view>
 
-    <view class="form-item">
-      <view class="form-label">商品分类 <text class="required">*</text></view>
-      <picker 
-        class="form-picker" 
-        range="{{categories}}" 
-        range-key="name"
-        value="{{categoryIndex}}"
-        bindchange="onCategoryChange"
-      >
-        <view class="picker-display">
-          {{categories[categoryIndex].name || '请选择分类'}}
-          <icon class="picker-arrow" type="success_no_circle" size="16" />
+    <!-- 商品标题 -->
+    <view class="form-section">
+      <view class="section-title">商品标题 <text class="required">*</text></view>
+      <!-- 将 input 改为 textarea -->
+      <textarea class="text-input"
+                placeholder="简洁描述商品特点，如：九成新 MacBook Pro 13寸"
+                placeholder-class="input-placeholder"
+                value="{{title}}"
+                bindinput="onTitleInput"
+                maxlength="50"
+                auto-height/>
+      <view class="text-count">{{title.length}}/50</view>
+    </view>
+
+    <!-- 价格信息 -->
+    <view class="form-section">
+      <view class="section-title">价格信息 <text class="required">*</text></view>
+      <view class="price-row">
+        <view class="price-item">
+          <text class="price-label">出售价格</text>
+          <view class="price-input-wrapper">
+            <text class="currency">¥</text>
+            <input class="price-input"
+                   placeholder="0.00"
+                   placeholder-class="input-placeholder"
+                   value="{{price}}"
+                   bindinput="onPriceInput"
+                   type="digit"/>
+          </view>
         </view>
-      </picker>
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">商品价格 <text class="required">*</text></view>
-      <view class="price-input-wrapper">
-        <text class="price-symbol">¥</text>
-        <input 
-          class="price-input" 
-          type="digit"
-          placeholder="0.00"
-          value="{{formData.price}}"
-          bindinput="onPriceInput"
-        />
-        <view class="negotiable-wrapper">
-          <checkbox 
-            checked="{{formData.isNegotiable}}" 
-            bindtap="toggleNegotiable"
-          />
-          <text class="negotiable-text">可议价</text>
+        <view class="price-item">
+          <text class="price-label">原价（可选）</text>
+          <view class="price-input-wrapper">
+            <text class="currency">¥</text>
+            <input class="price-input"
+                   placeholder="0.00"
+                   placeholder-class="input-placeholder"
+                   value="{{originalPrice}}"
+                   bindinput="onOriginalPriceInput"
+                   type="digit"/>
+          </view>
         </view>
       </view>
     </view>
 
-    <view class="form-item">
-      <view class="form-label">新旧程度 <text class="required">*</text></view>
-      <picker 
-        class="form-picker" 
-        range="{{conditions}}"
-        value="{{conditionIndex}}"
-        bindchange="onConditionChange"
-      >
-        <view class="picker-display">
-          {{conditions[conditionIndex] || '请选择新旧程度'}}
-          <icon class="picker-arrow" type="success_no_circle" size="16" />
-        </view>
-      </picker>
-    </view>
-  </view>
-
-  <!-- 详细描述 -->
-  <view class="form-section">
-    <view class="section-title">详细描述</view>
-    <view class="form-item">
-      <textarea 
-        class="form-textarea"
-        placeholder="请详细描述商品的状况、购买时间、使用情况等，让买家更了解您的商品"
-        value="{{formData.description}}"
-        bindinput="onDescriptionInput"
-        maxlength="500"
-        show-confirm-bar="{{false}}"
-      />
-      <view class="char-count">{{formData.description.length}}/500</view>
-    </view>
-  </view>
-
-  <!-- 交易方式 -->
-  <view class="form-section">
-    <view class="section-title">交易方式</view>
-    
-    <view class="trade-methods">
-      <view class="method-item" wx:for="{{tradeMethods}}" wx:key="value">
-        <checkbox 
-          value="{{item.value}}"
-          checked="{{formData.tradeMethods.includes(item.value)}}"
-          bindtap="toggleTradeMethod"
-          data-method="{{item.value}}"
-        />
-        <text class="method-text">{{item.label}}</text>
+    <!-- 商品分类 -->
+    <view class="form-section">
+      <view class="section-title">商品分类 <text class="required">*</text></view>
+      <view class="picker-item" bindtap="showCustomPicker">
+        <text class="picker-text {{category ? '' : 'placeholder'}}">
+          {{categoryName || '请选择分类'}}
+        </text>
+        <text class="picker-arrow">›</text>
       </view>
     </view>
 
-    <view class="form-item" wx:if="{{formData.tradeMethods.includes('face_to_face')}}">
-      <view class="form-label">交易地点</view>
-      <input 
-        class="form-input" 
-        placeholder="如：学校南门、图书馆等" 
-        value="{{formData.tradeLocation}}"
-        bindinput="onTradeLocationInput"
-      />
+    <!-- 自定义选择器弹窗 -->
+    <view class="custom-picker-mask {{showPicker ? 'show' : ''}}" bindtap="hidePicker">
+      <view class="custom-picker" catchtap="">
+        <view class="picker-header">
+          <text class="picker-cancel" bindtap="hidePicker">取消</text>
+          <text class="picker-title">选择分类</text>
+          <text class="picker-confirm" bindtap="confirmPicker">确定</text>
+        </view>
+        <picker-view style="width: 100%; height: 300rpx;" value="{{[categoryIndex]}}" bindchange="onPickerChange">
+          <picker-view-column>
+            <view wx:for="{{categories}}" wx:key="value" class="picker-item-custom">
+              {{item.name}}
+            </view>
+          </picker-view-column>
+        </picker-view>
+      </view>
     </view>
-  </view>
+    <!-- 商品描述 -->
+    <view class="form-section">
+      <view class="section-title">商品描述 <text class="required">*</text></view>
+      <textarea class="textarea-input"
+                placeholder="详细描述商品状况、购买时间、使用情况等..."
+                placeholder-class="input-placeholder"
+                value="{{description}}"
+                bindinput="onDescriptionInput"
+                maxlength="300"
+                auto-height/>
+      <view class="text-count">{{description.length}}/300</view>
+    </view>
 
-  <!-- 联系方式 -->
-  <view class="form-section">
-    <view class="section-title">联系方式</view>
-    
-    <view class="form-item">
-      <view class="form-label">联系电话</view>
-      <input 
-        class="form-input" 
-        type="number"
-        placeholder="请输入手机号码" 
-        value="{{formData.phone}}"
-        bindinput="onPhoneInput"
-      />
+    <!-- 发布提示 -->
+    <view class="publish-tips">
+      <text class="tip-text">• 真实描述商品状况，上传清晰图片</text>
+      <text class="tip-text">• 价格合理，诚信交易</text>
+      <text class="tip-text">• 遵守校园二手交易规范</text>
     </view>
 
-    <view class="form-item">
-      <view class="form-label">微信号</view>
-      <input 
-        class="form-input" 
-        placeholder="请输入微信号（可选）" 
-        value="{{formData.wechat}}"
-        bindinput="onWechatInput"
-      />
-    </view>
   </view>
 
   <!-- 发布按钮 -->
-  <view class="submit-section">
+  <view class="publish-footer">
     <button 
-      class="submit-btn" 
-      bindtap="submitForm" 
-      loading="{{submitting}}"
-      disabled="{{submitting || !isFormValid}}"
+      class="publish-button {{title && price && category && description && images.length > 0 ? 'active' : ''}}"
+      bindtap="publishItem"
+      disabled="{{publishing}}"
     >
-      {{isEditMode ? '保存修改' : '发布商品'}}
+      {{publishing ? '发布中...' : '发布'}}
     </button>
-    
-    <view class="tips" wx:if="{{!isFormValid}}">
-      <icon type="info" size="14" />
-      <text>请完善必填信息：图片、标题、分类、价格、新旧程度</text>
-    </view>
   </view>
 
-  <!-- 预览区域 -->
-  <view class="preview-section" wx:if="{{showPreview}}">
-    <view class="preview-title">预览效果</view>
-    <view class="preview-card">
-      <image class="preview-image" src="{{images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-      <view class="preview-content">
-        <view class="preview-item-title">{{formData.title || '商品标题'}}</view>
-        <view class="preview-price">¥{{formData.price || '0.00'}}</view>
-        <view class="preview-tags">
-          <text class="preview-tag">{{categories[categoryIndex] && categories[categoryIndex].name}}</text>
-          <text class="preview-tag">{{conditions[conditionIndex]}}</text>
-          <text class="preview-tag" wx:if="{{formData.isNegotiable}}">可议价</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 底部占位 -->
-  <view class="bottom-space"></view>
-</view>
-
-<!-- 加载状态 -->
-<view class="loading-mask" wx:if="{{submitting}}">
-  <view class="loading-content">
-    <view class="loading-spinner"></view>
-    <view class="loading-text">{{isEditMode ? '保存中...' : '发布中...'}}</view>
-  </view>
 </view>

@@ -57,7 +57,7 @@ Page({
     if (!itemId) {
       console.error('itemId为空:', itemId);
       wx.showToast({
-        title: '帖子ID无效',
+        title: '商品ID无效',
         icon: 'none'
       });
       return;
@@ -317,14 +317,14 @@ Page({
     
     if (item.sellerId === currentUserId) {
       wx.showToast({
-        title: '不能联系自己',
+        title: '不能私信自己',
         icon: 'none'
       });
       return;
     }
     
     wx.navigateTo({
-      url: `/pages/chat/chat?userId=${item.sellerId}&userName=${item.sellerName}&itemId=${this.data.itemId}`
+      url: `/pages/chat/chat?userId=${item.sellerId}&itemId=${this.data.itemId}`
     });
   },
   // 返回上一页
