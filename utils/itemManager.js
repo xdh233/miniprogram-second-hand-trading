@@ -7,7 +7,7 @@ class ItemManager {
     this.ITEMS_KEY = 'campus_items'; // 存储所有商品的key
     this.CATEGORIES_KEY = 'item_categories'; // 商品分类
     this.LIKED_ITEMS_KEY = 'liked_items'; // 用户收藏的商品
-    this.ITEM_COMMENTS_KEY = 'item_comments'; // 商品评论存储key
+    this.COMMENTS_KEY = 'item_comments'; // 商品评论存储key
     this.init();
   }
 
@@ -17,7 +17,6 @@ class ItemManager {
     if (items.length === 0) {
       this.createMockData();
     }
-    
     // 初始化分类数据
     const categories = this.getCategories();
     if (categories.length === 0) {
@@ -27,18 +26,82 @@ class ItemManager {
     // 初始化测试评论数据
     this.initTestItemComments();
   }
+  
+  // 初始化时添加一些测试评论数据
+  initTestItemComments() {
+    const existingComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
+    if (existingComments.length === 0) {
+      const testComments = [
+        {
+          id: 1,
+          itemId: 1, // 这里需要对应实际的商品ID
+          userId: 3,
+          userNickname: '蛋黄',
+          avatar: '/images/default-avatar.png',
+          content: '这个商品看起来不错，还有货吗？',
+          isAuthor: false,
+          likes: 5,
+          isLiked: false,
+          createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          timeAgo: '2小时前'
+        },
+        {
+          id: 2,
+          itemId: 1, 
+          userId: 1,
+          userNickname: '三张',
+          avatar: '/images/default-avatar.png',
+          content: '主播我也想玩。',
+          isAuthor: false,
+          likes: 3,
+          isLiked: true,
+          createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          timeAgo: '2小时前',
+        },
+        {
+          id: 3,
+          itemId: 2, 
+          userId: 1,
+          userNickname: '三张',
+          avatar: '/images/default-avatar.png',
+          content: '主播我也想玩。',
+          isAuthor: false,
+          likes: 3,
+          isLiked: true,
+          createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          timeAgo: '2小时前',
+        },
+        {
+          id: 4,
+          itemId: 2, 
+          userId: 1,
+          userNickname: '三张',
+          avatar: '/images/default-avatar.png',
+          content: '主播我也想玩。',
+          isAuthor: false,
+          likes: 3,
+          isLiked: true,
+          createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          timeAgo: '2小时前',
+        }
+        // 可以添加更多测试评论
+      ];
+      
+      wx.setStorageSync(this.COMMENTS_KEY, testComments);
+    }
+  }
 
   // 初始化商品分类
   initCategories() {
     const categories = [
-      { id: 1, name: '数码电子', icon: '📱', description: '手机、电脑、相机等' },
-      { id: 2, name: '生活用品', icon: '🏠', description: '日用品、家居用品等' },
-      { id: 3, name: '学习用品', icon: '📚', description: '书籍、文具、学习资料等' },
-      { id: 4, name: '服装配饰', icon: '👕', description: '衣服、鞋子、包包等' },
-      { id: 5, name: '运动器材', icon: '⚽', description: '运动用品、健身器材等' },
-      { id: 6, name: '化妆护肤', icon: '💄', description: '化妆品、护肤品等' },
-      { id: 7, name: '食品零食', icon: '🍿', description: '零食、特产等' },
-      { id: 8, name: '其他商品', icon: '🎁', description: '其他未分类商品' }
+      { id: 1, name: '数码电子', icon: '📱' },
+      { id: 2, name: '生活用品', icon: '🏠' },
+      { id: 3, name: '学习用品', icon: '📚' },
+      { id: 4, name: '服装配饰', icon: '👕' },
+      { id: 5, name: '运动器材', icon: '⚽' },
+      { id: 6, name: '化妆护肤', icon: '💄' },
+      { id: 7, name: '食品零食', icon: '🍿' },
+      { id: 8, name: '其他商品', icon: '🎁' }
     ];
     
     wx.setStorageSync(this.CATEGORIES_KEY, categories);
@@ -48,7 +111,7 @@ class ItemManager {
   createMockData() {
     const mockItems = [
       {
-        id: this.generateId(),
+        id: 1,
         title: 'iPhone 13 Pro 128GB 深空灰色',
         description: '自用iPhone 13 Pro，购买不到一年，九成五新。功能完好，外观无明显划痕，一直贴膜使用。包装盒和配件齐全，支持当面验货。因为换了新机型所以出售，价格可小刀。',
         price: '4500',
@@ -60,13 +123,31 @@ class ItemManager {
         sellerNickname: '三张',
         sellerAvatar: '/images/default-avatar.jpg',
         status: 'active',
-        publishTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        createTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         timeAgo: '2天前',
         viewCount: 25,
         likeCount: 3,
       },
       {
-        id: this.generateId(),
+        id: 2,
+        title: 'xbox游戏手柄',
+        description: 'xbox游戏手柄 黑色 买来未使用过一直闲置 适配pc端',
+        price: '315',
+        images: ['/images/xbox.png'],
+        categoryId: 1,
+        category: '数码电子',
+        sellerId: 2,
+        sellerName: '李四',
+        sellerNickname: '四李',
+        sellerAvatar: '/images/default-avatar.jpg',
+        status: 'active',
+        createTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '一天前',
+        viewCount: 120,
+        likeCount: 7,
+      },
+      {
+        id: 3,
         title: '护眼台灯 全新未拆封',
         description: '全新护眼台灯，买重了，原价120，现80出售。品牌是飞利浦，有护眼认证，适合学习使用。',
         price: '80',
@@ -78,20 +159,56 @@ class ItemManager {
         sellerNickname: '四李',
         sellerAvatar: '/images/default-avatar.jpg',
         status: 'active',
-        publishTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        createTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         timeAgo: '一天前',
         viewCount: 12,
         likeCount: 1,
+      },
+      {
+        id: 4,
+        title: '嵌入式技术第五版',
+        description: '物联网专业选修课 嵌入式系统与技术的教科书 收的二手 现在考完了转卖',
+        price: '10',
+        images: ['/images/lamp1.jpg'],
+        categoryId: 3,
+        category: '学习用品',
+        sellerId: 2,
+        sellerName: '李四',
+        sellerNickname: '四李',
+        sellerAvatar: '/images/embedded.jpg',
+        status: 'active',
+        createTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '一天前',
+        viewCount: 32,
+        likeCount: 2,
       }
     ];
-
-    wx.setStorageSync(this.ITEMS_KEY, mockItems);
+    this.saveItems(mockItems);
     console.log('初始化商品模拟数据');
   }
-
-  // 生成唯一ID
-  generateId() {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  
+  // 获取单个商品详情
+  getItemDetail(itemId) {
+    return new Promise((resolve, reject) => {
+      console.log('getItemDetail 被调用，itemId:', itemId, '类型:', typeof itemId);
+      
+      const items = this.getAllItems();
+      console.log('所有商品:', items);
+      console.log('商品ID列表:', items.map(p => ({ id: p.id, type: typeof p.id })));
+      
+      // 确保类型匹配
+      const item = items.find(p => p.id == itemId);
+      console.log('找到的商品:', item);
+      
+      if (item) {
+        // 更新时间显示
+        item.timeAgo = sharedTools.formatTimeAgo(item.createTime);
+        resolve(item);
+      } else {
+        console.log('未找到商品，itemId:', itemId);
+        reject({ message: '商品不存在' });
+      }
+    });
   }
 
   // 获取商品列表
@@ -102,7 +219,7 @@ class ItemManager {
       const endIndex = startIndex + limit;
       
       // 按时间倒序排列
-      allItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+      allItems.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
       
       const items = allItems.slice(startIndex, endIndex);
       const hasMore = endIndex < allItems.length;
@@ -118,6 +235,7 @@ class ItemManager {
     });
   }
 
+  // 获得所有商品
   getAllItems() {
     try {
       return wx.getStorageSync(this.ITEMS_KEY) || [];
@@ -127,9 +245,27 @@ class ItemManager {
     }
   }
 
-  getItemComments(itemId) {
+  // 保存商品
+  saveItems(items) {
     try {
-      const allComments = wx.getStorageSync(this.ITEM_COMMENTS_KEY) || [];
+      wx.setStorageSync(this.ITEMS_KEY, items);
+      return true;
+    } catch (error) {
+      console.error('保存商品失败:', error);
+      return false;
+    }
+  }
+
+  // 根据ID获取单个商品
+  getItemById(itemId) {
+    const items = this.getAllItems();
+    return items.find(item => item.id == itemId);
+  }
+
+  // 获得商品评论
+  getCommentByItemId(itemId) {
+    try {
+      const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
       // 筛选出该商品的评论，按时间正序排列
       return allComments
         .filter(comment => comment.itemId == itemId)
@@ -140,14 +276,22 @@ class ItemManager {
     }
   }
 
-  saveItemComment(itemId, content, userId, userInfo) {
+  // 添加并保存评论
+  addCommentByItemId(itemId, content) {
     return new Promise((resolve, reject) => {
       try {
         if (!content.trim()) {
           reject({ message: '评论内容不能为空' });
           return;
         }
-  
+        // 获取当前用户信息
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
         // 获取商品信息，判断是否为楼主
         const item = this.getItemById(itemId);
         if (!item) {
@@ -155,98 +299,110 @@ class ItemManager {
           return;
         }
   
-        const isAuthor = item.sellerId === userId;
+        const isAuthor = item.sellerId === currentUser.id;
         
-        const allComments = wx.getStorageSync(this.ITEM_COMMENTS_KEY) || [];
-        
+        const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
         const newComment = {
           id: Date.now().toString(),
           itemId: itemId,
-          userId: userId,
-          username: userInfo.username || userInfo.name,
-          avatar: userInfo.avatar || '/images/default-avatar.png',
+          userId: currentUser.id,
+          userNickname: currentUser.nickname || currentUser.name,
+          avatar: currentUser.avatar || '/images/default-avatar.png',
           content: content.trim(),
+          likes: 0,
+          isLiked: false,
           isAuthor: isAuthor,
           createTime: new Date().toISOString(),
           timeAgo: '刚刚'
         };
   
-        allComments.push(newComment);
-        wx.setStorageSync(this.ITEM_COMMENTS_KEY, allComments);
+        allComments.unshift(newComment);
+        wx.setStorageSync(this.COMMENTS_KEY, allComments);
   
-        // 更新商品的评论数
-        this.updateItemCommentsCount(itemId);
-  
-        resolve(newComment);
+        if (this.saveComments(allComments)) {
+          // 更新商品的评论数
+          this.updateItemCommentsCount(itemId);
+          resolve(newComment);
+        } else {
+          reject({ message: '评论失败，请重试' });
+        }
       } catch (error) {
         console.error('保存评论失败:', error);
         reject({ message: '评论失败，请重试' });
       }
     });
   }
-  updateItemCommentsCount(itemId) {
-    const items = this.getAllItems();
-    const itemIndex = items.findIndex(item => item.id == itemId);
-    
-    if (itemIndex !== -1) {
-      const comments = this.getItemComments(itemId);
-      items[itemIndex].commentsCount = comments.length;
-      this.saveItems(items);
-    }
-  }
-  
-  // 获取商品详情（包含评论）
-  getItemWithComments(itemId) {
-    const item = this.getItemById(itemId);
-    if (!item) {
-      return null;
-    }
-  
-    const comments = this.getItemComments(itemId);
-    
-    // 更新评论的时间显示
-    comments.forEach(comment => {
-      comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
-    });
-  
-    return {
-      ...item,
-      comments: comments,
-      commentsCount: comments.length
-    };
-  }
-  
-  // 初始化时添加一些测试评论数据
-  initTestItemComments() {
-    const existingComments = wx.getStorageSync(this.ITEM_COMMENTS_KEY) || [];
-    if (existingComments.length === 0) {
-      const testComments = [
-        {
-          id: 'comment_1',
-          itemId: 'your_test_item_id_1', // 这里需要对应实际的商品ID
-          userId: 'user_1',
-          username: '买家小明',
-          avatar: '/images/default-avatar.png',
-          content: '这个商品看起来不错，还有货吗？',
-          isAuthor: false,
-          createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          timeAgo: '2小时前'
-        }
-        // 可以添加更多测试评论
-      ];
-      
-      wx.setStorageSync(this.ITEM_COMMENTS_KEY, testComments);
-    }
-  }
-  // 保存商品数据
-  saveItems(items) {
+
+  // 获得所有评论
+  getAllComment(){
     try {
-      wx.setStorageSync(this.ITEMS_KEY, items);
+      return wx.getStorageSync(this.COMMENTS_KEY) || [];
+    } catch (error) {
+      console.error('获取所有评论失败:', error);
+      return [];
+    }
+  }
+
+  // 保存评论
+  saveComments(comments) {
+    try {
+      wx.setStorageSync(this.COMMENTS_KEY, comments);
       return true;
     } catch (error) {
-      console.error('保存商品数据失败:', error);
+      console.error('保存评论失败:', error);
       return false;
     }
+  }
+
+  // 获取商品评论列表 - 支持排序
+  getItemComments(itemId, page = 1, limit = 20, sortType = 'time_desc') {
+    return new Promise((resolve) => {
+      const itemComments = this.getCommentByItemId(itemId);
+      // 根据排序类型进行排序
+      switch (sortType) {
+        case 'hot':
+          // 最热：按点赞数降序，点赞数相同按时间降序
+          itemComments.sort((a, b) => {
+            const likesA = a.likes || 0;
+            const likesB = b.likes || 0;
+            if (likesB !== likesA) {
+              return likesB - likesA; // 点赞数降序
+            }
+            return new Date(b.createTime) - new Date(a.createTime); // 时间降序
+          });
+          break;
+        case 'time_asc':
+          // 最早：按时间升序
+          itemComments.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+          break;
+        case 'time_desc':
+        default:
+          // 最新：按时间降序（默认）
+          itemComments.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+          break;
+      }
+      
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const comments = itemComments.slice(startIndex, endIndex);
+      
+      // 更新时间显示
+      comments.forEach(comment => {
+        comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
+      });
+      
+      console.log(`评论排序 - 类型: ${sortType}, 总数: ${itemComments.length}, 返回: ${comments.length}`);
+      
+      setTimeout(() => {
+        resolve(comments);
+      }, 300);
+    });
+  }
+
+  // 更新商品的评论数
+  updateItemCommentsCount(itemId) {
+    const comments = this.getCommentByItemId(itemId);
+    return comments.length;
   }
 
   // 获取商品分类
@@ -257,12 +413,6 @@ class ItemManager {
       console.error('获取分类数据失败:', error);
       return [];
     }
-  }
-
-  // 根据ID获取单个商品
-  getItemById(itemId) {
-    const items = this.getAllItems();
-    return items.find(item => item.id == itemId);
   }
 
   // 发布新商品
@@ -285,7 +435,7 @@ class ItemManager {
         const category = categories.find(cat => cat.id === itemData.categoryId);
 
         const newItem = {
-          id: this.generateId(),
+          id: Date.now(),
           title: itemData.title,
           description: itemData.description || '',
           price: itemData.price,
@@ -297,7 +447,7 @@ class ItemManager {
           sellerNickname: itemData.sellerNickname || itemData.sellerName || '',
           sellerAvatar: itemData.sellerAvatar || '',
           status: 'active',
-          publishTime: new Date().toISOString(),
+          createTime: new Date().toISOString(),
           viewCount: 0,
           likeCount: 0,
         };
@@ -428,7 +578,7 @@ class ItemManager {
             filteredItems.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
             break;
           case 'time_desc':
-            filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+            filteredItems.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
             break;
           case 'popular':
             filteredItems.sort((a, b) => (b.viewCount + b.likeCount) - (a.viewCount + a.likeCount));
@@ -436,7 +586,7 @@ class ItemManager {
         }
       } else {
         // 默认按发布时间倒序
-        filteredItems.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
+        filteredItems.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
       }
 
       // 添加延迟，与 getItems 保持一致
@@ -451,20 +601,7 @@ class ItemManager {
     const items = this.getAllItems();
     return items
       .filter(item => item.sellerId === sellerId)
-      .sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime));
-  }
-
-  // 获取相关推荐商品
-  getRelatedItems(itemId, categoryId, limit = 4) {
-    const items = this.getAllItems();
-    return items
-      .filter(item => 
-        item.id !== itemId && 
-        item.categoryId === categoryId && 
-        item.status === 'active'
-      )
-      .sort((a, b) => (b.viewCount + b.likeCount) - (a.viewCount + a.likeCount))
-      .slice(0, limit);
+      .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
   }
 
   // 增加浏览次数
@@ -516,28 +653,6 @@ class ItemManager {
     });
   }
 
-  // 获取热门商品
-  getHotItems(limit = 10) {
-    const items = this.getAllItems();
-    return items
-      .filter(item => item.status === 'active')
-      .sort((a, b) => {
-        const scoreA = (a.viewCount || 0) * 1 + (a.likeCount || 0) * 3;
-        const scoreB = (b.viewCount || 0) * 1 + (b.likeCount || 0) * 3;
-        return scoreB - scoreA;
-      })
-      .slice(0, limit);
-  }
-
-  // 获取最新商品
-  getLatestItems(limit = 10) {
-    const items = this.getAllItems();
-    return items
-      .filter(item => item.status === 'active')
-      .sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime))
-      .slice(0, limit);
-  }
-
   // 获取用户收藏的商品
   getLikedItems(userId) {
     try {
@@ -552,43 +667,62 @@ class ItemManager {
   }
 
   // 切换收藏状态
-  toggleLike(itemId, userId) {
-    try {
-      const key = this.LIKED_ITEMS_KEY + '_' + userId;
-      let likedIds = wx.getStorageSync(key) || [];
-      
-      // 使用 == 进行宽松比较
-      const index = likedIds.findIndex(id => id == itemId);
-      const isLiked = index === -1;
-      
-      if (index > -1) {
-        likedIds.splice(index, 1);
-      } else {
-        likedIds.push(itemId);
-      }
-      
-      wx.setStorageSync(key, likedIds);
-      
-      // 更新商品的点赞数
+  toggleLike(itemId) {
+    return new Promise((resolve, reject) => {
       const items = this.getAllItems();
-      const itemIndex = items.findIndex(item => item.id == itemId); // 这里也改为 ==
-      let newLikeCount = 0;
+      const updatedItems = items.map(item => {
+        if (item.id === itemId) {
+          const newLikeState = !item.isLiked;
+          return {
+            ...item,
+            isLiked: newLikeState,
+            likes: newLikeState ? item.likes + 1 : item.likes - 1
+          };
+        }
+        return item;
+      });
       
-      if (itemIndex !== -1) {
-        items[itemIndex].likeCount = (items[itemIndex].likeCount || 0) + (isLiked ? 1 : -1);
-        newLikeCount = items[itemIndex].likeCount;
-        this.saveItems(items);
+      if (this.saveItems(updatedItems)) {
+        const updatedItem = updatedItems.find(p => p.id === itemId);
+        resolve({
+          isLiked: updatedItem.isLiked,
+          likes: updatedItem.likes
+        });
+      } else {
+        reject({ message: '操作失败' });
       }
+    });
+  }
+
+   // 评论点赞/取消点赞
+   toggleCommentLike(commentId) {
+    return new Promise((resolve, reject) => {
+      const comments = this.getAllComment();
+      const commentIndex = comments.findIndex(c => c.id == commentId);
       
-      return {
-        isLiked: isLiked,
-        likes: newLikeCount,
-        likeCount: newLikeCount
-      };
-    } catch (error) {
-      console.error('切换收藏状态失败:', error);
-      throw new Error('收藏操作失败');
-    }
+      if (commentIndex === -1) {
+        reject({ message: '评论不存在' });
+        return;
+      }
+
+      const comment = comments[commentIndex];
+      if (comment.isLiked) {
+        comment.likes = Math.max(0, (comment.likes || 0) - 1);
+        comment.isLiked = false;
+      } else {
+        comment.likes = (comment.likes || 0) + 1;
+        comment.isLiked = true;
+      }
+
+      if (this.saveComments(comments)) {
+        resolve({
+          isLiked: comment.isLiked,
+          likes: comment.likes
+        });
+      } else {
+        reject({ message: '操作失败' });
+      }
+    });
   }
 
   // 清除所有数据（调试用）

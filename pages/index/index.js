@@ -1,4 +1,5 @@
-// pages/index/index.js - 社交帖子流版本
+// pages/index/index.js - 修复版本
+
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
 const sharedTools = require('../../utils/sharedTools');
@@ -12,7 +13,7 @@ Page({
     hasMore: true,
     currentPage: 1,
     searchKeyword: '',
-    sharePostId:''
+    sharePostId: '' // 保持不变
   },
 
   onLoad() {
@@ -24,11 +25,11 @@ Page({
     console.log('=== 首页显示 ===');
     this.checkLoginStatus();
     if (this.data.userInfo) {
-      this.loadPosts(true); //每次显示都刷新数据
+      this.loadPosts(true);
     }
   },
 
-  // 检查登录状态
+  // 检查登录状态 
   checkLoginStatus() {
     console.log('检查登录状态...');
     
@@ -63,7 +64,7 @@ Page({
     }
   },
 
-  // 加载帖子列表
+  // 加载帖子列表 
   async loadPosts(refresh = false) {
     if (this.data.loading) return;
     
@@ -101,7 +102,7 @@ Page({
     }
   },
 
-  // 搜索功能
+  // 搜索功能 
   onSearchInput(e) {
     this.setData({ searchKeyword: e.detail.value });
   },
@@ -137,6 +138,7 @@ Page({
     }
   },
 
+  // 修复1: onShareAppMessage 中的变量引用错误
   onShareAppMessage() {
     const post = this.data.posts.find(p => p.id == this.data.sharePostId);
     
@@ -150,12 +152,13 @@ Page({
     }
     
     return {
-      title: this.data.post?.content.substring(0, 20) || '校园动态',
+      title: post.content.substring(0, 20) || '校园动态', // 改为 post.content
       path: `/pages/post-detail/post-detail?id=${this.data.sharePostId}`,
-      imageUrl: this.data.post?.images?.[0] || '/images/default-share.jpg'
+      imageUrl: post.images?.[0] || '/images/default-share.jpg' // 改为 post.images
     };
   },
-  // 转发帖子 - 设置分享数据
+
+  // 转发帖子 
   onSharePost(e) {
     const postId = e.currentTarget.dataset.id;
     const post = this.data.posts.find(p => p.id == postId);
@@ -169,20 +172,17 @@ Page({
     }
     
     console.log('要分享的帖子:', post);
-    // 设置当前要分享的帖子ID，供 onShareAppMessage 使用
     this.setData({ sharePostId: postId });
   },
 
-  // 格式化分享标题
+  // 修复2: 实际使用 formatShareTitle 方法（可选）
   formatShareTitle(post) {
-    // 添加参数检查
     if (!post || !post.content) {
       return '校园动态';
     }
     
     const authorName = post.userNickname || post.userName || '校园用户';
     
-    // 清理内容并截取
     let contentPreview = post.content.trim();
     if (contentPreview.length > 30) {
       contentPreview = contentPreview.substring(0, 30) + '...';
@@ -191,7 +191,7 @@ Page({
     return `${authorName}: ${contentPreview}`;
   },
 
-  // 评论帖子
+  // 评论帖子 
   onCommentPost(e) {
     const postId = e.currentTarget.dataset.id;
     console.log('评论帖子:', postId);
@@ -200,7 +200,7 @@ Page({
     });
   },
 
-  // 点赞/取消点赞
+  // 点赞/取消点赞 
   async onLikePost(e) {
     const postId = e.currentTarget.dataset.id;
     const postIndex = e.currentTarget.dataset.index;
@@ -208,7 +208,6 @@ Page({
     try {
       const result = await postManager.toggleLike(postId);
       
-      // 更新页面数据
       const posts = this.data.posts;
       posts[postIndex].isLiked = result.isLiked;
       posts[postIndex].likes = result.likes;
@@ -223,7 +222,7 @@ Page({
     }
   },
 
-  // 查看详情
+  // 查看详情 
   onPostTap(e) {
     const postId = e.currentTarget.dataset.id;
     console.log('点击帖子，跳转到详情页:', postId);
@@ -231,11 +230,13 @@ Page({
       url: `/pages/post-detail/post-detail?id=${postId}`
     });
   },
-  // 防止事件冒泡的空方法
+
+  // 防止事件冒泡 
   preventBubble() {
     // 什么都不做，只是阻止事件冒泡
   },
-  // 查看图片
+
+  // 查看图片 
   previewImage(e) {
     const { images, index } = e.currentTarget.dataset;
     wx.previewImage({
@@ -244,20 +245,23 @@ Page({
     });
   },
 
-  // 查看用户主页
   navigateToUserProfile(e) {
     const userId = e.currentTarget.dataset.userid;
     console.log('查看用户主页:', userId);
+    
+    // 可以选择显示开发中提示，或者直接跳转
     wx.showToast({
       title: '用户主页开发中',
       icon: 'none'
     });
-    wx.navigateTo({
-      url: `/pages/user-profile/user-profile?id=${userId}`
-    });
+    
+    // 如果用户主页已开发，取消注释下面的代码
+    // wx.navigateTo({
+    //   url: `/pages/user-profile/user-profile?id=${userId}`
+    // });
   },
 
-  // 下拉刷新
+  // 下拉刷新 
   async onPullDownRefresh() {
     console.log('下拉刷新');
     this.setData({ refreshing: true });
@@ -265,11 +269,11 @@ Page({
     wx.stopPullDownRefresh();
   },
 
-  // 触底加载更多
+  // 触底加载更多 
   onReachBottom() {
     console.log('触底加载更多');
     if (this.data.hasMore && !this.data.loading) {
       this.loadPosts(false);
     }
-  },
+  }
 });

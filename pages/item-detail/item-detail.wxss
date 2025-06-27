@@ -1,88 +1,22 @@
+/* 调试用边框 - 加到你CSS文件最顶部 */
 page {
   background: #f5f5f5;
-  padding-top: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-
 .container {
   min-height: 100vh;
   padding-bottom: 140rpx;
-  padding-top: 0;
-}
-
-/* 头部导航 */
-.header {
-  background: white;
-  padding: 20rpx 30rpx;
-  padding-bottom: 20rpx;
-  display: flex;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  width: 100%;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
-
-.back-btn {
-  width: 60rpx;
-  height: 60rpx;
-  border: 3rpx solid #333;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 30rpx;
-}
-
-.back-icon {
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #333;
-  line-height: 1;
-}
-
-.seller-info {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  flex: 1;
-}
-
-.seller-avatar {
-  width: 60rpx;
-  height: 60rpx;
-  border-radius: 50%;
-}
-
-.seller-name {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #333;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  margin-right: 30rpx;
-}
-
-.action-dots {
-  font-size: 32rpx;
-  color: #666;
-}
-
-.record-btn {
-  width: 60rpx;
-  height: 60rpx;
-  border: 3rpx solid #333;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32rpx;
+.container > view {
+  width: calc(100% - 36rpx) !important;  /* 👈 总宽度减去24rpx */
+  margin: 18rpx !important;              /* 👈 上下左右都是12rpx */
+  box-sizing: border-box !important;
 }
 
 .loading {
@@ -94,13 +28,14 @@ page {
   color: #666;
 }
 
-/* 商品图片轮播 */
+/* 商品图片轮播 - 小间距版 */
 .image-container {
-  position: relative;
   background: white;
   height: 750rpx;
-  width: 100%;
-  margin-top: 140rpx; /* 给头部导航留出更多空间 */
+  border-radius: 12rpx;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .image-swiper {
@@ -127,15 +62,54 @@ page {
   z-index: 10;
 }
 
-/* 商品信息 */
-.product-info {
+/* 商品信息卡片 - 小间距版 */
+.product-card {
   background: white;
-  padding: 30rpx;
-  margin-top: 20rpx;
-  width: 100%;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
 }
 
+/* 卖家信息区域 */
+.seller-section {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.seller-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 30rpx;
+  border: 2rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.seller-info {
+  flex: 1;
+}
+
+.seller-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+/* 商品标题 */
+.product-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15rpx;
+  line-height: 1.4;
+}
+
+/* 商品价格 */
 .product-price {
   font-size: 48rpx;
   font-weight: bold;
@@ -143,175 +117,360 @@ page {
   margin-bottom: 20rpx;
 }
 
-.product-meta {
-  display: flex;
-  gap: 40rpx;
-  font-size: 28rpx;
-  color: #666;
-}
-
 /* 商品描述 */
 .product-description {
-  background: white;
-  padding: 30rpx;
-  margin-top: 20rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.description-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  margin-bottom: 20rpx;
-  color: #333;
-}
-
-.description-content {
   font-size: 28rpx;
   line-height: 1.6;
   color: #666;
-  white-space: pre-line;
+  word-break: break-word;
+  margin-bottom: 20rpx;
 }
 
-/* 评论区 */
-.comments-section {
+/* 分割线 */
+.divider {
+  height: 1rpx;
+  background: #f0f0f0;
+  margin: 20rpx 0;
+}
+
+/* 发布时间和浏览次数 */
+.product-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 评论容器 - 小间距版 */
+.comments-container {
   background: white;
-  padding: 30rpx;
-  margin-top: 20rpx;
-  width: 100%;
+  border-radius: 12rpx;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-.comments-header {
-  font-size: 32rpx;
-  font-weight: 500;
-  margin-bottom: 30rpx;
-  color: #333;
-}
-
-.comment-input {
+/* 评论输入区域 */
+.comment-input-section {
   display: flex;
   align-items: center;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
   gap: 20rpx;
-  margin-bottom: 40rpx;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .user-avatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  background: #ddd;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  border: 2rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 
-.input-box {
+.input-container {
   flex: 1;
+  display: flex;
+  align-items: center;
   background: #f5f5f5;
-  border: 2rpx solid #e0e0e0;
-  border-radius: 50rpx;
-  padding: 20rpx 30rpx;
+  border-radius: 25rpx;
+  padding: 8rpx 16rpx;
+  gap: 12rpx;
+}
+
+.comment-input-field {
+  flex: 1;
   font-size: 28rpx;
+  line-height: 1.4;
+  min-height: 40rpx;
+  border: none;
+  background: transparent;
   color: #333;
+}
+
+.input-placeholder {
+  color: #999;
+}
+
+.send-btn {
+  background: #ccc;
+  color: #fff;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  transition: background 0.3s;
+  min-width: 60rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.send-btn.active {
+  background: #0096c3;
+}
+
+/* 评论标题和排序区域 */
+.comments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.comments-title-section {
+  display: flex;
+  align-items: center;
+}
+
+.comments-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.comments-count {
+  font-size: 28rpx;
+  color: #999;
+  margin-left: 8rpx;
+}
+
+/* 排序标签组样式 */
+.sort-tabs {
+  display: flex;
+  gap: 32rpx;
+}
+
+.sort-tab {
+  padding: 8rpx 0;
+  background: transparent;
+  border: none;
+}
+
+.sort-tab-text {
+  font-size: 28rpx;
+  color: #8e8e93;
+  transition: all 0.3s ease;
+}
+
+.sort-tab.active .sort-tab-text {
+  color: #0096c3;
+  font-weight: 600;
+}
+
+/* 评论列表 */
+.comments-list {
+  padding: 0 24rpx;
 }
 
 .comment-item {
   display: flex;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f8f9fa;
+}
+
+.comment-item:last-child {
+  border-bottom: none;
 }
 
 .comment-avatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  background: #ddd;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  margin-right: 20rpx;
 }
 
-.comment-content {
+.comment-main {
   flex: 1;
 }
 
-.comment-author {
+/* 评论用户信息区域 */
+.comment-user-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.comment-user-left {
+  display: flex;
+  align-items: center;
+}
+
+.comment-username {
   font-size: 28rpx;
   font-weight: 500;
-  margin-bottom: 8rpx;
   color: #333;
+  margin-right: 16rpx;
+}
+
+.author-tag {
+  background: #0096c3;
+  color: white;
+  font-size: 20rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 8rpx;
+  margin-right: 8rpx;
 }
 
 .comment-time {
   font-size: 24rpx;
   color: #999;
-  margin-bottom: 15rpx;
 }
 
-.comment-text {
+/* 评论点赞按钮 */
+.comment-like-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx;
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.comment-like-btn:active {
+  transform: scale(0.9);
+}
+
+.comment-like-icon {
+  width: 28rpx;
+  height: 28rpx;
+  transition: all 0.3s ease;
+}
+
+.comment-like-btn.liked .comment-like-icon {
+  transform: scale(1.1);
+}
+
+.comment-like-count {
+  font-size: 24rpx;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.comment-like-btn.liked .comment-like-count {
+  color: #ff3b30;
+  font-weight: 500;
+}
+
+.comment-content {
   font-size: 28rpx;
   line-height: 1.5;
   color: #333;
+  word-break: break-word;
 }
 
-/* 底部操作栏 */
+/* 加载更多状态 */
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 32rpx;
+  color: #8e8e93;
+  font-size: 28rpx;
+}
+
+.loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 3rpx solid #f3f3f3;
+  border-top: 3rpx solid #0096c3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 没有更多评论 */
+.no-more-comments {
+  text-align: center;
+  padding: 32rpx;
+  color: #8e8e93;
+  font-size: 28rpx;
+}
+
+/* 空状态 */
+.empty-comments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 24rpx;
+}
+
+.empty-icon {
+  width: 144rpx;
+  height: 144rpx;
+  margin-bottom: 16rpx;
+  opacity: 0.6;
+}
+
+.empty-text {
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 底部操作栏 - 简洁版 */
 .bottom-actions {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   background: white;
-  padding: 20rpx 30rpx;
+  padding: 15rpx 20rpx;
   display: flex;
   align-items: center;
-  gap: 30rpx;
+  justify-content: space-between;
   z-index: 100;
   border-top: 1rpx solid #e0e0e0;
+  box-sizing: border-box;
+}
+
+/* 左侧图标区域 - 增加左移 */
+.left-actions {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-left: 40rpx;
 }
 
 .action-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  font-size: 24rpx;
-  color: #666;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.9);
+}
+
+.action-btn.liked {
+  color: #ff4d4f;
 }
 
 .action-icon {
-  width: 50rpx;
-  height: 50rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32rpx;
-  border: 2rpx solid #ddd;
-  border-radius: 10rpx;
-  background: white;
-}
-
-.action-btn.liked .like-icon {
-  background: #ff4d4f;
-  border-color: #ff4d4f;
+  width: 48rpx !important;
+  height: 48rpx !important;
 }
 
 .contact-btn {
-  flex: 1;
-  background: #007AFF;
+  background: #0096c3;
   color: white;
   border: none;
-  padding: 25rpx;
-  border-radius: 15rpx;
+  padding: 20rpx 40rpx;
+  border-radius: 25rpx;
   font-size: 32rpx;
   font-weight: 500;
+  text-align: center;
+  min-width: 200rpx;
 }
 
 .contact-btn::after {
   border: none;
-}
-
-.author-badge {
-  background-color: #0096c3;
-  color: white;
-  font-size: 20rpx;
-  padding: 4rpx 8rpx;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
 }

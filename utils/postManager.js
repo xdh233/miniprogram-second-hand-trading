@@ -35,7 +35,7 @@ class PostManager {
           userNickname: '四李',
           userAvatar: '/images/default-avatar.png',
           content: '图书馆怎么这么多拍照的，我明年一定要到点就跑路。',
-          images: ["/images/default-avatar.png"],
+          images: ["/images/default-avatar.png","/images/xbox.png"],
           likes: 8,
           comments: 3,
           isLiked: false,
@@ -125,6 +125,30 @@ class PostManager {
     this.saveComments(testComments);
   }
 
+  // 获取单个动态详情
+  getPostDetail(postId) {
+    return new Promise((resolve, reject) => {
+      console.log('getPostDetail 被调用，postId:', postId, '类型:', typeof postId);
+      
+      const posts = this.getAllPosts();
+      console.log('所有帖子:', posts);
+      console.log('帖子ID列表:', posts.map(p => ({ id: p.id, type: typeof p.id })));
+      
+      // 确保类型匹配
+      const post = posts.find(p => p.id == postId);
+      console.log('找到的帖子:', post);
+      
+      if (post) {
+        // 更新时间显示
+        post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+        resolve(post);
+      } else {
+        console.log('未找到帖子，postId:', postId);
+        reject({ message: '动态不存在' });
+      }
+    });
+  }
+
   // 获取动态列表（分页）
   getPosts(page = 1, limit = 10) {
     return new Promise((resolve) => {
@@ -170,14 +194,81 @@ class PostManager {
     }
   }
 
-  // 获取所有评论
-  getAllComments() {
+  // 根据ID获取单个商品
+  getPostById(postId) {
+    const posts = this.getAllPosts();
+    return posts.find(post => post.id == postId);
+  }
+
+  // 获得商品评论
+  getCommentByPostId(postId) {
     try {
-      return wx.getStorageSync(this.COMMENTS_KEY) || [];
+      const allComments = this.getAllComment();
+      // 筛选出该商品的评论，按时间正序排列
+      return allComments
+        .filter(comment => comment.postId == postId)
+        .sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
     } catch (error) {
-      console.error('获取评论失败:', error);
+      console.error('获取商品评论失败:', error);
       return [];
     }
+  }
+
+  // 添加并保存评论
+  addCommentByPostId(postId, content) {
+    return new Promise((resolve, reject) => {
+      try{
+        if (!content.trim()) {
+          reject({ message: '评论内容不能为空' });
+          return;
+        }
+        // 获取当前用户信息
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
+        // 获取帖子作者信息
+        const post=this.getPostById(postId);
+        if (!post) {
+          reject({ message: '帖子不存在' });
+          return;
+        }
+  
+        const isAuthor = post.userId === currentUser.id;
+
+        const allComments = this.getAllComment();
+        const newComment = {
+          id: Date.now(),
+          postId: parseInt(postId),
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userNickname: currentUser.nickname || currentUser.name,
+          userAvatar: '/images/default-avatar.png',
+          content: content.trim(),
+          likes: 0,
+          isLiked: false,
+          isAuthor: isAuthor, // 标识是否为楼主
+          createTime: new Date().toISOString(),
+          timeAgo: '刚刚'
+        };
+
+        allComments.unshift(newComment);
+        
+        if (this.saveComments(allComments)) {
+          // 更新帖子的评论数
+          this.updatePostCommentsCount(postId);
+          resolve(newComment);
+        } else {
+          reject({ message: '评论失败，请重试' });
+        }
+      }catch(error){
+        console.error('保存评论失败:', error);
+        reject({ message: '评论失败，请重试' });
+      }
+    });
   }
 
   // 保存评论
@@ -189,6 +280,57 @@ class PostManager {
       console.error('保存评论失败:', error);
       return false;
     }
+  }
+
+  // 获取帖子评论列表 - 支持排序
+  getPostComments(postId, page = 1, limit = 20, sortType = 'time_desc') {
+    return new Promise((resolve) => {
+      const postComments = this.getCommentByPostId(postId);
+      // 根据排序类型进行排序
+      switch (sortType) {
+        case 'hot':
+          // 最热：按点赞数降序，点赞数相同按时间降序
+          postComments.sort((a, b) => {
+            const likesA = a.likes || 0;
+            const likesB = b.likes || 0;
+            if (likesB !== likesA) {
+              return likesB - likesA; // 点赞数降序
+            }
+            return new Date(b.createTime) - new Date(a.createTime); // 时间降序
+          });
+          break;
+        case 'time_asc':
+          // 最早：按时间升序
+          postComments.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+          break;
+        case 'time_desc':
+        default:
+          // 最新：按时间降序（默认）
+          postComments.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+          break;
+      }
+      
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const comments = postComments.slice(startIndex, endIndex);
+      
+      // 更新时间显示
+      comments.forEach(comment => {
+        comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
+      });
+      
+      console.log(`评论排序 - 类型: ${sortType}, 总数: ${postComments.length}, 返回: ${comments.length}`);
+      
+      setTimeout(() => {
+        resolve(comments);
+      }, 300);
+    });
+  }
+
+  // 更新帖子评论数
+  updatePostCommentsCount(postId) {
+    const comments = this.getCommentByPostId(postId);
+    return comments.length;
   }
 
   // 发布动态
@@ -234,30 +376,42 @@ class PostManager {
     });
   }
 
+  // 搜索动态
+  searchPosts(keyword) {
+    return new Promise((resolve) => {
+      const allPosts = this.getAllPosts();
+      const results = allPosts.filter(post => 
+        post.content.includes(keyword) || 
+        post.userNickname.includes(keyword)
+      );
+      
+      setTimeout(() => {
+        resolve(results);
+      }, 300);
+    });
+  }
+
   // 点赞/取消点赞
   toggleLike(postId) {
     return new Promise((resolve, reject) => {
       const posts = this.getAllPosts();
-      const postIndex = posts.findIndex(p => p.id == postId);
+      const updatedPosts = posts.map(post => {
+        if (post.id === postId) {
+          const newLikeState = !post.isLiked;
+          return {
+            ...post,
+            isLiked: newLikeState,
+            likes: newLikeState ? post.likes + 1 : post.likes - 1
+          };
+        }
+        return post;
+      });
       
-      if (postIndex === -1) {
-        reject({ message: '动态不存在' });
-        return;
-      }
-
-      const post = posts[postIndex];
-      if (post.isLiked) {
-        post.likes -= 1;
-        post.isLiked = false;
-      } else {
-        post.likes += 1;
-        post.isLiked = true;
-      }
-
-      if (this.savePosts(posts)) {
+      if (this.savePosts(updatedPosts)) {
+        const updatedPost = updatedPosts.find(p => p.id === postId);
         resolve({
-          isLiked: post.isLiked,
-          likes: post.likes
+          isLiked: updatedPost.isLiked,
+          likes: updatedPost.likes
         });
       } else {
         reject({ message: '操作失败' });
@@ -265,80 +419,20 @@ class PostManager {
     });
   }
 
-  // 获取单个动态详情
-  getPostDetail(postId) {
-    return new Promise((resolve, reject) => {
-      console.log('getPostDetail 被调用，postId:', postId, '类型:', typeof postId);
-      
-      const posts = this.getAllPosts();
-      console.log('所有帖子:', posts);
-      console.log('帖子ID列表:', posts.map(p => ({ id: p.id, type: typeof p.id })));
-      
-      // 确保类型匹配
-      const post = posts.find(p => p.id == postId);
-      console.log('找到的帖子:', post);
-      
-      if (post) {
-        // 更新时间显示
-        post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
-        resolve(post);
-      } else {
-        console.log('未找到帖子，postId:', postId);
-        reject({ message: '动态不存在' });
-      }
-    });
+  // 获得所有评论
+  getAllComment(){
+    try {
+      return wx.getStorageSync(this.COMMENTS_KEY) || [];
+    } catch (error) {
+      console.error('获取所有评论失败:', error);
+      return [];
+    }
   }
 
-  // 获取帖子评论列表 - 支持排序
-  getPostComments(postId, page = 1, limit = 20, sortType = 'time_desc') {
-    return new Promise((resolve) => {
-      const allComments = this.getAllComments();
-      let postComments = allComments.filter(comment => comment.postId == postId);
-      
-      // 根据排序类型进行排序
-      switch (sortType) {
-        case 'hot':
-          // 最热：按点赞数降序，点赞数相同按时间降序
-          postComments.sort((a, b) => {
-            const likesA = a.likes || 0;
-            const likesB = b.likes || 0;
-            if (likesB !== likesA) {
-              return likesB - likesA; // 点赞数降序
-            }
-            return new Date(b.createTime) - new Date(a.createTime); // 时间降序
-          });
-          break;
-        case 'time_asc':
-          // 最早：按时间升序
-          postComments.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
-          break;
-        case 'time_desc':
-        default:
-          // 最新：按时间降序（默认）
-          postComments.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-          break;
-      }
-      
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const comments = postComments.slice(startIndex, endIndex);
-      
-      // 更新时间显示
-      comments.forEach(comment => {
-        comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
-      });
-      
-      console.log(`评论排序 - 类型: ${sortType}, 总数: ${postComments.length}, 返回: ${comments.length}`);
-      
-      setTimeout(() => {
-        resolve(comments);
-      }, 300);
-    });
-  }
    // 评论点赞/取消点赞
    toggleCommentLike(commentId) {
     return new Promise((resolve, reject) => {
-      const comments = this.getAllComments();
+      const comments = this.getAllComment();
       const commentIndex = comments.findIndex(c => c.id == commentId);
       
       if (commentIndex === -1) {
@@ -363,80 +457,6 @@ class PostManager {
       } else {
         reject({ message: '操作失败' });
       }
-    });
-  }
-  // 添加评论
-  addComment(postId, content) {
-    return new Promise((resolve, reject) => {
-      if (!content.trim()) {
-        reject({ message: '评论内容不能为空' });
-        return;
-      }
-
-      // 获取当前用户信息
-      const userManager = require('./userManager');
-      const currentUser = userManager.getCurrentUser();
-
-      if (!currentUser) {
-        reject({ message: '请先登录' });
-        return;
-      }
-      // 获取帖子作者信息
-      const posts = this.getAllPosts();
-      const post = posts.find(p => p.id == postId);
-      const isAuthor = post && post.userId === currentUser.id;
-
-      const comments = this.getAllComments();
-      const newComment = {
-        id: Date.now(),
-        postId: parseInt(postId),
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userNickname: currentUser.nickname || currentUser.name,
-        userAvatar: '/images/default-avatar.png',
-        content: content.trim(),
-        isAuthor: isAuthor, // 标识是否为楼主
-        createTime: new Date().toISOString(),
-        timeAgo: '刚刚'
-      };
-
-      comments.unshift(newComment);
-      
-      if (this.saveComments(comments)) {
-        // 更新帖子的评论数
-        this.updatePostCommentsCount(postId);
-        resolve(newComment);
-      } else {
-        reject({ message: '评论失败，请重试' });
-      }
-    });
-  }
-
-  // 更新帖子评论数
-  updatePostCommentsCount(postId) {
-    const posts = this.getAllPosts();
-    const postIndex = posts.findIndex(p => p.id == postId);
-    
-    if (postIndex !== -1) {
-      const comments = this.getAllComments();
-      const commentsCount = comments.filter(c => c.postId == postId).length;
-      posts[postIndex].comments = commentsCount;
-      this.savePosts(posts);
-    }
-  }
-
-  // 搜索动态
-  searchPosts(keyword) {
-    return new Promise((resolve) => {
-      const allPosts = this.getAllPosts();
-      const results = allPosts.filter(post => 
-        post.content.includes(keyword) || 
-        post.userNickname.includes(keyword)
-      );
-      
-      setTimeout(() => {
-        resolve(results);
-      }, 300);
     });
   }
 

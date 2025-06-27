@@ -5,12 +5,14 @@ Page({
   data: {
     postId: null,
     post: null,
+    userInfo: null,
     comments: [],
+    newCommentContent: '',
     loading: true,
-    commentContent: '',
     loadingMore: false,
     hasMore: true,
     currentPage: 1,
+    currentImageIndex: 0,
     pageSize: 20,
     sortType: 'hot',
   },
@@ -35,7 +37,18 @@ Page({
       }, 2000);
     }
   },
+  // 检查登录状态
+  checkLoginStatus() {
+    if (!userManager.isLoggedIn()) {
+      wx.redirectTo({
+        url: '/pages/login/login'
+      });
+      return;
+    }
 
+    const userInfo = userManager.getCurrentUser();
+    this.setData({ userInfo });
+  },
   // 加载帖子详情
   async loadPostDetail() {
     // 先检查postId是否存在
@@ -47,10 +60,9 @@ Page({
       });
       return;
     }
-
     try {
       this.setData({ loading: true });
-      console.log('正在加载帖子ID:', this.data.postId);
+      console.log('正在加载帖子的ID:', this.data.postId);
       
       const post = await postManager.getPostDetail(this.data.postId);
       console.log('获取到的帖子数据:', post);
@@ -85,7 +97,6 @@ Page({
       }, 3000);
     }
   },
-
   // 加载评论列表
   async loadComments(refresh = false) {
     if (this.data.loadingMore && !refresh) return;
@@ -109,7 +120,8 @@ Page({
         comments: refresh ? comments : [...this.data.comments, ...comments],
         currentPage: page + 1,
         hasMore: comments.length === this.data.pageSize,
-        loadingMore: false
+        loadingMore: false,
+        'post.commentsCount': comments.length
       });
     } catch (error) {
       console.error('加载评论失败:', error);
@@ -136,10 +148,16 @@ Page({
     
     // 重新加载评论
     this.loadComments(true);
+  }, 
+  // 评论内容输入
+  onCommentInput(e) {
+    this.setData({
+      newCommentContent: e.detail.value
+    });
   },
   // 提交评论
   async submitComment() {
-    if (!this.data.commentContent.trim()) {
+    if (!this.data.newCommentContent.trim()) {
       return wx.showToast({
         title: '请输入评论内容',
         icon: 'none'
@@ -147,18 +165,15 @@ Page({
     }
 
     try {
-      console.log('提交评论，postId:', this.data.postId, 'content:', this.data.commentContent);
+      console.log('提交评论，postId:', this.data.postId, 'content:', this.data.newCommentContent);
       
-      await postManager.addComment(this.data.postId, this.data.commentContent);
+      await postManager.addCommentByPostId(this.data.postId, this.data.newCommentContent);
       
-      this.setData({ commentContent: '' });
+      this.setData({ newCommentContent: '' });
       
-      // 刷新评论列表
+      // 刷新评论列表 评论数量
       this.loadComments(true);
-      
-      // 更新帖子的评论数显示
-       this.loadPostDetail();
-      
+
       wx.showToast({
         title: '评论成功',
         icon: 'success'
@@ -168,6 +183,22 @@ Page({
       console.error('提交评论失败:', error);
       wx.showToast({
         title: error.message || '评论失败',
+        icon: 'none'
+      });
+    }
+  },
+  // 点赞/取消点赞
+  async onLikePost() {
+    try {
+      const result = await postManager.toggleLike(this.data.postId);
+      this.setData({
+        'post.isLiked': result.isLiked,
+        'post.likes': result.likes
+      });
+    } catch (error) {
+      console.error('点赞操作失败:', error);
+      wx.showToast({
+        title: error.message || '操作失败',
         icon: 'none'
       });
     }
@@ -195,23 +226,6 @@ Page({
       });
     }
   },
-  // 点赞/取消点赞
-  async onLikePost() {
-    try {
-      const result = await postManager.toggleLike(this.data.post.id);
-      this.setData({
-        'post.isLiked': result.isLiked,
-        'post.likes': result.likes
-      });
-    } catch (error) {
-      console.error('点赞操作失败:', error);
-      wx.showToast({
-        title: error.message || '操作失败',
-        icon: 'none'
-      });
-    }
-  },
-
   // 分享
   onShareAppMessage() {
     const post = this.data.post;
@@ -227,11 +241,10 @@ Page({
     
     return {
       title: this.formatShareTitle(post),
-      path: `/pages/post-detail/post-detail?id=${post.id}`,
+      path: `/pages/post-detail/post-detail?id=${postId}`,
       imageUrl: post.images?.[0] || '/images/default-share.jpg'
     };
   },
-
   // 格式化分享标题 
   formatShareTitle(post) {
     if (!post || !post.content) {
@@ -248,7 +261,6 @@ Page({
     
     return `${authorName}: ${contentPreview}`;
   },
-  
   // 私信
   onPrivateChat() {
     const post = this.data.post;
@@ -270,30 +282,24 @@ Page({
     }
 
     wx.navigateTo({
-      url: `/pages/chat/chat?userId=${post.userId}&userName=${post.userName || post.userNickname}`
+      url: `/pages/chat/chat?userId=${post.userId}&postId=${post.id}`
+    });
+  },
+  // 图片轮播切换
+  onImageChange(e) {
+    const current = e.detail.current;
+    this.setData({
+      currentImageIndex: current
     });
   },
   // 预览图片
   previewImage(e) {
-    const { images, index } = e.currentTarget.dataset;
+    const images = e.currentTarget.dataset.images || this.data.post.images;
+    const index = e.currentTarget.dataset.index || 0;
+    
     wx.previewImage({
       current: images[index],
       urls: images
-    });
-
-    if (this.data.isSeller) {
-      wx.showToast({
-        title: '不能联系自己',
-        icon: 'none'
-      });
-      return;
-    }
-  },
-
-  // 评论内容输入
-  onCommentInput(e) {
-    this.setData({
-      commentContent: e.detail.value
     });
   },
 
@@ -310,4 +316,4 @@ Page({
       this.loadComments();
     }
   }
-})
+});

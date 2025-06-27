@@ -30,20 +30,38 @@
 
       <!-- 图片展示区域 -->
       <view wx:if="{{post.images && post.images.length > 0}}" class="images-section">
-        <view class="images-grid">
-          <image wx:for="{{post.images}}" 
-                 wx:key="*this" 
-                 wx:for-item="img"
-                 wx:for-index="imgIndex"
-                 class="post-image" 
-                 src="{{img}}" 
-                 mode="aspectFill"
-                 data-images="{{post.images}}"
-                 data-index="{{imgIndex}}"
-                 bindtap="previewImage" />
+        <!-- 单图：保持原始比例 -->
+        <view class="single-image" wx:if="{{post.images.length === 1}}">
+          <image 
+            class="post-image-single" 
+            src="{{post.images[0]}}" 
+            mode="widthFix"
+            data-images="{{post.images}}"
+            data-index="0"
+            bindtap="previewImageFixed"
+          />
+        </view>
+        <!-- 多图：智能网格布局 -->
+        <view class="images-grid images-grid-{{post.images.length}}" wx:else>
+          <view 
+            class="grid-item"
+            wx:for="{{post.images}}" 
+            wx:for-item="img"
+            wx:for-index="imgIndex"
+            wx:key="imgIndex"
+          >
+            <image 
+              class="grid-image" 
+              src="{{img}}" 
+              mode="aspectFill"
+              data-images="{{post.images}}"
+              data-index="{{imgIndex}}"
+              bindtap="previewImageFixed"
+            />
+          </view>
         </view>
       </view>
-      
+    
       <!-- 点赞和评论按钮 -->
       <view class="action-buttons">
         <button class="action-btn share-btn" open-type="share">
@@ -122,7 +140,7 @@
         
         <!-- 加载状态 -->
         <view wx:if="{{loadingMore}}" class="loading-more">
-          <text>加载更多评论...</text>
+          <text>加载中...</text>
         </view>
         
         <view wx:if="{{!hasMore && comments.length > 0}}" class="no-more-comments">
@@ -147,7 +165,7 @@
       <input class="comment-input"
             placeholder="输入消息..."
             placeholder-class="input-placeholder"
-            value="{{commentContent}}"
+            value="{{newCommentContent}}"
             bindinput="onCommentInput"
             bindconfirm="submitComment"
             adjust-position="{{false}}"
@@ -155,7 +173,7 @@
             confirm-type="send"/>
       
       <!-- 发送按钮 -->
-      <view class="send-btn {{commentContent ? 'active' : ''}}" 
+      <view class="send-btn {{newCommentContent ? 'active' : ''}}" 
             bindtap="submitComment">
         <text>发送</text>
       </view>

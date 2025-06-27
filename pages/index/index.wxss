@@ -1,4 +1,4 @@
-/* pages/index/index.wxss - 优化版帖子流 */
+/* pages/index/index.wxss - 完整优化版 */
 
 page {
   background-color: #fff;
@@ -11,7 +11,7 @@ page {
   background: #fff;
   margin: 0;
   padding: 0;
-  position: absolute; /* 绝对定位 */
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -60,15 +60,15 @@ page {
 /* 帖子容器 */
 .posts-container {
   flex: 1;
-  background: #fff; /* 改为白色背景 */
+  background: #fff;
 }
 
 /* 帖子卡片 */
 .post-card {
   background: white;
   padding: 30rpx;
-  margin: 0 0 20rpx 0; /* 增加底部间距，用白色背景分隔 */
-  border-bottom: 20rpx solid #f5f5f5; /* 用边框创建分隔效果 */
+  margin: 0 0 20rpx 0;
+  border-bottom: 20rpx solid #f5f5f5;
   transition: all 0.2s ease;
 }
 
@@ -78,7 +78,7 @@ page {
 }
 
 .post-card:last-child {
-  border-bottom: none; /* 最后一个卡片不需要分隔 */
+  border-bottom: none;
 }
 
 /* 用户信息栏 */
@@ -94,7 +94,6 @@ page {
   border-radius: 50%;
   margin-right: 20rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  /* 头像可点击的视觉提示 */
   transition: opacity 0.2s ease;
 }
 
@@ -106,12 +105,10 @@ page {
   flex: 1;
 }
 
-/* 昵称行容器 */
 .user-name-row {
   margin-bottom: 6rpx;
 }
 
-/* 昵称样式 - 关键修改：使用 display: inline-block */
 .user-name {
   font-size: 32rpx;
   color: #333;
@@ -143,56 +140,123 @@ page {
   word-wrap: break-word;
 }
 
-/* 图片内容 */
+/* ✅ 优化后的图片样式 */
 .post-images {
-  margin-bottom: 20rpx;
+  margin: 20rpx 0;
 }
 
-/* 单图显示 */
+/* 单图样式 */
 .single-image {
-  width: 100%;
+  border-radius: 12rpx;
+  overflow: hidden;
 }
 
+.post-image-single {
+  width: 100%;
+  max-height: 600rpx;
+  border-radius: 12rpx;
+}
+
+/* 多图网格样式 */
+.images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.grid-item {
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.grid-image {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+}
+
+/* 2张图片：一行两个 */
+.images-grid-2 .grid-item {
+  width: calc(50% - 4rpx);
+  height: 200rpx;
+}
+
+/* 3张图片：第一张大图，后两张小图 */
+.images-grid-3 .grid-item:first-child {
+  width: 100%;
+  height: 240rpx;
+}
+
+.images-grid-3 .grid-item:not(:first-child) {
+  width: calc(50% - 4rpx);
+  height: 160rpx;
+}
+
+/* 4张图片：2x2网格 */
+.images-grid-4 .grid-item {
+  width: calc(50% - 4rpx);
+  height: 180rpx;
+}
+
+/* 5张图片：前两张一行，后三张一行 */
+.images-grid-5 .grid-item:nth-child(-n+2) {
+  width: calc(50% - 4rpx);
+  height: 180rpx;
+}
+
+.images-grid-5 .grid-item:nth-child(n+3) {
+  width: calc(33.33% - 6rpx);
+  height: 140rpx;
+}
+
+/* 6张图片：2行，每行3个 */
+.images-grid-6 .grid-item {
+  width: calc(33.33% - 6rpx);
+  height: 160rpx;
+}
+
+/* 7-9张图片：3行，每行最多3个 */
+.images-grid-7 .grid-item,
+.images-grid-8 .grid-item,
+.images-grid-9 .grid-item {
+  width: calc(33.33% - 6rpx);
+  height: 140rpx;
+}
+
+/* 超过9张图片，隐藏多余的 */
+.images-grid .grid-item:nth-child(n+10) {
+  display: none;
+}
+
+/* 🗑️ 删除旧的图片样式（这些现在不需要了） */
+/*
 .post-image {
   width: 100%;
   max-width: 500rpx;
   border-radius: 12rpx;
 }
 
-/* 多图网格 */
-.images-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-}
-
-.grid-image {
-  border-radius: 12rpx;
-  background: #f0f0f0;
-}
-
-/* 2图布局 */
 .grid-2 .grid-image {
   width: calc(50% - 4rpx);
   height: 280rpx;
 }
 
-/* 3图布局（默认） */
 .images-grid:not(.grid-2):not(.grid-4) .grid-image {
   width: calc(33.33% - 6rpx);
   height: 180rpx;
 }
 
-/* 4图布局 */
 .grid-4 .grid-image {
   width: calc(50% - 4rpx);
   height: 180rpx;
 }
 
-/* 超过4图的布局 */
 .images-grid:not(.grid-2):not(.grid-4) .grid-image:nth-child(n+4) {
   display: none;
 }
+*/
 
 /* 互动栏 */
 .post-actions {
@@ -202,6 +266,7 @@ page {
   margin-top: 20rpx;
   border-top: 1rpx solid #f0f0f0;
 }
+
 /* 重置分享按钮样式 */
 .share-button {
   background: none;
@@ -219,6 +284,7 @@ page {
 .share-button::after {
   border: none;
 }
+
 .action-item {
   flex: 1;
   display: flex;
@@ -258,7 +324,7 @@ page {
   padding: 40rpx;
   color: #999;
   font-size: 28rpx;
-  background: #fff; /* 改为白色背景 */
+  background: #fff;
 }
 
 /* 空状态 */
@@ -268,7 +334,7 @@ page {
   align-items: center;
   justify-content: center;
   padding: 200rpx 40rpx;
-  background: #fff; /* 改为白色背景 */
+  background: #fff;
 }
 
 .empty-text {
@@ -310,4 +376,54 @@ page {
 .loading-text {
   font-size: 28rpx;
   color: #666;
+}
+
+/* 📱 响应式适配 */
+@media screen and (max-width: 750rpx) {
+  .post-image-single {
+    max-height: 500rpx;
+  }
+  
+  .images-grid-3 .grid-item:first-child {
+    height: 200rpx;
+  }
+  
+  .images-grid-3 .grid-item:not(:first-child) {
+    height: 130rpx;
+  }
+}
+
+/* 🎨 额外的视觉效果 */
+.grid-item {
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.grid-item:active {
+  transform: scale(0.95);
+}
+
+/* 图片加载状态 */
+.grid-image,
+.post-image-single {
+  transition: opacity 0.3s ease;
+}
+
+.grid-image[lazy-load="loading"],
+.post-image-single[lazy-load="loading"] {
+  opacity: 0.6;
+}
+
+/* 图片数量徽章（可选） */
+.images-grid::after {
+  content: attr(data-count) "张图片";
+  position: absolute;
+  bottom: 10rpx;
+  right: 10rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4rpx 8rpx;
+  border-radius: 12rpx;
+  font-size: 20rpx;
+  display: none; /* 默认隐藏，需要时可以显示 */
 }

@@ -1,16 +1,5 @@
 <!--item-detail.wxml-->
 <view class="container">
-  <!-- 头部导航 -->
-  <view class="header" style="padding-top: {{statusBarHeight + 20}}rpx;">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
-    </view>
-    <view class="seller-info" bindtap="navigateToSellerProfile">
-      <image class="seller-avatar" src="{{item.seller.avatar}}" mode="aspectFill"></image>
-      <text class="seller-name">{{item.seller.username}}</text>
-    </view>
-  </view>
-
   <view wx:if="{{loading}}" class="loading">
     <text>加载中...</text>
   </view>
@@ -28,44 +17,122 @@
       <view class="image-indicator">{{currentImageIndex + 1}}/{{item.images.length}}</view>
     </view>
 
-    <!-- 商品信息 -->
-    <view class="product-info">
+    <!-- 商品信息卡片 -->
+    <view class="product-card">
+      <!-- 卖家信息区域 - 移到商品卡片内部 -->
+      <view class="seller-section" wx:if="{{item}}" bindtap="navigateToSellerProfile">
+        <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <view class="seller-info">
+          <text class="seller-name">{{item.sellerName || item.sellerNickname}}</text>
+        </view>
+      </view>
+
+      <!-- 商品标题 -->
+      <view class="product-title">{{item.title}}</view>
+      
+      <!-- 商品价格 -->
       <view class="product-price">¥{{item.price}}</view>
+      
+      <!-- 商品描述 -->
+      <view class="product-description">{{item.description}}</view>
+      
+      <!-- 分割线 -->
+      <view class="divider"></view>
+      
+      <!-- 发布时间和浏览次数 -->
       <view class="product-meta">
-        <text>发布时间: {{item.formattedPublishTime}}</text>
+        <text>{{item.formattedPublishTime}}</text>
         <text>浏览：{{item.viewCount}}次</text>
       </view>
     </view>
 
-    <!-- 商品描述 -->
-    <view class="product-description">
-      <view class="description-title">商品描述</view>
-      <view class="description-content">{{item.description}}</view>
-    </view>
-
     <!-- 评论区 -->
-    <view class="comments-section">
-      <view class="comments-header">共{{comments.length}}条留言</view>
-      
-      <!-- 评论输入框 -->
-      <view class="comment-input">
-        <image class="user-avatar" src="{{userInfo.avatar}}" mode="aspectFill"></image>
-        <input class="input-box" type="text" placeholder="说点什么" 
-               value="{{newComment}}" bindinput="onCommentInput" 
-               bindconfirm="sendComment" confirm-type="send"/>
+    <view class="comments-container">
+      <!-- 评论输入区域 -->
+      <view class="comment-input-section">
+        <image class="user-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="input-container">
+          <input class="comment-input-field"
+                placeholder="写评论..."
+                placeholder-class="input-placeholder"
+                value="{{newCommentContent}}"
+                bindinput="onCommentInput"
+                bindconfirm="submitComment"
+                confirm-type="send"
+                maxlength="200" />
+          <view class="send-btn {{newCommentContent ? 'active' : ''}}" 
+                bindtap="submitComment">
+            <text>发送</text>
+          </view>
+        </view>
       </view>
 
-      <!-- 评论列表 -->
-      <view class="comment-item" wx:for="{{comments}}" wx:key="id">
-        <image class="comment-avatar" src="{{item.avatar}}"></image>
-        <view class="comment-content">
-          <view class="comment-header">
-            <text class="comment-username">{{item.username}}</text>
-            <!-- 楼主标志 -->
-            <text wx:if="{{item.isAuthor}}" class="author-badge">楼主</text>
-            <text class="comment-time">{{item.createTime}}</text>
+      <view class="comments-header">
+        <view class="comments-title-section">
+          <text class="comments-title">评论</text>
+          <text class="comments-count">({{comments.length}})</text>
+        </view>
+        
+        <!-- 排序按钮组 -->
+        <view class="sort-tabs">
+          <view class="sort-tab {{sortType === 'hot' ? 'active' : ''}}" 
+                data-sort="hot" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最热</text>
           </view>
-          <text class="comment-text">{{item.content}}</text>
+          <view class="sort-tab {{sortType === 'time_desc' ? 'active' : ''}}" 
+                data-sort="time_desc" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最新↑</text>
+          </view>
+          <view class="sort-tab {{sortType === 'time_asc' ? 'active' : ''}}" 
+                data-sort="time_asc" 
+                bindtap="onSortSelect">
+            <text class="sort-tab-text">最早↓</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 评论列表 - 移除scroll-view，让整个页面统一滚动 -->
+      <view class="comments-list">
+        <view wx:for="{{comments}}" wx:key="id" class="comment-item">
+          <image class="comment-avatar" src="{{item.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="comment-main">
+            <view class="comment-user-info">
+              <view class="comment-user-left">
+                <text class="comment-username">{{item.userNickname || item.username}}</text>
+                <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
+                <text class="comment-time">{{item.formattedTime}}</text>
+              </view>
+              <!-- 评论点赞按钮移到右侧 -->
+              <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
+                    bindtap="toggleCommentLike"
+                    data-id="{{item.id}}">
+                <image class="comment-like-icon" 
+                       src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                       mode="aspectFit" />
+                <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
+              </view>
+            </view>
+            <text class="comment-content">{{item.content}}</text>
+          </view>
+        </view>
+        
+        <!-- 加载状态 -->
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-spinner"></view>
+          <text>加载更多评论...</text>
+        </view>
+        
+        <!-- 没有更多评论 -->
+        <view wx:if="{{!hasMore && comments.length > 0}}" class="no-more-comments">
+          <text>已显示全部评论</text>
+        </view>
+        
+        <!-- 空状态 -->
+        <view wx:if="{{comments.length === 0 && !loadingMore}}" class="empty-comments">
+          <image class="empty-icon" src="/images/comment_empty.png" mode="aspectFit" />
+          <text class="empty-text">还没有评论，快来抢沙发吧~</text>
         </view>
       </view>
     </view>
@@ -73,18 +140,17 @@
 
   <!-- 底部操作栏 -->
   <view class="bottom-actions">
-    <view class="action-btn" bindtap="sendComment">
-      <view class="action-icon comment-icon">💬</view>
-      <text>评论</text>
+    <!-- 左侧图标区域 -->
+    <view class="left-actions">
+      <view class="action-btn {{isLiked ? 'liked' : ''}}" bindtap="toggleLike">
+        <image class="action-icon" src="{{isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit"></image>
+      </view>
+      <view class="action-btn" bindtap="onShareAppMessage">
+        <image class="action-icon" src="/images/share.png" mode="aspectFit"></image>
+      </view>
     </view>
-    <view class="action-btn {{isLiked ? 'liked' : ''}}" bindtap="toggleLike">
-      <view class="action-icon like-icon">{{isLiked ? '❤️' : '🤍'}}</view>
-      <text>{{isLiked ? '收藏' : '收藏'}}</text>
-    </view>
-    <view class="action-btn" bindtap="onShareClick">
-      <view class="action-icon share-icon">📤</view>
-      <text>分享</text>
-    </view>
+    
+    <!-- 右侧联系卖家按钮 -->
     <button class="contact-btn" bindtap="contactSeller">联系卖家</button>
   </view>
 </view>

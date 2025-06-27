@@ -169,22 +169,95 @@
 }
 
 /* 图片展示区域 */
+/* ✅ 添加这些样式到你的 post-detail.wxss */
+
+/* 图片展示区域 */
 .images-section {
-  margin-bottom: 24rpx;
+  margin: 20rpx 0;
 }
 
+/* 单图样式 */
+.single-image {
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.post-image-single {
+  width: 100%;
+  max-height: 600rpx;
+  border-radius: 12rpx;
+}
+
+/* 多图网格样式 */
 .images-grid {
   display: flex;
-  flex-direction: column;
-  gap: 16rpx;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
 }
 
+.grid-item {
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.grid-image {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+}
+
+/* 2张图片 */
+.images-grid-2 .grid-item {
+  width: calc(50% - 4rpx);
+  height: 200rpx;
+}
+
+/* 3张图片 */
+.images-grid-3 .grid-item:first-child {
+  width: 100%;
+  height: 240rpx;
+}
+
+.images-grid-3 .grid-item:not(:first-child) {
+  width: calc(50% - 4rpx);
+  height: 160rpx;
+}
+
+/* 4张图片 */
+.images-grid-4 .grid-item {
+  width: calc(50% - 4rpx);
+  height: 180rpx;
+}
+
+/* 5-9张图片 */
+.images-grid-5 .grid-item:nth-child(-n+2) {
+  width: calc(50% - 4rpx);
+  height: 180rpx;
+}
+
+.images-grid-5 .grid-item:nth-child(n+3) {
+  width: calc(33.33% - 6rpx);
+  height: 140rpx;
+}
+
+.images-grid-6 .grid-item,
+.images-grid-7 .grid-item,
+.images-grid-8 .grid-item,
+.images-grid-9 .grid-item {
+  width: calc(33.33% - 6rpx);
+  height: 140rpx;
+}
+
+/* 🗑️ 删除原来的简单图片样式（如果有的话） */
+/*
 .post-image {
   width: 100%;
-  max-height: 800rpx;
+  height: 300rpx;
   border-radius: 12rpx;
-  background: #f5f5f5;
 }
+*/
 
 /* 评论容器 */
 .comments-container {

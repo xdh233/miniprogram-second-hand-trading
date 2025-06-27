@@ -1,104 +1,94 @@
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const sharedTools = require('../../utils/sharedTools');
 
 Page({
   data: {
+    itemId: null,
     item: null,
-    userInfo: null,
-    currentImageIndex: 0,
     comments: [],
-    newComment: '',
-    isLiked: false,
-    likeCount: 0,
+    newCommentContent: '',
     loading: true,
-    statusBarHeight: 0
+    loadingMore: false,
+    userInfo: null,
+    hasMore: true,
+    currentPage: 1,
+    currentImageIndex: 0,  // 修正：从0开始
+    pageSize: 20,
+    sortType: 'hot',
+    isLiked: false,  // 添加收藏状态
   },
-
   onLoad(options) {
-    const itemId = options.id;
-    console.log('加载商品详情:', itemId);
-    
-    // 获取系统信息，处理状态栏高度
-    this.getSystemInfo();
-    
-    // 检查登录状态
-    this.checkLoginStatus();
-    
-    // 加载商品详情
-    this.loadItemDetail(itemId);
-    
-    // 加载评论
-    this.loadComments(itemId);
+    console.log('item-detail onLoad, options:', options);
+    if (options.id) {
+      // 确保itemId是数字类型
+      const itemId = parseInt(options.id);
+      console.log('设置itemId:', itemId);
+      this.setData({ itemId: itemId });
+      // 检查登录状态
+      this.checkLoginStatus();
+      this.loadItemDetail();
+      this.loadComments();
+    } else {
+      console.error('没有传入itemId');
+      wx.showToast({
+        title: '商品ID缺失',
+        icon: 'none'
+      });
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 500);
+    }
   },
-
-  // 获取系统信息
-  getSystemInfo() {
-    const systemInfo = wx.getSystemInfoSync();
-    const statusBarHeight = systemInfo.statusBarHeight || 0;
-    
-    // 转换为rpx单位 (1px = 2rpx on iPhone)
-    const statusBarHeightRpx = statusBarHeight * 2;
-    
-    this.setData({
-      statusBarHeight: statusBarHeightRpx
-    });
-    
-    console.log('状态栏高度(px):', statusBarHeight);
-    console.log('状态栏高度(rpx):', statusBarHeightRpx);
-  },
-
   // 检查登录状态
   checkLoginStatus() {
-    // 暂时使用测试用户，避免跳转
-    const mockUserInfo = {
-      id: 'test_user_123',
-      username: '测试用户',
-      avatar: '/images/default-avatar.png'
-    };
-    this.setData({ userInfo: mockUserInfo });
-    
-    /* 真实环境下使用这段代码
     if (!userManager.isLoggedIn()) {
       wx.redirectTo({
         url: '/pages/login/login'
       });
       return;
     }
-
     const userInfo = userManager.getCurrentUser();
     this.setData({ userInfo });
-    */
   },
-
-  // 简化 loadItemDetail 方法
-  async loadItemDetail(itemId) {
+  // 加载商品详情
+  async loadItemDetail() {
+    const itemId = this.data.itemId;
+    if (!itemId) {
+      console.error('itemId为空:', itemId);
+      wx.showToast({
+        title: '帖子ID无效',
+        icon: 'none'
+      });
+      return;
+    }
     try {
-      // 从 itemManager 获取商品详情（包含评论）
-      const itemWithComments = itemManager.getItemWithComments(itemId);
-      
-      if (!itemWithComments) {
+      this.setData({ loading: true });
+      console.log('正在加载商品的ID:', itemId);
+
+      const item = await itemManager.getItemDetail(itemId);
+      console.log('获取到的商品数据:', item);
+
+      if (!item) {
         throw new Error('商品不存在');
       }
 
       // 格式化发布时间
-      itemWithComments.formattedPublishTime = this.formatTime(itemWithComments.publishTime);
-
-      // 检查收藏状态
-      const likedItems = itemManager.getLikedItems(this.data.userInfo.id);
-      const isLiked = likedItems.some(likedItem => likedItem.id == itemId);
+      item.formattedPublishTime = sharedTools.formatTime(item.createTime);
 
       // 增加浏览次数
       itemManager.incrementViewCount(itemId);
 
+      // 设置收藏状态
+      const isLiked = item.isLiked || false;
+
       this.setData({
-        item: itemWithComments,
-        comments: itemWithComments.comments || [],
+        item: item,
         isLiked: isLiked,
-        likeCount: itemWithComments.likeCount || 0,
         loading: false
       });
 
-      console.log('商品详情加载成功:', itemWithComments);
+      console.log('商品详情加载成功:', itemId);
 
     } catch (error) {
       console.error('加载商品详情失败:', error);
@@ -110,92 +100,73 @@ Page({
       
       setTimeout(() => {
         wx.navigateBack();
-      }, 2000);
+      }, 500);
     }
-  },
-
-  // 添加时间格式化方法
-  formatTime(timestamp) {
-    const date = new Date(timestamp);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
   },
   // 加载评论
-  loadComments(itemId) {
+  async loadComments(refresh = false) {
+    if (this.data.loadingMore && !refresh) return;
+
+    const page = refresh ? 1 : this.data.currentPage;
+    
     try {
-      const testComments = [
-        {
-          id: 1,
-          userId: 'user_1',
-          username: '买家小明',
-          avatar: '/images/default-avatar.png',
-          content: '这里是这个人发的评论。',
-          createTime: '2小时前',
-          isAuthor: false  // 不是楼主
-        },
-        {
-          id: 2,
-          userId: this.data.item.sellerId, // 使用商品卖家ID
-          username: this.data.item.seller.username,
-          avatar: this.data.item.seller.avatar,
-          content: '感谢大家的关注！有问题可以随时联系我。',
-          createTime: '1小时前',
-          isAuthor: true  // 是楼主
-        },
-        {
-          id: 3,
-          userId: 'user_3',
-          username: '买家A',
-          avatar: '/images/default-avatar.png',
-          content: '电池健康度多少？有没有磕碰？',
-          createTime: '1天前',
-          isAuthor: false
-        }
-      ];
+      this.setData({ loadingMore: true });
+      console.log('加载评论，itemId:', this.data.itemId, 'page:', page);
+      
+      const comments = await itemManager.getItemComments(
+        this.data.itemId,
+        page,
+        this.data.pageSize,
+        this.data.sortType
+      );
+
+      console.log('获取到的评论:', comments);
+
+      // 格式化评论时间
+      const formattedComments = comments.map(comment => ({
+        ...comment,
+        formattedTime: sharedTools.formatTime(comment.createTime)
+      }));
 
       this.setData({
-        comments: testComments
+        comments: refresh ? formattedComments : [...this.data.comments, ...formattedComments],
+        currentPage: page + 1,
+        hasMore: comments.length === this.data.pageSize,
+        loadingMore: false
       });
-
     } catch (error) {
       console.error('加载评论失败:', error);
+      this.setData({ loadingMore: false });
     }
   },
-
-  // 图片轮播切换
-  onImageChange(e) {
-    const current = e.detail.current;
-    this.setData({
-      currentImageIndex: current
-    });
-  },
-
-  // 预览图片
-  previewImage(e) {
-    const current = e.currentTarget.dataset.src;
-    const urls = this.data.item.images;
+  // 选择评论显示方式
+  onSortSelect(e) {
+    const sortType = e.currentTarget.dataset.sort;
     
-    wx.previewImage({
-      current: current,
-      urls: urls
+    if (sortType === this.data.sortType) {
+      return;
+    }
+    
+    console.log('切换排序方式:', sortType);
+    
+    this.setData({
+      sortType: sortType,
+      comments: [],
+      currentPage: 1,
+      hasMore: true
     });
+    
+    this.loadComments(true);
   },
-
   // 评论输入
   onCommentInput(e) {
     this.setData({
-      newComment: e.detail.value
+      newCommentContent: e.detail.value
     });
   },
-
   // 发送评论
-  async sendComment() {
-    const comment = this.data.newComment.trim();
+  async submitComment() {
+    const comment = this.data.newCommentContent.trim();
     if (!comment) {
       wx.showToast({
         title: '请输入评论内容',
@@ -205,23 +176,13 @@ Page({
     }
   
     try {
-      // 使用 itemManager 保存评论
-      const newComment = await itemManager.saveItemComment(
-        this.data.item.id,
-        comment,
-        this.data.userInfo.id,
-        this.data.userInfo
-      );
-  
-      // 重新获取评论列表
-      const updatedComments = itemManager.getItemComments(this.data.item.id);
+      console.log('提交评论，itemId:', this.data.itemId, 'content:', this.data.newCommentContent);
+      await itemManager.addCommentByItemId(this.data.itemId, this.data.newCommentContent);
+
+      this.setData({ newCommentContent: '' });  // 发送完清空
       
-      this.setData({
-        comments: updatedComments,
-        newComment: '',
-        'item.commentsCount': updatedComments.length
-      });
-  
+      this.loadComments(true);
+
       wx.showToast({
         title: '评论成功',
         icon: 'success'
@@ -235,18 +196,15 @@ Page({
       });
     }
   },
-  
   // 收藏/取消收藏
   async toggleLike() {
     try {
-      const itemId = this.data.item.id;
-      const userId = this.data.userInfo.id;
-      
-      const result = await itemManager.toggleLike(itemId, userId);
+      const itemId = this.data.itemId;      
+      const result = await itemManager.toggleLike(itemId);
       
       this.setData({
         isLiked: result.isLiked,
-        likeCount: result.likes
+        'item.likeCount': result.likes
       });
 
       wx.showToast({
@@ -262,42 +220,94 @@ Page({
       });
     }
   },
-
-  // 分享商品
+  // 评论点赞
+  async toggleCommentLike(e) {
+    const commentId = e.currentTarget.dataset.id;
+    try {
+      const result = await itemManager.toggleCommentLike(commentId);
+      
+      // 更新评论列表中的点赞状态
+      const comments = this.data.comments.map(comment => {
+        if (comment.id == commentId) {
+          return {
+            ...comment,
+            isLiked: result.isLiked,
+            likes: result.likes
+          };
+        }
+        return comment;
+      });
+      
+      this.setData({ comments });
+      
+    } catch (error) {
+      console.error('评论点赞失败:', error);
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'error'
+      });
+    }
+  },
+  // 分享
   onShareAppMessage() {
+    const item = this.data.item;
+    
+    if (!item) {
+      return {
+        title: '校园动态分享',
+        desc: '发现精彩的校园生活',
+        path: '/pages/index/index',
+        imageUrl: '/images/default-share.jpg'
+      };
+    }
+    
     return {
-      title: this.data.item.title,
-      path: `/pages/item-detail/item-detail?id=${this.data.item.id}`,
-      imageUrl: this.data.item.images[0]
+      title: this.formatShareTitle(item),
+      path: `/pages/item-detail/item-detail?id=${this.data.itemId}`,
+      imageUrl: item.images?.[0] || '/images/default-share.jpg'
     };
   },
-
-  // 点击分享按钮
-  onShareClick() {
-    wx.showActionSheet({
-      itemList: ['分享给朋友', '分享到朋友圈'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.showToast({
-            title: '请点击右上角分享',
-            icon: 'none'
-          });
-        } else if (res.tapIndex === 1) {
-          wx.showToast({
-            title: '敬请期待',
-            icon: 'none'
-          });
-        }
-      }
+  // 格式化分享标题 
+  formatShareTitle(post) {
+    if (!post || !post.content) {
+      return '校园动态分享';
+    }
+    
+    const authorName = post.userNickname || post.userName || '校园用户';
+    
+    // 清理内容并截取
+    let contentPreview = post.content.trim();
+    if (contentPreview.length > 30) {
+      contentPreview = contentPreview.substring(0, 30) + '...';
+    }
+    
+    return `${authorName}: ${contentPreview}`;
+  },
+  // 图片轮播切换
+  onImageChange(e) {
+    const current = e.detail.current;
+    this.setData({
+      currentImageIndex: current
+    });
+  },
+  // 预览图片
+  previewImage(e) {
+    const current = e.currentTarget.dataset.src;
+    const urls = this.data.item.images;
+    
+    wx.previewImage({
+      current: current,
+      urls: urls
     });
   },
 
   // 联系卖家
   contactSeller() {
     const item = this.data.item;
-    const currentUser = this.data.userInfo;
-    
-    if (!item || !item.seller) {
+    const currentUser = userManager.getCurrentUser();
+    const currentUserId = currentUser.id;
+
+    if (!item || !item.sellerId) {
       wx.showToast({
         title: '卖家信息获取失败',
         icon: 'none'
@@ -305,8 +315,7 @@ Page({
       return;
     }
     
-    // 检查是否是自己的商品
-    if (item.sellerId === currentUser.id) {
+    if (item.sellerId === currentUserId) {
       wx.showToast({
         title: '不能联系自己',
         icon: 'none'
@@ -314,22 +323,25 @@ Page({
       return;
     }
     
-    // 直接跳转到聊天页面
     wx.navigateTo({
-      url: `/pages/chat/chat?userId=${item.sellerId}&userName=${item.seller.username}&itemId=${item.id}&itemTitle=${encodeURIComponent(item.title)}`
+      url: `/pages/chat/chat?userId=${item.sellerId}&userName=${item.sellerName}&itemId=${this.data.itemId}`
     });
   },
-
   // 返回上一页
   goBack() {
     wx.navigateBack();
   },
-
   // 跳转到卖家主页
   navigateToSellerProfile() {
     wx.showToast({
       title: '跳转卖家主页',
       icon: 'none'
     });
+  },
+  // 触底加载更多
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.loadingMore) {
+      this.loadComments();
+    }
   }
 });

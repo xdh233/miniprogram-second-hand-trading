@@ -1,4 +1,3 @@
-<!-- pages/index/index.wxml - 优化版帖子流 -->
 <view class="container">
   <!-- 统一内容容器 -->
   <view class="content-container">
@@ -16,14 +15,11 @@
       </view>
     </view>
 
-    <!-- 帖子列表 -->
+    <!-- ✅ 修复后的帖子列表 -->
     <scroll-view 
       class="posts-container"
       scroll-y
       enable-back-to-top
-      refresher-enabled
-      refresher-triggered="{{refreshing}}"
-      bindrefresherrefresh="onPullDownRefresh"
       bindscrolltolower="onReachBottom"
     >
       <!-- 帖子卡片 -->
@@ -35,16 +31,13 @@
 
         <!-- 用户信息栏 -->
         <view class="post-header">
-          <!-- 头像也可以点击跳转 -->
           <image class="user-avatar" 
                  src="{{item.userAvatar || '/images/default-avatar.png'}}" 
                  mode="aspectFill"
                  catchtap="navigateToUserProfile"
                  data-userid="{{item.userId}}" />
           <view class="user-info">
-            <!-- 昵称和时间的容器 -->
             <view class="user-name-row">
-              <!-- 只有昵称文字区域可点击，使用 text 元素 -->
               <text class="user-name"
                     catchtap="navigateToUserProfile"
                     data-userid="{{item.userId}}">{{item.userNickname}}</text>
@@ -60,10 +53,11 @@
 
         <!-- 图片内容 -->
         <view class="post-images" wx:if="{{item.images && item.images.length > 0}}">
+          
           <!-- 单图 -->
           <view class="single-image" wx:if="{{item.images.length === 1}}">
             <image 
-              class="post-image" 
+              class="post-image-single" 
               src="{{item.images[0]}}" 
               mode="widthFix"
               catchtap="previewImage"
@@ -72,38 +66,41 @@
             />
           </view>
           
-          <!-- 多图网格 -->
-          <view class="images-grid {{item.images.length === 2 ? 'grid-2' : item.images.length === 4 ? 'grid-4' : 'grid-3'}}" wx:else>
-            <image 
-              class="grid-image" 
+          <!-- 多图 -->
+          <view class="images-grid images-grid-{{item.images.length}}" wx:else>
+            <view 
+              class="grid-item"
               wx:for="{{item.images}}" 
               wx:for-item="image"
               wx:for-index="imgIndex"
               wx:key="imgIndex"
-              src="{{image}}" 
-              mode="aspectFill"
-              catchtap="previewImage"
-              data-images="{{item.images}}"
-              data-index="{{imgIndex}}"
-            />
+            >
+              <image 
+                class="grid-image" 
+                src="{{image}}" 
+                mode="aspectFill"
+                catchtap="previewImage"
+                data-images="{{item.images}}"
+                data-index="{{imgIndex}}"
+              />
+            </view>
           </view>
         </view>
 
         <!-- 互动栏 -->
-        <view class="post-actions" catchtap="preventBubble" >
-          <!-- 修改转发按钮 -->
+        <view class="post-actions" catchtap="preventBubble">
           <button class="action-item share-button" 
                   open-type="share" 
                   data-id="{{item.id}}"
                   bindtap="onSharePost"
-                  catchtap="onSharePost" >
+                  catchtap="onSharePost">
             <image class="action-icon" src="/images/forward.png" mode="aspectFit" />
           </button>
           
           <view class="action-item"
                 bindtap="onCommentPost" 
                 data-id="{{item.id}}"
-                catchtap="onCommentPost" >
+                catchtap="onCommentPost">
             <image class="action-icon" src="/images/comment.png" mode="aspectFit" />
             <text class="action-text" wx:if="{{item.comments > 0}}">{{item.comments}}</text>
           </view>
@@ -112,9 +109,12 @@
                 bindtap="onLikePost"
                 data-id="{{item.id}}"
                 data-index="{{index}}"
-                catchtap="onLikePost" >
-            <image class="action-icon" src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit" />
-            <text class="action-text {{item.isLiked ? 'liked' : ''}}" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
+                catchtap="onLikePost">
+            <image class="action-icon" 
+                   src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                   mode="aspectFit" />
+            <text class="action-text {{item.isLiked ? 'liked' : ''}}" 
+                  wx:if="{{item.likes > 0}}">{{item.likes}}</text>
           </view>
         </view>
       </view>
