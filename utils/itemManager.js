@@ -115,7 +115,7 @@ class ItemManager {
         title: 'iPhone 13 Pro 128GB 深空灰色',
         description: '自用iPhone 13 Pro，购买不到一年，九成五新。功能完好，外观无明显划痕，一直贴膜使用。包装盒和配件齐全，支持当面验货。因为换了新机型所以出售，价格可小刀。',
         price: '4500',
-        images: ['/images/phone1.jpg', '/images/phone2.jpg'],
+        images: ['/images/phone1.jpg', '/images/phone1.jpg'],
         categoryId: 1,
         category: '数码电子',
         sellerId: 1,

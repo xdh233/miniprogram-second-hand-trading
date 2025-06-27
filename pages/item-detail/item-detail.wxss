@@ -1,37 +1,55 @@
-/* 调试用边框 - 加到你CSS文件最顶部 */
-page {
-  background: #f5f5f5;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-.container {
+/* item-detail.wxss */
+
+/* 页面容器 的布局 */
+.page-container {
   min-height: 100vh;
-  padding-bottom: 140rpx;
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-.container > view {
-  width: calc(100% - 36rpx) !important;  /* 👈 总宽度减去24rpx */
-  margin: 18rpx !important;              /* 👈 上下左右都是12rpx */
-  box-sizing: border-box !important;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 }
 
-.loading {
+/* 加载状态 */
+.loading-container {
+  flex: 1;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 400rpx;
-  font-size: 32rpx;
-  color: #666;
+  background: #fff;
 }
 
-/* 商品图片轮播 - 小间距版 */
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #0096c3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 20rpx;
+  color: #666;
+  font-size: 28rpx;
+}
+
+/* 内容滚动区域 */
+.content-scroll {
+  flex: 1;
+  padding-bottom: 120rpx; 
+  box-sizing: border-box;
+}
+
+/* 商品图片轮播 */
 .image-container {
   background: white;
   height: 750rpx;
+  margin: 16rpx !important; /* 强制设置间距 */
   border-radius: 12rpx;
   overflow: hidden;
   position: relative;
@@ -62,14 +80,15 @@ page {
   z-index: 10;
 }
 
-/* 商品信息卡片 - 小间距版 */
+/* 商品信息卡片 */
 .product-card {
   background: white;
   border-radius: 12rpx;
+  margin: 16rpx !important; /* 强制设置间距 */
   padding: 24rpx;
   position: relative;
   z-index: 1;
-  box-sizing: border-box;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 /* 卖家信息区域 */
@@ -141,12 +160,13 @@ page {
   color: #999;
 }
 
-/* 评论容器 - 小间距版 */
+/* 评论容器 */
 .comments-container {
   background: white;
   border-radius: 12rpx;
+  margin: 16rpx !important; /* 强制设置间距 */
   overflow: hidden;
-  box-sizing: border-box;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 /* 评论输入区域 */
@@ -242,6 +262,11 @@ page {
   padding: 8rpx 0;
   background: transparent;
   border: none;
+  transition: all 0.3s ease;
+}
+
+.sort-tab:active {
+  transform: scale(0.95);
 }
 
 .sort-tab-text {
@@ -369,20 +394,6 @@ page {
   font-size: 28rpx;
 }
 
-.loading-spinner {
-  width: 32rpx;
-  height: 32rpx;
-  border: 3rpx solid #f3f3f3;
-  border-top: 3rpx solid #0096c3;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* 没有更多评论 */
 .no-more-comments {
   text-align: center;
@@ -411,36 +422,45 @@ page {
   font-size: 28rpx;
 }
 
-/* 底部操作栏 - 简洁版 */
+/* 底部占位 */
+.bottom-placeholder {
+  height: 120rpx; 
+}
+
+/* 底部操作栏 - 更薄的设计 */
 .bottom-actions {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   background: white;
-  padding: 15rpx 20rpx;
+  height: 80rpx; 
+  padding: 0 24rpx; /* 只保留左右内边距 */
+  padding-bottom: env(safe-area-inset-bottom); /* 只处理安全区域 */
   display: flex;
-  align-items: center;
+  align-items: center; /* 垂直居中 */
   justify-content: space-between;
   z-index: 100;
-  border-top: 1rpx solid #e0e0e0;
-  box-sizing: border-box;
+  border-top: 1rpx solid #e5e5ea;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.1);
 }
 
-/* 左侧图标区域 - 增加左移 */
+/* 左侧图标区域 */
 .left-actions {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  margin-left: 40rpx;
+  gap: 20rpx; 
+  margin-left: 32rpx; 
+  margin-top: 32rpx; 
 }
 
 .action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80rpx;
+  width: 80rpx; 
   height: 80rpx;
+  margin-left: 32rpx; 
   background: transparent;
   border: none;
   transition: all 0.3s ease;
@@ -455,20 +475,28 @@ page {
 }
 
 .action-icon {
-  width: 48rpx !important;
-  height: 48rpx !important;
+  width: 48rpx; /* 稍微减小图标大小 */
+  height: 48rpx;
 }
 
 .contact-btn {
-  background: #0096c3;
+  background: #0096c3; 
   color: white;
   border: none;
-  padding: 20rpx 40rpx;
+  padding: 20rpx 40rpx; 
+  margin-top: 32rpx; 
   border-radius: 25rpx;
-  font-size: 32rpx;
+  font-size: 32rpx; 
   font-weight: 500;
   text-align: center;
-  min-width: 200rpx;
+  min-width: 200rpx; 
+  height: auto; 
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+
+.contact-btn:active {
+  transform: scale(0.95);
 }
 
 .contact-btn::after {
