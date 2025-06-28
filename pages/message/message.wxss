@@ -77,19 +77,19 @@ page {
 /* 消息分类 */
 .message-types {
   display: flex;
-  padding: 20rpx 0;
+  justify-content: space-between;
+  padding: 20rpx 120rpx;
   background: #fff;
   width: 100%;
   box-sizing: border-box;
 }
 
 .type-item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  padding: 10rpx 0;
+  padding: 10rpx 20rpx;
   box-sizing: border-box;
 }
 
@@ -105,11 +105,6 @@ page {
   box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
 }
 
-.type-icon.mention {
-  background: #e8f3ff;
-  /* color: #3a7bff; */
-}
-
 .type-icon.comment {
   background: #36cfc9;
   color: #36cfc9;
@@ -117,18 +112,15 @@ page {
 
 .type-icon.like {
   background: #fff2f0;
-  /* color: #ff4d4f; */
 }
 
-.type-icon.new-chat {
-  background: #f6ffed;
-  /*color: #52c41a;*/
-}
+
 
 .type-icon-image {
   width: 48rpx;
   height: 48rpx;
 }
+
 .type-text {
   font-size: 24rpx;
   color: #666;

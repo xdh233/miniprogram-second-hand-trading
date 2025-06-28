@@ -80,13 +80,9 @@ Page({
   // 设置
   navigateToSettings() {
     console.log('打开设置');
-    wx.showToast({
-      title: '设置功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/settings/settings'
     });
-    // wx.navigateTo({
-    //   url: '/pages/settings/settings'
-    // });
   },
 
 

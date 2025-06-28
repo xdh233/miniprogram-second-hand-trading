@@ -12,7 +12,10 @@
     "pages/chat/chat",
     "pages/post-detail/post-detail",
     "pages/publish-post/publish-post",
-    "pages/publish-item/publish-item"
+    "pages/publish-item/publish-item",
+    "pages/comments/comments",
+    "pages/likes/likes",
+    "pages/settings/settings"
   ],
   "window": {
     "backgroundTextStyle": "light",

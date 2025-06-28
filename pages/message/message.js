@@ -5,7 +5,6 @@ const messageManager = require('../../utils/messageManager');
 Page({
   data: {
     userInfo: null,
-    mentionCount: 0,
     commentCount: 0,
     likeCount: 0,
     chatList: [],
@@ -63,16 +62,15 @@ Page({
         isMuted: chat.isMuted || false
       }));
 
-      // 获取各种消息的未读数
-      const totalUnread = messageManager.getTotalUnreadCount(this.data.userInfo.id);
-      const tradeUnread = messageManager.getTradeUnreadCount(this.data.userInfo.id);
-      const systemUnread = messageManager.getSystemUnreadCount(this.data.userInfo.id);
+      // 从通知管理器获取未读数
+      const notifyManager = require('../../utils/notifyManager');
+      const commentUnread = notifyManager.getUnreadCount(this.data.userInfo.id, 'comment');
+      const likeUnread = notifyManager.getUnreadCount(this.data.userInfo.id, 'like');
 
       this.setData({
         chatList: formattedChatList,
-        mentionCount: systemUnread, // 系统消息作为@我的消息
-        commentCount: tradeUnread,  // 交易相关消息作为评论
-        likeCount: Math.max(0, totalUnread - tradeUnread - systemUnread) // 其他消息作为点赞
+        commentCount: commentUnread,
+        likeCount: likeUnread
       });
 
     } catch (error) {
@@ -148,43 +146,20 @@ Page({
     this.setData({ chatList: formattedResults });
   },
 
-  // 查看@我的消息
-  navigateToMentions() {
-    console.log('查看@我的消息');
-    wx.showToast({
-      title: '系统消息功能开发中',
-      icon: 'none'
-    });
-    // 这里可以跳转到系统消息页面
-    // wx.navigateTo({
-    //   url: '/pages/system-messages/system-messages'
-    // });
-  },
-
   // 查看评论消息
   navigateToComments() {
     console.log('查看评论消息');
-    wx.showToast({
-      title: '交易消息功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/comments/comments'
     });
-    // 这里可以显示交易相关的聊天
-    // wx.navigateTo({
-    //   url: '/pages/trade-messages/trade-messages'
-    // });
   },
 
   // 查看点赞消息
   navigateToLikes() {
     console.log('查看点赞消息');
-    wx.showToast({
-      title: '互动消息功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/likes/likes'
     });
-    // 这里可以显示点赞、收藏等互动消息
-    // wx.navigateTo({
-    //   url: '/pages/interaction-messages/interaction-messages'
-    // });
   },
 
   // 进入聊天页面
@@ -303,15 +278,5 @@ Page({
     });
   },
 
-  // 开始新聊天
-  startNewChat() {
-    wx.showToast({
-      title: '选择联系人功能开发中',
-      icon: 'none'
-    });
-    // 这里可以跳转到选择联系人页面
-    // wx.navigateTo({
-    //   url: '/pages/select-contact/select-contact'
-    // });
-  }
+
 });

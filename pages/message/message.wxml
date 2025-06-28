@@ -30,11 +30,6 @@
     >
       <!-- 消息分类 -->
       <view class="message-types">
-        <view class="type-item" bindtap="navigateToMentions">
-          <image class="type-icon-image" src="../../images/at-bold.png" mode="aspectFit" />
-          <text class="type-text">提到我的</text>
-          <view class="badge" wx:if="{{mentionCount > 0}}">{{mentionCount}}</view>
-        </view>
         <view class="type-item" bindtap="navigateToComments">
           <image class="type-icon-image" src="../../images/comment_fill.png" mode="aspectFit" />
           <text class="type-text">评论</text>
@@ -44,10 +39,6 @@
           <image class="type-icon-image" src="../../images/like_fill.png" mode="aspectFit" />
           <text class="type-text">点赞</text>
           <view class="badge" wx:if="{{likeCount > 0}}">{{likeCount}}</view>
-        </view>
-        <view class="type-item" bindtap="startNewChat">
-          <image class="type-icon-image" src="../../images/add_bold.png" mode="aspectFit" />
-          <text class="type-text">新聊天</text>
         </view>
       </view>
 
@@ -110,8 +101,8 @@
         <view class="empty-icon">💬</view>
         <text class="empty-title">暂无聊天记录</text>
         <text class="empty-subtitle">开始你的第一个对话吧</text>
-        <view class="start-chat-btn" bindtap="startNewChat">
-          <text>开始聊天</text>
+        <view class="start-chat-btn" bindtap="navigateToComments">
+          <text>查看评论消息</text>
         </view>
       </view>
 

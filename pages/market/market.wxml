@@ -75,7 +75,7 @@
               <!-- 发布人信息 -->
               <view class="seller-info">
                 <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
-                <text class="seller-name">{{item.sellerName}}</text>
+                <text class="seller-name">{{item.sellerNickname}}</text>
                 <!-- 卖/收标签 -->
                 <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
                   {{item.tradeType === 'sell' ? '卖' : '收'}}
@@ -115,7 +115,7 @@
               <!-- 发布人信息 -->
               <view class="seller-info">
                 <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
-                <text class="seller-name">{{item.sellerName}}</text>
+                <text class="seller-name">{{item.sellerNickname}}</text>
                 <!-- 卖/收标签 -->
                 <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
                   {{item.tradeType === 'sell' ? '卖' : '收'}}

@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "点赞通知",
+  "navigationBarBackgroundColor": "#ffffff", 
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f8f9fa",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}

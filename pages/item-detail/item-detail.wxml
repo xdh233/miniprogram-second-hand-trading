@@ -28,7 +28,7 @@
       <view class="seller-section" wx:if="{{item}}" bindtap="navigateToSellerProfile">
         <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
         <view class="seller-info">
-          <text class="seller-name">{{item.sellerName || item.sellerNickname}}</text>
+          <text class="seller-name">{{item.sellerNickname || item.sellerName}}</text>
         </view>
       </view>
 
