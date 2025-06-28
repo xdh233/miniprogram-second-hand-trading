@@ -1,4 +1,4 @@
-<!--item-detail.wxml-->
+<!--pages/post-detail/post-detail.wxml-->
 <view class="page-container">
   
   <!-- 加载状态 -->
@@ -7,71 +7,84 @@
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 商品详情内容 -->
-  <scroll-view wx:else class="content-scroll" scroll-y="{{true}}" enhanced="{{true}}">
+  <!-- 帖子详情 -->
+  <view wx:else class="content-scroll" scroll-y="{{true}}" enhanced="{{true}}">
     
-    <!-- 商品图片轮播 -->
-    <view class="image-container">
-      <swiper class="image-swiper" indicator-dots="{{false}}" autoplay="{{false}}" 
-              bindchange="onImageChange">
-        <swiper-item wx:for="{{item.images}}" wx:key="index">
-          <image class="product-image" src="{{item}}" mode="aspectFill" 
-                 bindtap="previewImage" data-src="{{item}}"></image>
-        </swiper-item>
-      </swiper>
-      <view class="image-indicator">{{currentImageIndex + 1}}/{{item.images.length}}</view>
-    </view>
-
-    <!-- 商品信息卡片 -->
-    <view class="product-card">
-      <!-- 卖家信息区域 -->
-      <view class="seller-section" wx:if="{{item}}" bindtap="navigateToSellerProfile">
-        <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
-        <view class="seller-info">
-          <text class="seller-name">{{item.sellerName || item.sellerNickname}}</text>
+    <!-- 主帖内容卡片 -->
+    <view wx:if="{{post}}" class="post-card">
+      
+      <!-- 用户信息区域 -->
+      <view class="user-section">
+        <image class="user-avatar" src="{{post.userAvatar}}" mode="aspectFill" />
+        <view class="user-info">
+          <text class="username">{{post.userNickname}}</text>
+          <text class="post-time">{{post.timeAgo}}</text>
         </view>
+        <button class="chat-btn" bindtap="onPrivateChat">私信</button>
       </view>
 
-      <!-- 商品标题 -->
-      <view class="product-title">{{item.title}}</view>
-      
-      <!-- 商品价格 -->
-      <view class="product-price">¥{{item.price}}</view>
-      
-      <!-- 商品描述 -->
-      <view class="product-description">{{item.description}}</view>
-      
-      <!-- 分割线 -->
-      <view class="divider"></view>
-      
-      <!-- 发布时间和浏览次数 -->
-      <view class="product-meta">
-        <text>{{item.formattedPublishTime}}</text>
-        <text>浏览：{{item.viewCount}}次</text>
+      <!-- 帖子正文内容 -->
+      <view class="post-content">
+        <text class="content-text">{{post.content}}</text>
       </view>
-    </view>
 
-    <!-- 评论区 -->
-    <view class="comments-container">
-      <!-- 评论输入区域（保持原位置） -->
-      <view class="comment-input-section">
-        <image class="user-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
-        <view class="input-container">
-          <input class="comment-input-field"
-                placeholder="写评论..."
-                placeholder-class="input-placeholder"
-                value="{{newCommentContent}}"
-                bindinput="onCommentInput"
-                bindconfirm="submitComment"
-                confirm-type="send"
-                maxlength="200" />
-          <view class="send-btn {{newCommentContent ? 'active' : ''}}" 
-                bindtap="submitComment">
-            <text>发送</text>
+      <!-- 图片展示区域 -->
+      <view wx:if="{{post.images && post.images.length > 0}}" class="images-section">
+        <!-- 单图：保持原始比例 -->
+        <view class="single-image" wx:if="{{post.images.length === 1}}">
+          <image 
+            class="post-image-single" 
+            src="{{post.images[0]}}" 
+            mode="widthFix"
+            data-images="{{post.images}}"
+            data-index="0"
+            bindtap="previewImageFixed"
+          />
+        </view>
+        <!-- 多图：智能网格布局 -->
+        <view class="images-grid images-grid-{{post.images.length}}" wx:else>
+          <view 
+            class="grid-item"
+            wx:for="{{post.images}}" 
+            wx:for-item="img"
+            wx:for-index="imgIndex"
+            wx:key="imgIndex"
+          >
+            <image 
+              class="grid-image" 
+              src="{{img}}" 
+              mode="aspectFill"
+              data-images="{{post.images}}"
+              data-index="{{imgIndex}}"
+              bindtap="previewImageFixed"
+            />
           </view>
         </view>
       </view>
+    
+      <!-- 点赞和评论按钮 -->
+      <view class="action-buttons">
+        <button class="action-btn share-btn" open-type="share">
+          <image class="action-icon" src="/images/forward.png" mode="aspectFit" />
+          <text class="action-text">分享</text>
+        </button>
 
+        <view class="action-btn comment-btn">
+          <image class="action-icon" src="/images/comment.png" mode="aspectFit" />
+          <text class="action-count">{{post.comments || 0}}</text>
+        </view>
+        
+        <view class="action-btn like-btn {{post.isLiked ? 'liked' : ''}}" bindtap="onLikePost">
+          <image class="action-icon" src="{{post.isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit" />
+          <text class="action-count">{{post.likes || 0}}</text>
+        </view>
+      </view>
+
+    </view>
+
+    <!-- 评论区域 -->
+    <view class="comments-container">
+      
       <!-- 评论标题和排序 -->
       <view class="comments-header">
         <view class="comments-title-section">
@@ -99,7 +112,7 @@
         </view>
       </view>
       
-      <!-- 嵌套评论列表 -->
+      <!-- 评论列表（嵌套结构） -->
       <view class="comments-list">
         <!-- 主评论 -->
         <view wx:for="{{organizedComments}}" wx:key="id" class="comment-thread">
@@ -108,11 +121,20 @@
           <view class="comment-item main-comment">
             <image class="comment-avatar" src="{{item.userAvatar}}" mode="aspectFill" />
             <view class="comment-main">
-              <!-- 第一行：昵称+楼主标签 -->
+              <!-- 第一行：昵称+楼主标签 | 点赞按钮 -->
               <view class="comment-header">
                 <view class="comment-user-left">
                   <text class="comment-username" bindtap="goToUserProfile" data-user-id="{{item.userId}}">{{item.userNickname}}</text>
                   <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
+                </view>
+                <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
+                      bindtap="onLikeComment"
+                      data-id="{{item.id}}"
+                      data-index="{{index}}">
+                  <image class="comment-like-icon" 
+                         src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                         mode="aspectFit" />
+                  <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
                 </view>
               </view>
               
@@ -121,26 +143,11 @@
                 <text class="comment-content">{{item.content}}</text>
               </view>
               
-              <!-- 第三行：时间 | 点赞+回复 -->
+              <!-- 第三行：时间 | 回复按钮 -->
               <view class="comment-footer">
                 <text class="comment-time">{{item.timeAgo}}</text>
-                <view class="comment-actions">
-                  <!-- 点赞按钮 -->
-                  <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
-                        bindtap="onLikeComment"
-                        data-id="{{item.id}}"
-                        data-is-reply="{{false}}">
-                    <image class="comment-like-icon" 
-                           src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
-                           mode="aspectFit" />
-                    <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
-                  </view>
-                  <!-- 回复按钮 -->
-                  <view class="reply-btn" bindtap="showReplyInput" 
-                        data-comment="{{item}}" 
-                        data-is-reply="{{false}}">
-                    <text class="reply-text">回复</text>
-                  </view>
+                <view class="reply-btn" bindtap="showReplyInput" data-comment="{{item}}" data-is-reply="{{false}}">
+                  <text class="reply-text">回复</text>
                 </view>
               </view>
             </view>
@@ -149,12 +156,24 @@
           <!-- 子回复列表 -->
           <view wx:if="{{item.replies && item.replies.length > 0}}" class="replies-container">
             
+            <!-- 调试信息 -->
+            <text style="font-size: 20rpx; color: blue; display: block; margin-bottom: 10rpx;">
+              总回复: {{item.replies.length}}, 显示: {{item.displayReplies.length}}, 展开: {{item.showAllReplies}}
+            </text>
+            <text style="font-size: 18rpx; color: green; display: block; margin-bottom: 10rpx;">
+              displayReplies存在: {{item.displayReplies ? '是' : '否'}}, 
+              是数组: {{item.displayReplies.constructor.name === 'Array' ? '是' : '否'}}
+            </text>
+            
             <!-- 显示的回复 - 使用 displayReplies -->
             <view wx:for="{{item.displayReplies}}" 
                   wx:for-item="reply" 
                   wx:for-index="replyIndex"
                   wx:key="{{reply.id}}"
                   class="reply-item">
+              
+              <!-- 调试：显示当前回复索引 -->
+              <text style="font-size: 16rpx; color: red; display: block;">回复{{replyIndex}}: {{reply.content}}</text>
               
               <view class="reply-content">
                 <text class="reply-author" bindtap="goToUserProfile" data-user-id="{{reply.userId}}">{{reply.userNickname}}</text>
@@ -170,7 +189,7 @@
                   <view class="reply-like-btn {{reply.isLiked ? 'liked' : ''}}" 
                         bindtap="onLikeComment"
                         data-id="{{reply.id}}"
-                        data-is-reply="{{true}}">
+                        data-is-reply="true">
                     <image class="reply-like-icon" 
                            src="{{reply.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
                            mode="aspectFit" />
@@ -215,56 +234,41 @@
       </view>
     </view>
     
-    <!-- 底部占位，避免被操作栏遮挡 -->
+    <!-- 底部占位，避免被输入框遮挡 -->
     <view class="bottom-placeholder"></view>
-  </scroll-view>
+  </view>
 
-  <!-- 底部操作栏 -->
-  <view class="bottom-actions">
-    <!-- 左侧图标区域 -->
-    <view class="left-actions">
-      <view class="action-btn {{isLiked ? 'liked' : ''}}" bindtap="toggleLike">
-        <image class="action-icon" src="{{isLiked ? '/images/like-active.png' : '/images/like.png'}}" mode="aspectFit"></image>
-      </view>
-      <view class="action-btn" bindtap="onShareAppMessage">
-        <image class="action-icon" src="/images/share.png" mode="aspectFit"></image>
+  <!-- 底部评论输入框 -->
+  <view class="comment-input-bar">
+    <!-- 回复提示条 -->
+    <view wx:if="{{showReplyInput}}" class="reply-header">
+      <text class="reply-hint">
+        回复 @{{replyTargetInfo.targetName}}
+        <text wx:if="{{replyTargetInfo.replyToName}}" class="reply-chain">
+          (回复 @{{replyTargetInfo.replyToName}})
+        </text>
+      </text>
+      <view class="cancel-reply" bindtap="cancelReply">
+        <text>取消</text>
       </view>
     </view>
     
-    <!-- 右侧联系卖家按钮 -->
-    <button class="contact-btn" bindtap="contactSeller">联系卖家</button>
-  </view>
-
-  <!-- 修改回复输入浮层部分 -->
-  <view wx:if="{{showReplyInput}}" class="reply-input-overlay">
-    <view class="overlay-bg" bindtap="cancelReply"></view>
-    <view class="reply-input-panel">
-      <!-- 回复提示条 -->
-      <view class="reply-header">
-        <text class="reply-hint">
-          回复 @{{replyTargetInfo.targetName}}
-          <text wx:if="{{replyTargetInfo.replyToName}}" class="reply-chain">
-            (回复 @{{replyTargetInfo.replyToName}})
-          </text>
-        </text>
-        <view class="cancel-reply" bindtap="cancelReply">
-          <text>取消</text>
-        </view>
-      </view>
+    <view class="input-wrapper">
+      <!-- 文本输入框 -->
+      <input class="comment-input"
+            placeholder="{{showReplyInput ? '写下你的回复...' : '输入消息...'}}"
+            placeholder-class="input-placeholder"
+            value="{{showReplyInput ? replyContent : newCommentContent}}"
+            bindinput="{{showReplyInput ? 'onReplyInput' : 'onCommentInput'}}"
+            bindconfirm="{{showReplyInput ? 'submitReply' : 'submitComment'}}"
+            adjust-position="{{false}}"
+            bindkeyboardheightchange="onKeyboardHeightChange"
+            confirm-type="send"/>
       
-      <view class="input-wrapper">
-        <!-- 确保以下绑定正确 -->
-        <input class="reply-input"
-              placeholder="写下你的回复..."
-              value="{{replyContent}}"
-              bindinput="onReplyInput"
-              focus="{{inputFocus}}"
-              confirm-type="send"/>
-        
-        <view class="send-btn {{replyContent ? 'active' : ''}}" 
-              bindtap="submitReply">
-          <text>发送</text>
-        </view>
+      <!-- 发送按钮 -->
+      <view class="send-btn {{(showReplyInput ? replyContent : newCommentContent) ? 'active' : ''}}" 
+            bindtap="{{showReplyInput ? 'submitReply' : 'submitComment'}}">
+        <text>发送</text>
       </view>
     </view>
   </view>

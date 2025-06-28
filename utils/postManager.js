@@ -6,6 +6,7 @@ class PostManager {
   constructor() {
     this.POSTS_KEY = 'campus_posts';
     this.COMMENTS_KEY = 'campus_comments';
+    this.REPLIES_KEY = 'post_replies'; // 新增回复存储Key
     this.init();
   }
 
@@ -87,9 +88,10 @@ class PostManager {
         userNickname: '四李',
         userAvatar: '/images/default-avatar.png',
         content: '确实很好吃！我上次也去了',
+        parentId: null, // 主评论
         isAuthor: false,
-        likes: 5, // 评论点赞数
-        isLiked: false, // 当前用户是否点赞
+        likes: 5,
+        isLiked: false,
         createTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
         timeAgo: '1小时前'
       },
@@ -101,9 +103,10 @@ class PostManager {
         userNickname: '蛋黄',
         userAvatar: '/images/default-avatar.png',
         content: '在哪里啊？求地址',
+        parentId: null, // 主评论
         isAuthor: false,
-        likes: 3, // 评论点赞数
-        isLiked: false, // 当前用户是否点赞
+        likes: 3,
+        isLiked: false,
         createTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
         timeAgo: '30分钟前'
       },
@@ -115,11 +118,47 @@ class PostManager {
         userNickname: '三张',
         userAvatar: '/images/default-avatar.png',
         content: '哈哈哈，我也遇到过',
+        parentId: null, // 主评论
         isAuthor: false,
-        likes: 1, // 评论点赞数
-        isLiked: true, // 当前用户是否点赞
+        likes: 1,
+        isLiked: true,
         createTime: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
         timeAgo: '3小时前'
+      },
+      // 添加一些测试回复
+      {
+        id: 4,
+        postId: 1,
+        userId: 1,
+        userName: '张三',
+        userNickname: '三张',
+        userAvatar: '/images/default-avatar.png',
+        content: '在学校食堂二楼',
+        parentId: 1, // 回复评论1
+        replyToUserId: 3,
+        replyToUserName: '蛋黄',
+        isAuthor: true, // 楼主回复
+        likes: 2,
+        isLiked: false,
+        createTime: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+        timeAgo: '25分钟前'
+      },
+      {
+        id: 5,
+        postId: 1,
+        userId: 3,
+        userName: '牛大果',
+        userNickname: '蛋黄',
+        userAvatar: '/images/default-avatar.png',
+        content: '谢谢楼主！',
+        parentId: 1, // 回复评论1
+        replyToUserId: 1,
+        replyToUserName: '三张',
+        isAuthor: false,
+        likes: 1,
+        isLiked: false,
+        createTime: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        timeAgo: '20分钟前'
       }
     ];
     this.saveComments(testComments);
@@ -200,7 +239,7 @@ class PostManager {
     return posts.find(post => post.id == postId);
   }
 
-  // 获得商品评论
+  // 获得商品评论（包含所有评论和回复）
   getCommentByPostId(postId) {
     try {
       const allComments = this.getAllComment();
@@ -214,15 +253,17 @@ class PostManager {
     }
   }
 
-  // 添加回复评论的方法
-  addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
+  // 添加主评论
+  addCommentByPostId(postId, content) {
     return new Promise((resolve, reject) => {
       try {
-        if (!content.trim()) {
-          reject({ message: '回复内容不能为空' });
+        // 参数验证
+        if (!content || typeof content !== 'string' || !content.trim()) {
+          reject({ message: '评论内容不能为空' });
           return;
         }
-
+        
+        // 获取当前用户信息
         const userManager = require('./userManager');
         const currentUser = userManager.getCurrentUser();
 
@@ -230,7 +271,7 @@ class PostManager {
           reject({ message: '请先登录' });
           return;
         }
-
+        
         // 获取帖子作者信息
         const post = this.getPostById(postId);
         if (!post) {
@@ -241,7 +282,7 @@ class PostManager {
         const isAuthor = post.userId === currentUser.id;
 
         const allComments = this.getAllComment();
-        const newReply = {
+        const newComment = {
           id: Date.now(),
           postId: parseInt(postId),
           userId: currentUser.id,
@@ -249,26 +290,101 @@ class PostManager {
           userNickname: currentUser.nickname || currentUser.name,
           userAvatar: '/images/default-avatar.png',
           content: content.trim(),
+          parentId: null, // 主评论没有父评论
           likes: 0,
           isLiked: false,
           isAuthor: isAuthor,
-          parentId: parentCommentId, // 父评论ID（始终是主评论的ID）
-          replyToUserId: replyToUserId,
-          replyToUserName: replyToUserName,
           createTime: new Date().toISOString(),
           timeAgo: '刚刚'
         };
 
+        allComments.unshift(newComment);
+        
+        if (this.saveComments(allComments)) {
+          // 更新帖子的评论数
+          this.updatePostCommentsCount(postId);
+          resolve(newComment);
+        } else {
+          reject({ message: '评论失败，请重试' });
+        }
+      } catch (error) {
+        console.error('保存评论失败:', error);
+        reject({ message: '评论失败，请重试' });
+      }
+    });
+  }
+
+  // 添加回复
+  addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('addReplyToComment 参数:', { postId, parentCommentId, content, replyToUserId, replyToUserName });
+        
+        // 1. 参数验证
+        if (!content || typeof content !== 'string' || !content.trim()) {
+          reject({ message: '回复内容不能为空' });
+          return;
+        }
+
+        // 2. 获取当前用户
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
+
+        // 3. 查找被回复的主评论
+        const allComments = this.getAllComment();
+        const parentComment = allComments.find(c => c.id == parentCommentId );
+        if (!parentComment) {
+          reject({ message: '评论不存在' });
+          return;
+        }
+
+        // 4. 查找帖子信息
+        const post = this.getPostById(postId);
+        if (!post) {
+          reject({ message: '帖子不存在' });
+          return;
+        }
+
+        const isAuthor = post.userId === currentUser.id;
+
+        // 5. 创建回复对象
+        const newReply = {
+          id: Date.now(), // 唯一ID
+          postId: parseInt(postId),
+          parentId: parseInt(parentCommentId), // 父评论ID
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userNickname: currentUser.nickname || currentUser.name,
+          userAvatar: '/images/default-avatar.png',
+          content: content.trim(),
+          replyToUserId: replyToUserId || null, // 被回复的用户ID
+          replyToUserName: replyToUserName || null, // 被回复的用户名
+          likes: 0,
+          isLiked: false,
+          isAuthor: isAuthor,
+          createTime: new Date().toISOString(),
+          timeAgo: '刚刚'
+        };
+
+        console.log('创建的回复对象:', newReply);
+
+        // 6. 保存回复到评论列表中
         allComments.unshift(newReply);
         
         if (this.saveComments(allComments)) {
+          // 7. 更新帖子的评论数
           this.updatePostCommentsCount(postId);
           resolve(newReply);
         } else {
           reject({ message: '回复失败，请重试' });
         }
-      } catch(error) {
-        console.error('保存回复失败:', error);
+        
+      } catch (error) {
+        console.error('回复失败:', error);
         reject({ message: '回复失败，请重试' });
       }
     });
@@ -284,87 +400,12 @@ class PostManager {
       return false;
     }
   }
-  // 添加回复评论的方法
-  addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
-    return new Promise((resolve, reject) => {
-      try {
-        if (!content.trim()) {
-          reject({ message: '回复内容不能为空' });
-          return;
-        }
 
-        const userManager = require('./userManager');
-        const currentUser = userManager.getCurrentUser();
-
-        if (!currentUser) {
-          reject({ message: '请先登录' });
-          return;
-        }
-
-        const allComments = this.getAllComment();
-        const newReply = {
-          id: Date.now(),
-          postId: parseInt(postId),
-          userId: currentUser.id,
-          userName: currentUser.name,
-          userNickname: currentUser.nickname || currentUser.name,
-          userAvatar: '/images/default-avatar.png',
-          content: content.trim(),
-          likes: 0,
-          isLiked: false,
-          isAuthor: false,
-          parentId: parentCommentId, // 设置父评论ID
-          replyToUserId: replyToUserId,
-          replyToUserName: replyToUserName,
-          createTime: new Date().toISOString(),
-          timeAgo: '刚刚'
-        };
-
-        allComments.unshift(newReply);
-        
-        if (this.saveComments(allComments)) {
-          this.updatePostCommentsCount(postId);
-          resolve(newReply);
-        } else {
-          reject({ message: '回复失败，请重试' });
-        }
-      } catch(error) {
-        console.error('保存回复失败:', error);
-        reject({ message: '回复失败，请重试' });
-      }
-    });
-  }
-  // postManager.js 中添加
-  organizeCommentsWithReplies(comments) {
-    const commentMap = new Map();
-    const rootComments = [];
-    
-    // 先处理所有评论
-    comments.forEach(comment => {
-      comment.replies = [];
-      commentMap.set(comment.id, comment);
-      
-      if (!comment.parentId) {
-        rootComments.push(comment);
-      }
-    });
-    
-    // 然后组织回复关系
-    comments.forEach(comment => {
-      if (comment.parentId) {
-        const parentComment = commentMap.get(comment.parentId);
-        if (parentComment) {
-          parentComment.replies.push(comment);
-        }
-      }
-    });
-    
-    return rootComments;
-  }
-  // 获取帖子评论列表 - 支持排序
+  // 获取帖子评论列表 - 支持排序（包含嵌套回复）
   getPostComments(postId, page = 1, limit = 20, sortType = 'time_desc') {
     return new Promise((resolve) => {
       const postComments = this.getCommentByPostId(postId);
+      
       // 根据排序类型进行排序
       switch (sortType) {
         case 'hot':
@@ -389,16 +430,28 @@ class PostManager {
           break;
       }
       
+      // 这里返回所有评论（包括回复），前端会进行嵌套组织
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
-      const comments = postComments.slice(startIndex, endIndex);
+      
+      // 注意：这里我们需要考虑分页逻辑
+      // 可以只对主评论进行分页，然后带上它们的所有回复
+      const mainComments = postComments.filter(c => !c.parentId);
+      const paginatedMainComments = mainComments.slice(startIndex, endIndex);
+      
+      // 获取这些主评论的所有回复
+      const mainCommentIds = paginatedMainComments.map(c => c.id);
+      const replies = postComments.filter(c => c.parentId && mainCommentIds.includes(c.parentId));
+      
+      // 合并主评论和回复
+      const comments = [...paginatedMainComments, ...replies];
       
       // 更新时间显示
       comments.forEach(comment => {
         comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
       });
       
-      console.log(`评论排序 - 类型: ${sortType}, 总数: ${postComments.length}, 返回: ${comments.length}`);
+      console.log(`评论排序 - 类型: ${sortType}, 主评论总数: ${mainComments.length}, 返回评论数: ${comments.length}`);
       
       setTimeout(() => {
         resolve(comments);
@@ -406,80 +459,22 @@ class PostManager {
     });
   }
 
-  // 添加并保存评论
-  addCommentByPostId(postId, content) {
-    return new Promise((resolve, reject) => {
-      try {
-        if (!content.trim()) {
-          reject({ message: '评论内容不能为空' });
-          return;
-        }
-        // 获取当前用户信息
-        const userManager = require('./userManager');
-        const currentUser = userManager.getCurrentUser();
-
-        if (!currentUser) {
-          reject({ message: '请先登录' });
-          return;
-        }
-        // 获取商品信息，判断是否为楼主
-        const post = this.getPostById(postId);
-        if (!post) {
-          reject({ message: '商品不存在' });
-          return;
-        }
-  
-        const isAuthor = post.sellerId === currentUser.id;
-        
-        const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
-        const newComment = {
-          id: Date.now().toString(),
-          postId: postId,
-          userId: currentUser.id,
-          userNickname: currentUser.nickname || currentUser.name,
-          avatar: currentUser.avatar || '/images/default-avatar.png',
-          content: content.trim(),
-          likes: 0,
-          isLiked: false,
-          isAuthor: isAuthor,
-          createTime: new Date().toISOString(),
-          timeAgo: '刚刚'
-        };
-  
-        allComments.unshift(newComment);
-        wx.setStorageSync(this.COMMENTS_KEY, allComments);
-  
-        if (this.saveComments(allComments)) {
-          // 更新商品的评论数
-          this.updatePostCommentsCount(postId);
-          resolve(newComment);
-        } else {
-          reject({ message: '评论失败，请重试' });
-        }
-      } catch (error) {
-        console.error('保存评论失败:', error);
-        reject({ message: '评论失败，请重试' });
-      }
-    });
-  }
-
-  // 更新帖子评论数
+  // 更新帖子评论数（包含回复）
   updatePostCommentsCount(postId) {
-    const allComments = this.getAllComment();
-    const postComments = allComments.filter(comment => comment.postId == postId);
-    const totalCount = postComments.length; // 包括主评论和回复
+    const allComments = this.getCommentByPostId(postId);
+    const commentCount = allComments.length; // 包含主评论和回复的总数
     
-    // 更新帖子的评论数
+    // 更新帖子中的评论数
     const posts = this.getAllPosts();
     const updatedPosts = posts.map(post => {
       if (post.id == postId) {
-        return { ...post, comments: totalCount };
+        return { ...post, comments: commentCount };
       }
       return post;
     });
     
     this.savePosts(updatedPosts);
-    return totalCount;
+    return commentCount;
   }
 
   // 发布动态
@@ -569,7 +564,7 @@ class PostManager {
   }
 
   // 获得所有评论
-  getAllComment(){
+  getAllComment() {
     try {
       return wx.getStorageSync(this.COMMENTS_KEY) || [];
     } catch (error) {
@@ -578,8 +573,8 @@ class PostManager {
     }
   }
 
-   // 评论点赞/取消点赞
-   toggleCommentLike(commentId) {
+  // 评论点赞/取消点赞（支持主评论和回复）
+  toggleCommentLike(commentId) {
     return new Promise((resolve, reject) => {
       const comments = this.getAllComment();
       const commentIndex = comments.findIndex(c => c.id == commentId);
@@ -614,6 +609,7 @@ class PostManager {
     try {
       wx.removeStorageSync(this.POSTS_KEY);
       wx.removeStorageSync(this.COMMENTS_KEY);
+      wx.removeStorageSync(this.REPLIES_KEY);
       return true;
     } catch (error) {
       return false;

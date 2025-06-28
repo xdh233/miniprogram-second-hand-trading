@@ -7,8 +7,6 @@ Page({
     post: null,
     userInfo: null,
     comments: [],
-    organizedComments: [], // 组织好的嵌套评论结构
-    totalCommentsCount: 0, // 总评论数（包括回复）
     newCommentContent: '',
     loading: true,
     loadingMore: false,
@@ -18,14 +16,13 @@ Page({
     pageSize: 20,
     sortType: 'hot',
     
-    // 回复相关字段
+    // 回复相关的数据
     showReplyInput: false,
-    replyingToComment: null,  // 主评论对象
-    replyToTarget: null,      // 被回复的具体目标（可能是主评论或子回复）
     replyContent: '',
-    replyTargetInfo: {        // 回复目标信息
-      targetName: '',         // 直接回复的用户名
-      replyToName: ''         // 如果是回复子回复，这里是原始被回复者的名字
+    currentReplyComment: null,
+    replyTargetInfo: {
+      targetName: '',
+      replyToName: null
     }
   },
 
@@ -131,106 +128,17 @@ Page({
 
       console.log('获取到的评论:', comments);
 
-      // 组织评论为嵌套结构
-      const organizedComments = this.organizeCommentsWithReplies(comments);
-      
-      // 计算总评论数（包括回复）
-      const totalCommentsCount = this.calculateTotalComments(organizedComments);
-
       this.setData({
         comments: refresh ? comments : [...this.data.comments, ...comments],
-        organizedComments: organizedComments,
-        totalCommentsCount: totalCommentsCount,
         currentPage: page + 1,
         hasMore: comments.length === this.data.pageSize,
         loadingMore: false,
-        'post.comments': totalCommentsCount
+        'post.commentsCount': comments.length
       });
     } catch (error) {
       console.error('加载评论失败:', error);
       this.setData({ loadingMore: false });
     }
-  },
-
-  // 组织评论为嵌套结构
-  organizeCommentsWithReplies(allComments) {
-    const commentMap = new Map();
-    const rootComments = [];
-    
-    // 先创建所有评论的映射，并初始化replies数组
-    allComments.forEach(comment => {
-      comment.replies = [];
-      comment.showAllReplies = false; // 控制是否显示所有回复
-      commentMap.set(comment.id, comment);
-      
-      // 如果没有parentId，说明是主评论
-      if (!comment.parentId) {
-        rootComments.push(comment);
-      }
-    });
-    
-    // 然后将回复分配到对应的主评论下
-    allComments.forEach(comment => {
-      if (comment.parentId) {
-        const parentComment = commentMap.get(comment.parentId);
-        if (parentComment) {
-          parentComment.replies.push(comment);
-        }
-      }
-    });
-    
-    // 对每个主评论的回复按时间排序，并初始化显示状态
-    rootComments.forEach(comment => {
-      if (comment.replies.length > 0) {
-        comment.replies.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
-      }
-      
-      // 关键修复：强制重新初始化 displayReplies
-      if (comment.replies.length <= 2) {
-        comment.displayReplies = [...comment.replies];
-      } else {
-        comment.displayReplies = comment.replies.slice(0, 2);
-      }
-      comment.showAllReplies = false; // 强制设为未展开状态
-      
-      console.log(`评论 ${comment.userNickname}: 总回复=${comment.replies.length}, 显示回复=${comment.displayReplies.length}, 展开状态=${comment.showAllReplies}`);
-    });
-    
-    console.log('组织后的评论结构:', rootComments);
-    return rootComments;
-  },
-
-  // 计算总评论数（包括回复）
-  calculateTotalComments(organizedComments) {
-    let total = 0;
-    organizedComments.forEach(comment => {
-      total += 1; // 主评论
-      total += comment.replies.length; // 回复数
-    });
-    return total;
-  },
-
-  // 展开/收起更多回复
-  toggleReplies(e) {
-    const index = e.currentTarget.dataset.index;
-    const organizedComments = [...this.data.organizedComments];
-    const comment = organizedComments[index];
-    
-    console.log('切换展开状态，当前:', comment.showAllReplies);
-    
-    // 切换展开状态
-    comment.showAllReplies = !comment.showAllReplies;
-    
-    // 更新显示的回复
-    if (comment.showAllReplies) {
-      comment.displayReplies = [...comment.replies]; // 显示全部
-    } else {
-      comment.displayReplies = comment.replies.slice(0, 2); // 显示前2条
-    }
-    
-    this.setData({
-      organizedComments: organizedComments
-    });
   },
 
   // 选择评论显示方式
@@ -247,7 +155,6 @@ Page({
     this.setData({
       sortType: sortType,
       comments: [], // 清空现有评论
-      organizedComments: [],
       currentPage: 1,
       hasMore: true
     });
@@ -286,7 +193,7 @@ Page({
       
       this.setData({ newCommentContent: '' });
       
-      // 刷新评论列表
+      // 刷新评论列表 评论数量
       this.loadComments(true);
 
       wx.showToast({
@@ -305,33 +212,29 @@ Page({
 
   // 显示回复输入框
   showReplyInput(e) {
-    const dataset = e.currentTarget.dataset;
-    const comment = dataset.comment;  // 主评论
-    const replyTo = dataset.replyTo;  // 被回复的目标（如果是回复子回复）
-    const isReply = dataset.isReply;  // 是否是回复子回复
+    const { comment, index } = e.currentTarget.dataset;
     
-    console.log('开始回复:', { comment, replyTo, isReply });
+    console.log('开始回复:', { comment, index });
     
-    let replyTargetInfo = {
-      targetName: comment.userNickname,
-      replyToName: ''
-    };
-    
-    let replyToTarget = comment;
-    
-    // 如果是回复子回复
-    if (isReply && replyTo) {
-      replyTargetInfo.targetName = replyTo.userNickname;
-      replyTargetInfo.replyToName = replyTo.replyToUserName || comment.userNickname;
-      replyToTarget = replyTo;
+    // 如果comment对象传递失败，从data中获取
+    let targetComment = comment;
+    if (!targetComment && index !== undefined) {
+      targetComment = this.data.comments[index];
     }
     
+    if (!targetComment) {
+      console.error('无法获取评论信息');
+      return;
+    }
+
     this.setData({
       showReplyInput: true,
-      replyingToComment: comment,      // 始终是主评论
-      replyToTarget: replyToTarget,    // 实际回复的目标
-      replyContent: '',
-      replyTargetInfo: replyTargetInfo
+      currentReplyComment: targetComment,
+      replyTargetInfo: {
+        targetName: targetComment.userNickname,
+        replyToName: null
+      },
+      replyContent: ''
     });
   },
 
@@ -339,12 +242,11 @@ Page({
   cancelReply() {
     this.setData({
       showReplyInput: false,
-      replyingToComment: null,
-      replyToTarget: null,
+      currentReplyComment: null,
       replyContent: '',
       replyTargetInfo: {
         targetName: '',
-        replyToName: ''
+        replyToName: null
       }
     });
   },
@@ -358,64 +260,23 @@ Page({
       });
     }
 
-    const replyingTo = this.data.replyingToComment; // 主评论
-    const replyToTarget = this.data.replyToTarget;   // 实际回复目标
-    
-    // 调试信息
-    console.log('当前回复状态:', {
-      replyingTo: replyingTo,
-      replyToTarget: replyToTarget,
-      organizedComments: this.data.organizedComments
-    });
-    
-    if (!replyingTo || !replyingTo.id) {
-      wx.showToast({
-        title: '回复信息错误，请重试',
-        icon: 'none'
-      });
-      return;
-    }
-    
     try {
-      console.log('提交回复参数:', {
-        postId: this.data.postId,
-        parentCommentId: replyingTo.id,
-        content: this.data.replyContent,
-        replyToUserId: replyToTarget?.userId,
-        replyToUserName: replyToTarget?.userNickname
+      console.log('提交回复:', {
+        commentId: this.data.currentReplyComment.id,
+        content: this.data.replyContent
       });
-      
-      // 调用回复接口，需要传递主评论ID作为parentId
+
+      // 这里需要根据你的API调用回复接口
       await postManager.addReplyToComment(
-        this.data.postId,
-        replyingTo.id,  // 父评论ID（始终是主评论的ID）
-        this.data.replyContent,
-        replyToTarget?.userId || replyingTo.userId,
-        replyToTarget?.userNickname || replyingTo.userNickname
+        this.data.currentReplyComment.id, 
+        this.data.replyContent
       );
-      
+
       // 清空回复状态
       this.cancelReply();
       
-      // 保存当前的展开状态
-      const currentExpandStates = {};
-      this.data.organizedComments.forEach((comment, index) => {
-        currentExpandStates[comment.id] = comment.showAllReplies;
-      });
-      
-      // 重新加载评论
-      await this.loadComments(true);
-      
-      // 恢复展开状态
-      const organizedComments = [...this.data.organizedComments];
-      organizedComments.forEach(comment => {
-        if (currentExpandStates[comment.id]) {
-          comment.showAllReplies = true;
-          comment.displayReplies = [...comment.replies];
-        }
-      });
-      
-      this.setData({ organizedComments });
+      // 刷新评论列表
+      this.loadComments(true);
 
       wx.showToast({
         title: '回复成功',
@@ -451,82 +312,23 @@ Page({
   // 评论点赞/取消点赞
   async onLikeComment(e) {
     const commentId = e.currentTarget.dataset.id;
-    const isReply = e.currentTarget.dataset.isReply;
+    const commentIndex = e.currentTarget.dataset.index;
     
     try {
       const result = await postManager.toggleCommentLike(commentId);
       
-      // 更新对应的评论数据
-      if (isReply) {
-        // 更新回复的点赞状态
-        this.updateReplyLikeStatus(commentId, result);
-      } else {
-        // 更新主评论的点赞状态
-        this.updateMainCommentLikeStatus(commentId, result);
-      }
+      // 更新评论数据
+      const comments = this.data.comments;
+      comments[commentIndex].isLiked = result.isLiked;
+      comments[commentIndex].likes = result.likes;
+      
+      this.setData({ comments });
       
     } catch (error) {
       console.error('评论点赞操作失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
-      });
-    }
-  },
-
-  // 更新主评论点赞状态
-  updateMainCommentLikeStatus(commentId, result) {
-    const organizedComments = [...this.data.organizedComments];
-    const commentIndex = organizedComments.findIndex(c => c.id == commentId);
-    
-    if (commentIndex !== -1) {
-      organizedComments[commentIndex].isLiked = result.isLiked;
-      organizedComments[commentIndex].likes = result.likes;
-      this.setData({ organizedComments });
-    }
-  },
-
-  // 更新回复点赞状态
-  updateReplyLikeStatus(replyId, result) {
-    const organizedComments = [...this.data.organizedComments];
-    
-    for (let i = 0; i < organizedComments.length; i++) {
-      const comment = organizedComments[i];
-      const replyIndex = comment.replies.findIndex(r => r.id == replyId);
-      
-      if (replyIndex !== -1) {
-        comment.replies[replyIndex].isLiked = result.isLiked;
-        comment.replies[replyIndex].likes = result.likes;
-        
-        // 同时更新displayReplies中的数据
-        const displayIndex = comment.displayReplies.findIndex(r => r.id == replyId);
-        if (displayIndex !== -1) {
-          comment.displayReplies[displayIndex].isLiked = result.isLiked;
-          comment.displayReplies[displayIndex].likes = result.likes;
-        }
-        
-        this.setData({ organizedComments });
-        break;
-      }
-    }
-  },
-
-  // 跳转到用户个人空间
-  goToUserProfile(e) {
-    const userId = e.currentTarget.dataset.userId;
-    console.log('跳转到用户空间:', userId);
-    
-    // 检查是否是当前用户自己
-    const currentUser = userManager.getCurrentUser();
-    if (currentUser && currentUser.id == userId) {
-      // 跳转到自己的个人中心
-      wx.switchTab({
-        url: '/pages/profile/profile'
-      });
-    } else {
-      // 跳转到其他用户的个人空间
-      wx.navigateTo({
-        url: `/pages/user-profile/user-profile?userId=${userId}`
       });
     }
   },

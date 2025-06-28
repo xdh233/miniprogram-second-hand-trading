@@ -261,11 +261,10 @@ class ItemManager {
     const items = this.getAllItems();
     return items.find(item => item.id == itemId);
   }
-
-  // 获得商品评论
+  // 获得商品评论（包含所有评论和回复）
   getCommentByItemId(itemId) {
     try {
-      const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
+      const allComments = this.getAllComment();
       // 筛选出该商品的评论，按时间正序排列
       return allComments
         .filter(comment => comment.itemId == itemId)
@@ -276,14 +275,95 @@ class ItemManager {
     }
   }
 
-  // 添加并保存评论
+  // 添加回复（修复后的版本）
+  addReplyToComment(itemId, parentCommentId, content, replyToUserId, replyToUserName) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('addReplyToComment 参数:', { itemId, parentCommentId, content, replyToUserId, replyToUserName });
+        
+        // 1. 参数验证
+        if (!content || typeof content !== 'string' || !content.trim()) {
+          reject({ message: '回复内容不能为空' });
+          return;
+        }
+
+        // 2. 获取当前用户
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
+
+        // 3. 查找被回复的评论（可以是主评论或回复）
+        const allComments = this.getAllComment();
+        const targetComment = allComments.find(c => c.id == parentCommentId);
+        if (!targetComment) {
+          reject({ message: '评论不存在' });
+          return;
+        }
+
+        // 4. 确定真正的主评论ID（用于组织嵌套结构）
+        const mainCommentId = targetComment.parentId || targetComment.id;
+
+        // 5. 查找商品信息
+        const item = this.getItemById(itemId);
+        if (!item) {
+          reject({ message: '商品不存在' });
+          return;
+        }
+
+        const isAuthor = item.sellerId === currentUser.id;
+
+        // 6. 创建回复对象
+        const newReply = {
+          id: Date.now(),
+          itemId: parseInt(itemId),
+          parentId: mainCommentId, // 统一指向主评论ID
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userNickname: currentUser.nickname || currentUser.name,
+          userAvatar: '/images/default-avatar.png',
+          content: content.trim(),
+          replyToUserId: replyToUserId || null,
+          replyToUserName: replyToUserName || null,
+          likes: 0,
+          isLiked: false,
+          isAuthor: isAuthor,
+          createTime: new Date().toISOString(),
+          timeAgo: '刚刚'
+        };
+
+        console.log('创建的回复对象:', newReply);
+
+        // 7. 保存回复到评论列表中
+        allComments.unshift(newReply);
+        
+        if (this.saveComments(allComments)) {
+          // 8. 更新商品的评论数
+          this.updateItemCommentsCount(itemId);
+          resolve(newReply);
+        } else {
+          reject({ message: '回复失败，请重试' });
+        }
+        
+      } catch (error) {
+        console.error('回复失败:', error);
+        reject({ message: '回复失败，请重试' });
+      }
+    });
+  }
+
+  // 添加主评论（修复后的统一版本）
   addCommentByItemId(itemId, content) {
     return new Promise((resolve, reject) => {
       try {
-        if (!content.trim()) {
+        // 参数验证
+        if (!content || typeof content !== 'string' || !content.trim()) {
           reject({ message: '评论内容不能为空' });
           return;
         }
+        
         // 获取当前用户信息
         const userManager = require('./userManager');
         const currentUser = userManager.getCurrentUser();
@@ -292,33 +372,35 @@ class ItemManager {
           reject({ message: '请先登录' });
           return;
         }
+        
         // 获取商品信息，判断是否为楼主
         const item = this.getItemById(itemId);
         if (!item) {
           reject({ message: '商品不存在' });
           return;
         }
-  
+
         const isAuthor = item.sellerId === currentUser.id;
-        
-        const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
+
+        const allComments = this.getAllComment();
         const newComment = {
-          id: Date.now().toString(),
-          itemId: itemId,
+          id: Date.now(),
+          itemId: parseInt(itemId),
           userId: currentUser.id,
+          userName: currentUser.name,
           userNickname: currentUser.nickname || currentUser.name,
-          avatar: currentUser.avatar || '/images/default-avatar.png',
+          userAvatar: '/images/default-avatar.png',
           content: content.trim(),
+          parentId: null, // 主评论没有父评论
           likes: 0,
           isLiked: false,
           isAuthor: isAuthor,
           createTime: new Date().toISOString(),
           timeAgo: '刚刚'
         };
-  
+
         allComments.unshift(newComment);
-        wx.setStorageSync(this.COMMENTS_KEY, allComments);
-  
+        
         if (this.saveComments(allComments)) {
           // 更新商品的评论数
           this.updateItemCommentsCount(itemId);
@@ -354,10 +436,11 @@ class ItemManager {
     }
   }
 
-  // 获取商品评论列表 - 支持排序
+  // 获取帖子评论列表 - 支持排序（包含嵌套回复）
   getItemComments(itemId, page = 1, limit = 20, sortType = 'time_desc') {
     return new Promise((resolve) => {
       const itemComments = this.getCommentByItemId(itemId);
+      
       // 根据排序类型进行排序
       switch (sortType) {
         case 'hot':
@@ -382,16 +465,28 @@ class ItemManager {
           break;
       }
       
+      // 这里返回所有评论（包括回复），前端会进行嵌套组织
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
-      const comments = itemComments.slice(startIndex, endIndex);
+      
+      // 注意：这里我们需要考虑分页逻辑
+      // 可以只对主评论进行分页，然后带上它们的所有回复
+      const mainComments = itemComments.filter(c => !c.parentId);
+      const paginatedMainComments = mainComments.slice(startIndex, endIndex);
+      
+      // 获取这些主评论的所有回复
+      const mainCommentIds = paginatedMainComments.map(c => c.id);
+      const replies = itemComments.filter(c => c.parentId && mainCommentIds.includes(c.parentId));
+      
+      // 合并主评论和回复
+      const comments = [...paginatedMainComments, ...replies];
       
       // 更新时间显示
       comments.forEach(comment => {
         comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
       });
       
-      console.log(`评论排序 - 类型: ${sortType}, 总数: ${itemComments.length}, 返回: ${comments.length}`);
+      console.log(`评论排序 - 类型: ${sortType}, 主评论总数: ${mainComments.length}, 返回评论数: ${comments.length}`);
       
       setTimeout(() => {
         resolve(comments);
@@ -399,10 +494,22 @@ class ItemManager {
     });
   }
 
-  // 更新商品的评论数
+  // 更新帖子评论数（包含回复）
   updateItemCommentsCount(itemId) {
-    const comments = this.getCommentByItemId(itemId);
-    return comments.length;
+    const allComments = this.getCommentByItemId(itemId);
+    const commentCount = allComments.length; // 包含主评论和回复的总数
+    
+    // 更新帖子中的评论数
+    const items = this.getAllItems();
+    const updatedItems = items.map(item => {
+      if (item.id == itemId) {
+        return { ...item, comments: commentCount };
+      }
+      return item;
+    });
+    
+    this.saveItems(updatedItems);
+    return commentCount;
   }
 
   // 获取商品分类
