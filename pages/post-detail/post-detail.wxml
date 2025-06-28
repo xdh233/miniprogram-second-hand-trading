@@ -117,24 +117,38 @@
         <view wx:for="{{comments}}" wx:key="id" class="comment-item">
           <image class="comment-avatar" src="{{item.userAvatar}}" mode="aspectFill" />
           <view class="comment-main">
+            <!-- 第一行：昵称和楼主标签 -->
             <view class="comment-user-info">
               <view class="comment-user-left">
                 <text class="comment-username">{{item.userNickname}}</text>
                 <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
-                <text class="comment-time">{{item.timeAgo}}</text>
-              </view>
-              <!-- 评论点赞按钮移到右侧 -->
-              <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
-                    bindtap="onLikeComment"
-                    data-id="{{item.id}}"
-                    data-index="{{index}}">
-                <image class="comment-like-icon" 
-                       src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
-                       mode="aspectFit" />
-                <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
               </view>
             </view>
+            
+            <!-- 第二行：评论内容 -->
             <text class="comment-content">{{item.content}}</text>
+            
+            <!-- 第三行：发布时间和操作按钮 -->
+            <view class="comment-bottom-row">
+              <text class="comment-time">{{item.timeAgo}}</text>
+              <view class="comment-actions">
+                <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
+                      bindtap="onLikeComment"
+                      data-id="{{item.id}}"
+                      data-index="{{index}}">
+                  <image class="comment-like-icon" 
+                        src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                        mode="aspectFit" />
+                  <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
+                </view>
+                <view class="comment-reply-btn" 
+                      bindtap="showReplyInput"
+                      data-comment="{{item}}"
+                      data-index="{{index}}">
+                  <text class="comment-reply-text">回复</text>
+                </view>
+              </view>
+            </view>
           </view>
         </view>
         

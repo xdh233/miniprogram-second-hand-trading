@@ -169,9 +169,6 @@
 }
 
 /* 图片展示区域 */
-/* ✅ 添加这些样式到你的 post-detail.wxss */
-
-/* 图片展示区域 */
 .images-section {
   margin: 20rpx 0;
 }
@@ -250,15 +247,6 @@
   height: 140rpx;
 }
 
-/* 🗑️ 删除原来的简单图片样式（如果有的话） */
-/*
-.post-image {
-  width: 100%;
-  height: 300rpx;
-  border-radius: 12rpx;
-}
-*/
-
 /* 评论容器 */
 .comments-container {
   background: #fff;
@@ -323,7 +311,7 @@
   font-weight: 600;
 }
 
-/* 评论列表 */
+/* 评论列表 - 修改后的样式 */
 .comments-list {
   padding: 0 32rpx;
 }
@@ -344,17 +332,15 @@
   border-radius: 32rpx;
   margin-right: 20rpx;
   border: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .comment-main {
   flex: 1;
 }
 
-/* 评论用户信息区域 - 修改为一行显示 */
+/* 第一行：昵称和楼主标签 */
 .comment-user-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 12rpx;
 }
 
@@ -367,7 +353,7 @@
   font-size: 28rpx;
   font-weight: 500;
   color: #1a1a1a;
-  margin-right: 16rpx;
+  margin-right: 12rpx;
 }
 
 .author-tag {
@@ -376,7 +362,23 @@
   font-size: 20rpx;
   padding: 2rpx 8rpx;
   border-radius: 8rpx;
-  margin-right: 8rpx;
+}
+
+/* 第二行：评论内容 */
+.comment-content {
+  font-size: 28rpx;
+  color: #1a1a1a;
+  line-height: 1.5;
+  word-break: break-word;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+/* 第三行：发布时间和操作按钮 */
+.comment-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .comment-time {
@@ -384,19 +386,28 @@
   color: #8e8e93;
 }
 
+/* 操作按钮容器 */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
 /* 评论点赞按钮 - 无框样式 */
 .comment-like-btn {
   display: flex;
   align-items: center;
   gap: 6rpx;
-  padding: 8rpx;
+  padding: 8rpx 12rpx;
   background: transparent;
   border: none;
+  border-radius: 20rpx;
   transition: all 0.3s ease;
 }
 
 .comment-like-btn:active {
-  transform: scale(0.9);
+  background: #f0f0f0;
+  transform: scale(0.95);
 }
 
 .comment-like-icon {
@@ -418,6 +429,30 @@
 .comment-like-btn.liked .comment-like-count {
   color: #ff3b30;
   font-weight: 500;
+}
+
+/* 评论回复按钮 */
+.comment-reply-btn {
+  padding: 8rpx 12rpx;
+  background: transparent;
+  border: none;
+  border-radius: 20rpx;
+  transition: all 0.3s ease;
+}
+
+.comment-reply-btn:active {
+  background: #f0f0f0;
+  transform: scale(0.95);
+}
+
+.comment-reply-text {
+  font-size: 24rpx;
+  color: #8e8e93;
+  transition: all 0.3s ease;
+}
+
+.comment-reply-btn:active .comment-reply-text {
+  color: #0096c3;
 }
 
 /* 加载和空状态 */

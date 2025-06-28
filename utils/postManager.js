@@ -214,15 +214,15 @@ class PostManager {
     }
   }
 
-  // 添加并保存评论
-  addCommentByPostId(postId, content) {
+  // 添加回复评论的方法
+  addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
     return new Promise((resolve, reject) => {
-      try{
+      try {
         if (!content.trim()) {
-          reject({ message: '评论内容不能为空' });
+          reject({ message: '回复内容不能为空' });
           return;
         }
-        // 获取当前用户信息
+
         const userManager = require('./userManager');
         const currentUser = userManager.getCurrentUser();
 
@@ -230,17 +230,18 @@ class PostManager {
           reject({ message: '请先登录' });
           return;
         }
+
         // 获取帖子作者信息
-        const post=this.getPostById(postId);
+        const post = this.getPostById(postId);
         if (!post) {
           reject({ message: '帖子不存在' });
           return;
         }
-  
+
         const isAuthor = post.userId === currentUser.id;
 
         const allComments = this.getAllComment();
-        const newComment = {
+        const newReply = {
           id: Date.now(),
           postId: parseInt(postId),
           userId: currentUser.id,
@@ -250,23 +251,25 @@ class PostManager {
           content: content.trim(),
           likes: 0,
           isLiked: false,
-          isAuthor: isAuthor, // 标识是否为楼主
+          isAuthor: isAuthor,
+          parentId: parentCommentId, // 父评论ID（始终是主评论的ID）
+          replyToUserId: replyToUserId,
+          replyToUserName: replyToUserName,
           createTime: new Date().toISOString(),
           timeAgo: '刚刚'
         };
 
-        allComments.unshift(newComment);
+        allComments.unshift(newReply);
         
         if (this.saveComments(allComments)) {
-          // 更新帖子的评论数
           this.updatePostCommentsCount(postId);
-          resolve(newComment);
+          resolve(newReply);
         } else {
-          reject({ message: '评论失败，请重试' });
+          reject({ message: '回复失败，请重试' });
         }
-      }catch(error){
-        console.error('保存评论失败:', error);
-        reject({ message: '评论失败，请重试' });
+      } catch(error) {
+        console.error('保存回复失败:', error);
+        reject({ message: '回复失败，请重试' });
       }
     });
   }
@@ -281,7 +284,83 @@ class PostManager {
       return false;
     }
   }
+  // 添加回复评论的方法
+  addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (!content.trim()) {
+          reject({ message: '回复内容不能为空' });
+          return;
+        }
 
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
+
+        const allComments = this.getAllComment();
+        const newReply = {
+          id: Date.now(),
+          postId: parseInt(postId),
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userNickname: currentUser.nickname || currentUser.name,
+          userAvatar: '/images/default-avatar.png',
+          content: content.trim(),
+          likes: 0,
+          isLiked: false,
+          isAuthor: false,
+          parentId: parentCommentId, // 设置父评论ID
+          replyToUserId: replyToUserId,
+          replyToUserName: replyToUserName,
+          createTime: new Date().toISOString(),
+          timeAgo: '刚刚'
+        };
+
+        allComments.unshift(newReply);
+        
+        if (this.saveComments(allComments)) {
+          this.updatePostCommentsCount(postId);
+          resolve(newReply);
+        } else {
+          reject({ message: '回复失败，请重试' });
+        }
+      } catch(error) {
+        console.error('保存回复失败:', error);
+        reject({ message: '回复失败，请重试' });
+      }
+    });
+  }
+  // postManager.js 中添加
+  organizeCommentsWithReplies(comments) {
+    const commentMap = new Map();
+    const rootComments = [];
+    
+    // 先处理所有评论
+    comments.forEach(comment => {
+      comment.replies = [];
+      commentMap.set(comment.id, comment);
+      
+      if (!comment.parentId) {
+        rootComments.push(comment);
+      }
+    });
+    
+    // 然后组织回复关系
+    comments.forEach(comment => {
+      if (comment.parentId) {
+        const parentComment = commentMap.get(comment.parentId);
+        if (parentComment) {
+          parentComment.replies.push(comment);
+        }
+      }
+    });
+    
+    return rootComments;
+  }
   // 获取帖子评论列表 - 支持排序
   getPostComments(postId, page = 1, limit = 20, sortType = 'time_desc') {
     return new Promise((resolve) => {
@@ -327,10 +406,80 @@ class PostManager {
     });
   }
 
+  // 添加并保存评论
+  addCommentByPostId(postId, content) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (!content.trim()) {
+          reject({ message: '评论内容不能为空' });
+          return;
+        }
+        // 获取当前用户信息
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
+        // 获取商品信息，判断是否为楼主
+        const post = this.getPostById(postId);
+        if (!post) {
+          reject({ message: '商品不存在' });
+          return;
+        }
+  
+        const isAuthor = post.sellerId === currentUser.id;
+        
+        const allComments = wx.getStorageSync(this.COMMENTS_KEY) || [];
+        const newComment = {
+          id: Date.now().toString(),
+          postId: postId,
+          userId: currentUser.id,
+          userNickname: currentUser.nickname || currentUser.name,
+          avatar: currentUser.avatar || '/images/default-avatar.png',
+          content: content.trim(),
+          likes: 0,
+          isLiked: false,
+          isAuthor: isAuthor,
+          createTime: new Date().toISOString(),
+          timeAgo: '刚刚'
+        };
+  
+        allComments.unshift(newComment);
+        wx.setStorageSync(this.COMMENTS_KEY, allComments);
+  
+        if (this.saveComments(allComments)) {
+          // 更新商品的评论数
+          this.updatePostCommentsCount(postId);
+          resolve(newComment);
+        } else {
+          reject({ message: '评论失败，请重试' });
+        }
+      } catch (error) {
+        console.error('保存评论失败:', error);
+        reject({ message: '评论失败，请重试' });
+      }
+    });
+  }
+
   // 更新帖子评论数
   updatePostCommentsCount(postId) {
-    const comments = this.getCommentByPostId(postId);
-    return comments.length;
+    const allComments = this.getAllComment();
+    const postComments = allComments.filter(comment => comment.postId == postId);
+    const totalCount = postComments.length; // 包括主评论和回复
+    
+    // 更新帖子的评论数
+    const posts = this.getAllPosts();
+    const updatedPosts = posts.map(post => {
+      if (post.id == postId) {
+        return { ...post, comments: totalCount };
+      }
+      return post;
+    });
+    
+    this.savePosts(updatedPosts);
+    return totalCount;
   }
 
   // 发布动态
