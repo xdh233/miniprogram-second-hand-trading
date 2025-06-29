@@ -249,16 +249,10 @@ Page({
     const userId = e.currentTarget.dataset.userid;
     console.log('查看用户主页:', userId);
     
-    // 可以选择显示开发中提示，或者直接跳转
-    wx.showToast({
-      title: '用户主页开发中',
-      icon: 'none'
+    //如果用户主页已开发，取消注释下面的代码
+    wx.navigateTo({
+      url: `/pages/user-profile/user-profile?id=${userId}`
     });
-    
-    // 如果用户主页已开发，取消注释下面的代码
-    // wx.navigateTo({
-    //   url: `/pages/user-profile/user-profile?id=${userId}`
-    // });
   },
 
   // 下拉刷新 

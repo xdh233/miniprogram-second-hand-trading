@@ -1,0 +1,125 @@
+<!-- pages/my-sold-items/my-sold-items.wxml -->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-wrapper">
+    <view class="loading">
+      <text>加载中...</text>
+    </view>
+  </view>
+
+  <!-- 错误状态 -->
+  <view wx:elif="{{error}}" class="error-wrapper">
+    <view class="error">
+      <text>{{error}}</text>
+      <button class="retry-btn" bindtap="loadSoldItems">重试</button>
+    </view>
+  </view>
+
+  <!-- 内容区域 -->
+  <view wx:else>
+    <!-- 状态筛选标签 - 固定在顶部 -->
+    <view class="status-tabs">
+      <view 
+        wx:for="{{statusOptions}}" 
+        wx:key="key"
+        class="status-tab {{activeStatus === item.key ? 'active' : ''}}"
+        data-status="{{item.key}}"
+        bindtap="switchStatus"
+      >
+        <text class="tab-label">{{item.label}}</text>
+        <text class="tab-count">({{item.count}})</text>
+      </view>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="items-container">
+      <view wx:if="{{filteredItems.length === 0}}" class="empty-state">
+        <image class="empty-icon" src="/images/empty-box.png" mode="aspectFit" />
+        <text class="empty-text">暂无相关商品</text>
+        <text class="empty-tip">
+          {{activeStatus === 'all' ? '还没有发布过商品' : '该状态下暂无商品'}}
+        </text>
+      </view>
+
+      <view wx:else class="items-list">
+        <view 
+          wx:for="{{filteredItems}}" 
+          wx:key="id"
+          class="item-card"
+          data-item-id="{{item.id}}"
+          bindtap="onItemTap"
+        >
+          <!-- 商品主要内容：左图右文布局 -->
+          <view class="item-main-content">
+            <!-- 左侧：商品缩略图 -->
+            <view class="item-image-section">
+              <image 
+                class="item-thumbnail" 
+                src="{{item.images && item.images[0] ? item.images[0] : '/images/placeholder.png'}}"
+                mode="aspectFill"
+              />
+              <!-- 状态标签 -->
+              <view class="status-tag {{item.status === '在售' ? 'status-selling' : 'status-sold'}}">
+                {{item.status}}
+              </view>
+            </view>
+
+            <!-- 右侧：商品信息 -->
+            <view class="item-detail-section">
+              <!-- 商品标题 -->
+              <view class="item-title">{{item.title}}</view>
+              
+              <!-- 商品描述 -->
+              <view class="item-description">{{item.description}}</view>
+              
+              <!-- 商品价格 -->
+              <view class="item-price">¥{{item.price}}</view>
+              
+              <!-- 交易时间和统计信息 -->
+              <view class="item-meta">
+                <text class="create-time">发布：{{item.createTime}}</text>
+                <view class="item-stats">
+                  <text class="stat-item">👀 {{item.viewCount}}</text>
+                  <text class="stat-item">❤️ {{item.likeCount}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 买家信息（已售出时显示） -->
+          <view wx:if="{{item.buyerId && item.status === '已售出'}}" class="buyer-info">
+            <view class="buyer-details">
+              <image class="buyer-avatar" src="{{item.buyerAvatar}}" />
+              <view class="buyer-text">
+                <text class="buyer-label">购买者：</text>
+                <text class="buyer-name">{{item.buyerName}}</text>
+              </view>
+            </view>
+            <text class="sold-time">售出：{{item.soldTime}}</text>
+          </view>
+
+          <!-- 简化的操作按钮 -->
+          <view class="item-actions">
+            <!-- 在售状态的按钮 -->
+            <block wx:if="{{item.status === '在售'}}">
+              <button 
+                class="action-btn primary"
+                data-item-id="{{item.id}}"
+                catchtap="markAsSold"
+              >
+                标记售出
+              </button>
+            </block>
+
+            <!-- 已售出状态 -->
+            <block wx:if="{{item.status === '已售出'}}">
+              <view class="sold-info">
+                <text class="sold-text">🎉 交易已完成</text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -85,69 +85,50 @@ Page({
     });
   },
 
-
-
-  // 我发布的
+  // 个人空间
   navigateToMyPublished() {
-    console.log('查看我发布的');
-    wx.showToast({
-      title: '我发布的功能开发中',
-      icon: 'none'
+    console.log('查看个人空间');
+    const currentUser=userManager.getCurrentUser();
+
+    if (!currentUser) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const userId=currentUser.id;
+    wx.navigateTo({
+      url: `/pages/user-profile/user-profile?userId=${userId}`
     });
-    // wx.navigateTo({
-    //   url: '/pages/my-published/my-published'
-    // });
   },
 
   // 我卖出的
   navigateToMySold() {
     console.log('查看我卖出的');
-    wx.showToast({
-      title: '我卖出的功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/sold-items/sold-items'
     });
-    // wx.navigateTo({
-    //   url: '/pages/my-sold/my-sold'
-    // });
   },
 
   // 我买到的
   navigateToMyBought() {
     console.log('查看我买到的');
-    wx.showToast({
-      title: '我买到的功能开发中',
-      icon: 'none'
+
+    wx.navigateTo({
+      url: '/pages/bought-items/bought-items'
     });
-    // wx.navigateTo({
-    //   url: '/pages/my-bought/my-bought'
-    // });
   },
 
   // 我的收藏
   navigateToFavorites() {
     console.log('查看我的收藏');
-    wx.showToast({
-      title: '我的收藏功能开发中',
-      icon: 'none'
+
+    wx.navigateTo({
+      url: '/pages/my-favorites/my-favorites'
     });
-    // wx.navigateTo({
-    //   url: '/pages/favorites/favorites'
-    // });
   },
-
-  // 收货地址
-  navigateToDeliveryAddress() {
-    console.log('管理收货地址');
-    wx.showToast({
-      title: '收货地址功能开发中',
-      icon: 'none'
-    });
-    // wx.navigateTo({
-    //   url: '/pages/address/address'
-    // });
-  },
-
-
 
   // 意见反馈
   navigateToFeedback() {
@@ -172,8 +153,6 @@ Page({
       confirmText: '知道了'
     });
   },
-
-
 
   // 退出登录
   logout() {

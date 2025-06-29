@@ -22,6 +22,7 @@ class UserManager {
           phone: '13800138000',
           email: 'zhangsan@example.com',
           rating: '信用优秀',
+          bio: '我是狗。',
           createdAt: new Date().toISOString()
         },
         {
@@ -34,6 +35,7 @@ class UserManager {
           phone: '13800138001',
           email: 'lisi@example.com',
           rating: '信用良好',
+          bio: '我不是狗也不累',
           createdAt: new Date().toISOString()
         },
         {
@@ -46,6 +48,7 @@ class UserManager {
           phone: '13800138002',
           email: 'niudaguo@example.com',
           rating: '信用优秀',
+          bio: '累。',
           createdAt: new Date().toISOString()
         }
       ];
@@ -353,7 +356,51 @@ class UserManager {
       }
     });
   }
-
+  updateBio(newBio) {
+    return new Promise((resolve, reject) => {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser) {
+        reject({ code: 401, message: '请先登录' });
+        return;
+      }
+  
+      // 简介验证
+      if (newBio && newBio.length > 100) {
+        reject({ code: 400, message: '个人简介不能超过100个字符' });
+        return;
+      }
+  
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(u => u.id === currentUser.id);
+      
+      if (userIndex === -1) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+  
+      // 更新简介
+      users[userIndex].bio = newBio ? newBio.trim() : '';
+      users[userIndex].updatedAt = new Date().toISOString();
+  
+      if (this.saveUsers(users)) {
+        // 更新登录状态中的简介
+        const updatedLoginInfo = {
+          ...currentUser,
+          bio: newBio ? newBio.trim() : '',
+          updateTime: new Date().toISOString()
+        };
+        wx.setStorageSync(this.CURRENT_USER_KEY, updatedLoginInfo);
+        
+        resolve({
+          code: 200,
+          message: '个人简介更新成功',
+          data: { bio: newBio ? newBio.trim() : '' }
+        });
+      } else {
+        reject({ code: 500, message: '个人简介更新失败' });
+      }
+    });
+  }
   // 更新用户昵称
   updateNickname(newNickname) {
     return new Promise((resolve, reject) => {

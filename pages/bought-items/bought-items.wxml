@@ -1,0 +1,138 @@
+<!-- pages/my-bought-items/my-bought-items.wxml -->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-wrapper">
+    <view class="loading">
+      <text>加载中...</text>
+    </view>
+  </view>
+
+  <!-- 错误状态 -->
+  <view wx:elif="{{error}}" class="error-wrapper">
+    <view class="error">
+      <text>{{error}}</text>
+      <button class="retry-btn" bindtap="loadBoughtItems">重试</button>
+    </view>
+  </view>
+
+  <!-- 内容区域 -->
+  <view wx:else>
+    <!-- 状态筛选标签 - 固定在顶部 -->
+    <view class="status-tabs">
+      <view 
+        wx:for="{{statusOptions}}" 
+        wx:key="key"
+        class="status-tab {{activeStatus === item.key ? 'active' : ''}}"
+        data-status="{{item.key}}"
+        bindtap="switchStatus"
+      >
+        <text class="tab-label">{{item.label}}</text>
+        <text class="tab-count">({{item.count}})</text>
+      </view>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="items-container">
+      <view wx:if="{{filteredItems.length === 0}}" class="empty-state">
+        <image class="empty-icon" src="/images/empty-box.png" mode="aspectFit" />
+        <text class="empty-text">暂无购买记录</text>
+        <text class="empty-tip">
+          {{activeStatus === 'all' ? '还没有购买过商品' : '该状态下暂无商品'}}
+        </text>
+      </view>
+
+      <view wx:else class="items-list">
+        <view 
+          wx:for="{{filteredItems}}" 
+          wx:key="id"
+          class="item-card"
+          data-item-id="{{item.id}}"
+          bindtap="onItemTap"
+        >
+          <!-- 商品主要内容：左图右文布局 -->
+          <view class="item-main-content">
+            <!-- 左侧：商品缩略图 -->
+            <view class="item-image-section">
+              <image 
+                class="item-thumbnail" 
+                src="{{item.images && item.images[0] ? item.images[0] : '/images/placeholder.png'}}"
+                mode="aspectFill"
+              />
+              <!-- 状态标签 -->
+              <view class="status-tag {{item.purchaseStatus === '待确认' ? 'status-pending' : 'status-completed'}}">
+                {{item.purchaseStatus}}
+              </view>
+            </view>
+
+            <!-- 右侧：商品信息 -->
+            <view class="item-detail-section">
+              <!-- 商品标题 -->
+              <view class="item-title">{{item.title}}</view>
+              
+              <!-- 商品描述 -->
+              <view class="item-description">{{item.description}}</view>
+              
+              <!-- 商品价格 -->
+              <view class="item-price">¥{{item.price}}</view>
+              
+              <!-- 购买时间和卖家信息 -->
+              <view class="item-meta">
+                <text class="purchase-time">购买：{{item.purchaseTime}}</text>
+                <view class="seller-tag">
+                  <text class="seller-label">卖家：{{item.sellerName}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 卖家信息区域 -->
+          <view class="seller-info">
+            <view class="seller-details">
+              <image class="seller-avatar" src="{{item.sellerAvatar}}" />
+              <view class="seller-text">
+                <text class="seller-info-label">卖家信息</text>
+                <text class="seller-name">{{item.sellerName}}</text>
+              </view>
+            </view>
+            <text class="contact-info" wx:if="{{item.contactInfo}}">{{item.contactInfo}}</text>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view class="item-actions">
+            <!-- 待确认状态的按钮 -->
+            <block wx:if="{{item.purchaseStatus === '待确认'}}">
+              <button 
+                class="action-btn secondary"
+                data-item-id="{{item.id}}"
+                catchtap="contactSeller"
+              >
+                联系卖家
+              </button>
+              <button 
+                class="action-btn primary"
+                data-item-id="{{item.id}}"
+                catchtap="confirmReceived"
+              >
+                确认收货
+              </button>
+            </block>
+
+            <!-- 已完成状态 -->
+            <block wx:if="{{item.purchaseStatus === '已完成'}}">
+              <view class="completed-info">
+                <text class="completed-text">🎉 交易已完成</text>
+              </view>
+              <button 
+                class="action-btn secondary"
+                data-item-id="{{item.id}}"
+                catchtap="rateItem"
+              >
+                评价
+              </button>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

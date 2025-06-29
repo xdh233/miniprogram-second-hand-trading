@@ -23,11 +23,11 @@
       enable-back-to-top
     >
       <!-- 交易相关功能 -->
-      <view class="section-title">我的交易</view>
+      <view class="section-title">订单信息</view>
       <view class="function-list">
         <view class="function-item" bindtap="navigateToMyPublished">
           <image class="function-icon" src="../../images/goods_fill.png" mode="aspectFill" />
-          <text class="function-text">我发布的</text>
+          <text class="function-text">个人空间</text>
           <text class="arrow">></text>
         </view>
 
@@ -43,22 +43,16 @@
           <view class="function-badge" wx:if="{{tradeStats.bought > 0}}">{{tradeStats.bought}}</view>
           <text class="arrow">></text>
         </view>
+                <view class="function-item" bindtap="navigateToFavorites">
+          <image class="function-icon" src="../../images/favor_fill.png" mode="aspectFill" />
+          <text class="function-text">我的收藏</text>
+          <text class="arrow">></text>
+        </view>
       </view>
 
       <!-- 常用工具 -->
       <view class="section-title">常用工具</view>
       <view class="function-list">
-        <view class="function-item" bindtap="navigateToFavorites">
-          <image class="function-icon" src="../../images/favor_fill.png" mode="aspectFill" />
-          <text class="function-text">我的收藏</text>
-          <text class="arrow">></text>
-        </view>
-
-        <view class="function-item" bindtap="navigateToDeliveryAddress">
-          <image class="function-icon" src="../../images/location_fill.png" mode="aspectFill" />
-          <text class="function-text">收货地址</text>
-          <text class="arrow">></text>
-        </view>
 
         <view class="function-item" bindtap="navigateToFeedback">
           <image class="function-icon" src="../../images/question_fill.png" mode="aspectFill" />

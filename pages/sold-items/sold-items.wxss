@@ -1,0 +1,368 @@
+/* pages/my-sold-items/my-sold-items.wxss */
+.container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* 加载和错误状态 */
+.loading-wrapper, .error-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.loading, .error {
+  text-align: center;
+  color: #999;
+}
+
+.retry-btn {
+  margin-top: 20rpx;
+  background-color: #0096c3;
+  color: white;
+  border-radius: 20rpx;
+  padding: 10rpx 30rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+/* 状态筛选标签 - 紧贴返回栏 */
+.status-tabs {
+  display: flex;
+  background-color: white;
+  padding: 0;
+  border-bottom: 1rpx solid #e5e5e5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.status-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25rpx 10rpx;
+  position: relative;
+  min-width: 0;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.status-tab:active {
+  background-color: #f8f8f8;
+}
+
+.status-tab.active {
+  color: #0096c3;
+}
+
+.status-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 4rpx;
+  background-color: #0096c3;
+  border-radius: 2rpx;
+}
+
+.tab-label {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 5rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-count {
+  font-size: 24rpx;
+  color: #999;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.status-tab.active .tab-count {
+  color: #0096c3;
+  transform: scale(1.1);
+}
+
+/* 商品列表容器 - 修正顶部间距 */
+.items-container {
+  padding: 20rpx;
+  margin-top: -80rpx; /* 减少顶部间距 */
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 0;
+}
+
+.empty-icon {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 30rpx;
+}
+
+.empty-text {
+  display: block;
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.empty-tip {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+}
+
+/* 商品列表 */
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.item-card {
+  background-color: white;
+  border-radius: 15rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.item-card:active {
+  transform: scale(0.98);
+}
+
+/* 商品主要内容区域 - 左图右文布局 */
+.item-main-content {
+  display: flex;
+  padding: 20rpx;
+  gap: 20rpx;
+}
+
+/* 左侧图片区域 */
+.item-image-section {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.item-thumbnail {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  background-color: #f5f5f5;
+}
+
+.status-tag {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 10rpx;
+  font-size: 18rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.status-selling {
+  background-color: #52c41a;
+}
+
+.status-sold {
+  background-color: #999;
+}
+
+/* 右侧信息区域 */
+.item-detail-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.item-description {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 15rpx;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.item-price {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ff6b35;
+  margin-bottom: 15rpx;
+}
+
+.item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 15rpx;
+}
+
+.create-time {
+  font-size: 24rpx;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.item-stats {
+  display: flex;
+  gap: 15rpx;
+}
+
+.stat-item {
+  font-size: 22rpx;
+  color: #999;
+  white-space: nowrap;
+}
+
+/* 买家信息区域 */
+.buyer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15rpx 20rpx;
+  background-color: #f9f9f9;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.buyer-details {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.buyer-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  margin-right: 10rpx;
+}
+
+.buyer-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.buyer-label {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 2rpx;
+}
+
+.buyer-name {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+.sold-time {
+  font-size: 22rpx;
+  color: #999;
+  flex-shrink: 0;
+}
+
+/* 简化的操作按钮区域 */
+.item-actions {
+  display: flex;
+  padding: 15rpx 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12rpx 0;
+  border-radius: 6rpx;
+  font-size: 26rpx;
+  text-align: center;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.action-btn.primary {
+  background-color: #0096c3;
+  color: white;
+}
+
+.action-btn.primary:active {
+  background-color: #007aa3;
+}
+
+/* 已售出信息 */
+.sold-info {
+  flex: 1;
+  text-align: center;
+  padding: 15rpx 0;
+}
+
+.sold-text {
+  display: block;
+  font-size: 28rpx;
+  color: #52c41a;
+  font-weight: bold;
+}
+
+/* 响应式调整 */
+@media (max-width: 375px) {
+  .items-container {
+    margin-top: 85rpx; /* 小屏幕调整 */
+  }
+  
+  .item-main-content {
+    gap: 15rpx;
+  }
+  
+  .item-thumbnail {
+    width: 140rpx;
+    height: 140rpx;
+  }
+  
+  .item-title {
+    font-size: 30rpx;
+  }
+  
+  .item-price {
+    font-size: 32rpx;
+  }
+
+  .status-tabs {
+    font-size: 26rpx;
+  }
+  
+  .tab-label {
+    font-size: 26rpx;
+  }
+}

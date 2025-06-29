@@ -556,17 +556,10 @@ Page({
     
     // 检查是否是当前用户自己
     const currentUser = userManager.getCurrentUser();
-    if (currentUser && currentUser.id == userId) {
-      // 跳转到自己的个人中心
-      wx.switchTab({
-        url: '/pages/profile/profile'
-      });
-    } else {
-      // 跳转到其他用户的个人空间
-      wx.navigateTo({
-        url: `/pages/user-profile/user-profile?userId=${userId}`
-      });
-    }
+    // 跳转到其他用户的个人空间
+    wx.navigateTo({
+      url: `/pages/user-profile/user-profile?userId=${userId}`
+    });
   },
 
   // 键盘高度变化处理

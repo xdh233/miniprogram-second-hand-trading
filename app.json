@@ -15,7 +15,11 @@
     "pages/publish-item/publish-item",
     "pages/comments/comments",
     "pages/likes/likes",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/user-profile/user-profile",
+    "pages/sold-items/sold-items",
+    "pages/bought-items/bought-items",
+    "pages/my-favorites/my-favorites"
   ],
   "window": {
     "backgroundTextStyle": "light",
