@@ -19,7 +19,9 @@
     <scroll-view 
       class="posts-container"
       scroll-y
-      enable-back-to-top
+      refresher-enabled="{{true}}"
+      refresher-triggered="{{refreshing}}"
+      bindrefresherrefresh="onPullDownRefresh"
       bindscrolltolower="onReachBottom"
     >
       <!-- 帖子卡片 -->

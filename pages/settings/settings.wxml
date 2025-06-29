@@ -96,26 +96,28 @@
   </view>
 
   <!-- 昵称修改弹窗 -->
-  <view class="modal-mask" wx:if="{{showNicknameModal}}" bindtap="cancelNickname">
-    <view class="modal-content" catchtap="">
+  <view class="modal-mask" wx:if="{{showNicknameModal}}">
+    <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">修改昵称</view>
       <input 
-        class="modal-input" 
+        class="modal-input {{nicknameError ? 'input-error' : ''}}" 
         value="{{tempNickname}}" 
         placeholder="请输入昵称"
         maxlength="20"
         bindinput="onNicknameInput"
+        focus="{{showNicknameModal}}"
       />
+      <view class="error-text" wx:if="{{nicknameError}}">{{nicknameError}}</view>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelNickname">取消</view>
-        <view class="modal-button confirm" bindtap="confirmNickname">确定</view>
+        <view class="modal-button confirm {{nicknameError ? 'disabled' : ''}}" bindtap="confirmNickname">确定</view>
       </view>
     </view>
   </view>
 
   <!-- 简介修改弹窗 -->
-  <view class="modal-mask" wx:if="{{showBioModal}}" bindtap="cancelBio">
-    <view class="modal-content" catchtap="">
+  <view class="modal-mask" wx:if="{{showBioModal}}">
+    <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">修改个人简介</view>
       <textarea 
         class="modal-textarea" 
@@ -124,6 +126,7 @@
         maxlength="100"
         bindinput="onBioInput"
         auto-height
+        focus="{{showBioModal}}"
       ></textarea>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelBio">取消</view>
@@ -133,8 +136,8 @@
   </view>
 
   <!-- 性别选择弹窗 -->
-  <view class="modal-mask" wx:if="{{showGenderModal}}" bindtap="cancelGender">
-    <view class="modal-content" catchtap="">
+  <view class="modal-mask" wx:if="{{showGenderModal}}">
+    <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">选择性别</view>
       <view class="gender-options">
         <view 

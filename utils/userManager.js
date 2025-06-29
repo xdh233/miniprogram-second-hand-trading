@@ -320,7 +320,14 @@ class UserManager {
       return false;
     }
   }
-
+  // 检查昵称是否已存在
+  isNicknameExist(nickname, excludeUserId = null) {
+    const users = this.getAllUsers();
+    return users.some(user => 
+      user.nickname === nickname && 
+      (excludeUserId === null || user.id !== excludeUserId)
+    );
+  }
   // 更新用户信用评级
   updateUserRating(userId, rating) {
     return new Promise((resolve, reject) => {

@@ -33,15 +33,15 @@ page {
 
 .section-content {
   background: #fff;
-  margin: 0;
+  margin: 0 -30rpx;
   padding: 0;
-  width: 100%;
+  width: calc(100% + 60rpx);
 }
 
 /* 设置项 */
 .setting-item {
   background: #fff;
-  padding: 32rpx 30rpx;
+  padding: 32rpx 60rpx 32rpx 60rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -125,16 +125,19 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
+  padding: 60rpx;
+  box-sizing: border-box;
 }
 
 .modal-content {
   background: #fff;
   border-radius: 16rpx;
   padding: 40rpx;
-  margin: 60rpx;
-  min-width: 500rpx;
+  width: 100%;
   max-width: 600rpx;
+  position: relative;
+  z-index: 10000;
 }
 
 .modal-title {
@@ -150,8 +153,23 @@ page {
   border-radius: 8rpx;
   padding: 20rpx;
   font-size: 28rpx;
-  margin-bottom: 40rpx;
+  margin-bottom: 20rpx;
+  min-height: 120rpx;
   background: #fafafa;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-input.input-error {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-size: 24rpx;
+  margin-bottom: 20rpx;
+  margin-top: -10rpx;
 }
 
 .modal-textarea {
@@ -178,6 +196,8 @@ page {
   border-radius: 8rpx;
   font-size: 28rpx;
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
 }
 
 .modal-button.cancel {
@@ -186,8 +206,13 @@ page {
 }
 
 .modal-button.confirm {
-  background: #007aff;
+  background: #0096c3;
   color: #fff;
+}
+
+.modal-button.confirm.disabled {
+  background: #d9d9d9;
+  color: #999;
 }
 
 /* 性别选择 */
@@ -206,12 +231,15 @@ page {
   font-size: 28rpx;
   color: #666;
   background: #fafafa;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
 }
 
 .gender-option.selected {
-  background: #007aff;
+  background: #0096c3;
   color: #fff;
-  border-color: #007aff;
+  border-color: #0096c3;
 }
 
 /* Switch 组件样式调整 */

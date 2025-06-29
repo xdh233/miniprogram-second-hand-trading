@@ -13,7 +13,8 @@ Page({
     tempGender: '',        // 临时存储性别
     showNicknameModal: false,
     showBioModal: false,
-    showGenderModal: false
+    showGenderModal: false,
+    nicknameError: ''      // 昵称错误提示
   },
 
   onLoad() {
@@ -103,18 +104,36 @@ Page({
   showNicknameEdit() {
     this.setData({ 
       showNicknameModal: true,
-      tempNickname: this.data.userInfo.nickname || this.data.userInfo.name
+      tempNickname: this.data.userInfo.nickname || this.data.userInfo.name,
+      nicknameError: ''
     });
   },
 
   // 昵称输入
   onNicknameInput(e) {
-    this.setData({ tempNickname: e.detail.value });
+    const nickname = e.detail.value.trim();
+    this.setData({ tempNickname: nickname });
+    
+    // 实时检查昵称
+    if (nickname && nickname !== (this.data.userInfo.nickname || this.data.userInfo.name)) {
+      if (userManager.isNicknameExist(nickname, this.data.userInfo.id)) {
+        this.setData({ nicknameError: '昵称已被使用' });
+      } else {
+        this.setData({ nicknameError: '' });
+      }
+    } else {
+      this.setData({ nicknameError: '' });
+    }
   },
 
   // 确认修改昵称
   confirmNickname() {
     const nickname = this.data.tempNickname.trim();
+    
+    // 如果有错误提示，不允许提交
+    if (this.data.nicknameError) {
+      return;
+    }
     
     if (!nickname) {
       wx.showToast({
@@ -132,6 +151,16 @@ Page({
       return;
     }
 
+    // 检查昵称是否已存在（排除自己）
+    if (userManager.isNicknameExist(nickname, this.data.userInfo.id)) {
+      wx.showToast({
+        title: '昵称已被使用，请换一个',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     const updatedUser = {
       ...this.data.userInfo,
       nickname: nickname
@@ -140,7 +169,8 @@ Page({
     if (userManager.updateUserInfo(updatedUser)) {
       this.setData({ 
         userInfo: updatedUser,
-        showNicknameModal: false
+        showNicknameModal: false,
+        nicknameError: ''
       });
       wx.showToast({
         title: '昵称修改成功',
@@ -156,7 +186,10 @@ Page({
 
   // 取消修改昵称
   cancelNickname() {
-    this.setData({ showNicknameModal: false });
+    this.setData({ 
+      showNicknameModal: false,
+      nicknameError: ''
+    });
   },
 
   // 显示简介修改弹窗
@@ -219,6 +252,7 @@ Page({
   // 选择性别
   selectGender(e) {
     const gender = e.currentTarget.dataset.gender;
+    console.log('选择性别:', gender);
     this.setData({ tempGender: gender });
   },
 
@@ -279,6 +313,11 @@ Page({
         icon: 'success'
       });
     }
+  },
+
+  // 阻止事件冒泡
+  stopPropagation() {
+    // 什么都不做，只是阻止事件冒泡
   },
 
   // 退出登录

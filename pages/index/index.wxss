@@ -60,6 +60,7 @@ page {
 /* 帖子容器 */
 .posts-container {
   flex: 1;
+  height: 0; 
   background: #fff;
 }
 
