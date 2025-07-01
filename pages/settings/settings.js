@@ -209,9 +209,9 @@ Page({
   confirmBio() {
     const bio = this.data.tempBio.trim();
     
-    if (bio.length > 100) {
+    if (bio.length > 50) {
       wx.showToast({
-        title: '简介不能超过100个字符',
+        title: '简介不能超过50个字符',
         icon: 'none'
       });
       return;

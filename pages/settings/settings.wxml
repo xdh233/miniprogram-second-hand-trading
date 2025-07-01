@@ -123,11 +123,11 @@
         class="modal-textarea" 
         value="{{tempBio}}" 
         placeholder="请输入个人简介"
-        maxlength="100"
+        maxlength="50"
         bindinput="onBioInput"
-        auto-height
         focus="{{showBioModal}}"
       ></textarea>
+      <view class="char-count">{{tempBio.length || 0}}/50</view>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelBio">取消</view>
         <view class="modal-button confirm" bindtap="confirmBio">确定</view>

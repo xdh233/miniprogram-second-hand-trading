@@ -173,17 +173,30 @@ page {
 }
 
 .modal-textarea {
-  border: 1rpx solid #e0e0e0;
+  width: 100%;
+  min-height: 120rpx;
+  max-height: 200rpx; /* 设置最大高度 */
+  border: 2rpx solid #e5e5e5;
   border-radius: 8rpx;
   padding: 20rpx;
   font-size: 28rpx;
-  margin-bottom: 40rpx;
-  background: #fafafa;
-  min-height: 120rpx;
-  width: 100%;
   box-sizing: border-box;
+  background: #fafafa;
+  resize: none; /* 禁止手动调整大小 */
 }
 
+.modal-textarea:focus {
+  border-color: #0096c3;
+  background: white;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+  margin-bottom: 20rpx;
+}
 .modal-buttons {
   display: flex;
   gap: 20rpx;
