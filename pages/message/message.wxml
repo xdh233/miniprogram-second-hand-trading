@@ -67,7 +67,6 @@
             <!-- 头像区域 -->
             <view class="avatar-container">
               <image class="avatar" src="{{item.avatar}}" mode="aspectFill"/>
-              <view class="online-dot" wx:if="{{item.isOnline}}"></view>
               <view class="mute-icon" wx:if="{{item.isMuted}}">🔇</view>
             </view>
             
