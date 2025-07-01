@@ -40,10 +40,10 @@
         <view class="function-item" bindtap="navigateToMyBought">
           <image class="function-icon" src="../../images/cart_fill.png" mode="aspectFill" />
           <text class="function-text">我买到的</text>
-          <view class="function-badge" wx:if="{{tradeStats.bought > 0}}">{{tradeStats.bought}}</view>
           <text class="arrow">></text>
         </view>
-                <view class="function-item" bindtap="navigateToFavorites">
+
+        <view class="function-item" bindtap="navigateToFavorites">
           <image class="function-icon" src="../../images/favor_fill.png" mode="aspectFill" />
           <text class="function-text">我的收藏</text>
           <text class="arrow">></text>
@@ -53,9 +53,9 @@
       <!-- 常用工具 -->
       <view class="section-title">常用工具</view>
       <view class="function-list">
-
+        <!-- 添加意见反馈功能项 -->
         <view class="function-item" bindtap="navigateToFeedback">
-          <image class="function-icon" src="../../images/question_fill.png" mode="aspectFill" />
+          <image class="function-icon" src="../../images/feedback.png" mode="aspectFill" />
           <text class="function-text">意见反馈</text>
           <text class="arrow">></text>
         </view>
@@ -67,5 +67,31 @@
         </view>
       </view>
     </scroll-view>
+  </view>
+</view>
+
+<!-- 意见反馈弹窗 - 移除 bindtap="hideFeedbackModal" -->
+<view class="feedback-modal-mask" wx:if="{{showFeedbackModal}}">
+  <view class="feedback-modal-container" catchtap="">
+    <view class="feedback-modal-title">意见反馈</view>
+    
+    <view class="feedback-input-container">
+      <textarea 
+        class="feedback-textarea" 
+        placeholder="请输入您的意见或建议..." 
+        placeholder-class="textarea-placeholder"
+        value="{{feedbackContent}}"
+        bindinput="onFeedbackInput"
+        maxlength="{{maxLength}}"
+        show-confirm-bar="{{false}}"
+        auto-focus="{{true}}"
+      ></textarea>
+      <view class="char-count">{{feedbackContent.length}}/{{maxLength}}</view>
+    </view>
+    
+    <view class="feedback-modal-footer">
+      <button class="feedback-cancel-btn" bindtap="hideFeedbackModal">取消</button>
+      <button class="feedback-submit-btn" bindtap="submitFeedback">提交</button>
+    </view>
   </view>
 </view>

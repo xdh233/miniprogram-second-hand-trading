@@ -135,20 +135,6 @@ page {
   font-weight: 500;
 }
 
-.function-badge {
-  background: #ff4d4f;
-  color: #fff;
-  font-size: 20rpx;
-  padding: 0 10rpx;
-  height: 32rpx;
-  min-width: 32rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 15rpx;
-}
-
 .arrow {
   font-size: 28rpx;
   color: #ccc;
@@ -168,4 +154,103 @@ page {
   .function-text {
     font-size: 28rpx;
   }
+}
+
+/* 意见反馈弹窗样式 */
+.feedback-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.feedback-modal-container {
+  width: 600rpx;
+  background: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-modal-title {
+  text-align: center;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+  color: #333;
+}
+
+.feedback-input-container {
+  position: relative;
+  margin-bottom: 30rpx;
+}
+
+.feedback-textarea {
+  width: 100%;
+  min-height: 300rpx;
+  border: 2rpx solid #e5e5e5;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  background: #fafafa;
+}
+
+.feedback-textarea:focus {
+  border-color: #0096c3;
+  background: white;
+}
+
+.textarea-placeholder {
+  color: #999;
+}
+
+.char-count {
+  position: absolute;
+  right: 20rpx;
+  bottom: 10rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.feedback-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.feedback-cancel-btn {
+  flex: 1;
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 10rpx;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+}
+
+.feedback-submit-btn {
+  flex: 1;
+  background: #0096c3;
+  color: white;
+  border: none;
+  border-radius: 10rpx;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+}
+
+.feedback-cancel-btn:active {
+  background: #e0e0e0;
+}
+
+.feedback-submit-btn:active {
+  background: #0096c3;
 }

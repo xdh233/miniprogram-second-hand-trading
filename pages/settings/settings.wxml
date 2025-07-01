@@ -6,7 +6,7 @@
       <!-- 修改头像 -->
       <view class="setting-item" bindtap="changeAvatar">
         <view class="item-left">
-          <image class="item-icon" src="../../images/avatar.png" mode="aspectFit" />
+          <image class="item-icon" src="../../images/profile.png" mode="aspectFit" />
           <text class="item-text">头像</text>
         </view>
         <view class="item-right">

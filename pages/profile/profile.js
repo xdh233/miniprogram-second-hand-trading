@@ -6,16 +6,9 @@ const itemManager = require('../../utils/itemManager');
 Page({
   data: {
     userInfo: null,
-    userStats: {
-      posts: 0,
-      items: 0,
-      likes: 0
-    },
-    tradeStats: {
-      published: 0,
-      sold: 0,
-      bought: 5
-    }
+    showFeedbackModal: false,
+    feedbackContent: '',
+    maxLength: 200
   },
 
   onLoad() {
@@ -26,9 +19,6 @@ Page({
   onShow() {
     console.log('个人中心页面显示');
     this.checkLoginStatus();
-    if (this.data.userInfo) {
-      this.loadUserStats();
-    }
   },
 
   // 检查登录状态
@@ -42,39 +32,6 @@ Page({
 
     const userInfo = userManager.getCurrentUser();
     this.setData({ userInfo });
-  },
-
-  // 加载用户统计数据
-  async loadUserStats() {
-    try {
-      const userId = this.data.userInfo.id;
-      
-      // 获取用户发布的商品
-      const userItems = await itemManager.getUserItems(userId);
-      
-      // 统计数据
-      const published = userItems.length;
-      const sold = userItems.filter(item => item.status === 'sold').length;
-      
-      // 模拟其他统计数据
-      const stats = {
-        userStats: {
-          posts: 5, // 模拟动态数量
-          items: published,
-          likes: 20 // 模拟获赞数
-        },
-        tradeStats: {
-          published: published,
-          sold: sold,
-          bought: 5 // 模拟购买数量
-        }
-      };
-      
-      this.setData(stats);
-      
-    } catch (error) {
-      console.error('加载用户统计失败:', error);
-    }
   },
 
   // 设置
@@ -130,25 +87,57 @@ Page({
     });
   },
 
-  // 意见反馈
+  // 意见反馈方法
   navigateToFeedback() {
     console.log('意见反馈');
-    wx.showToast({
-      title: '意见反馈功能开发中',
-      icon: 'none'
+    this.setData({
+      showFeedbackModal: true,
+      feedbackContent: '' // 清空之前的内容
     });
-    // wx.navigateTo({
-    //   url: '/pages/feedback/feedback'
-    // });
   },
 
-  // 关于开发者
+  // 隐藏反馈弹窗
+  hideFeedbackModal() {
+    this.setData({
+      showFeedbackModal: false,
+      feedbackContent: ''
+    });
+  },
+
+  // 输入框内容变化
+  onFeedbackInput(e) {
+    this.setData({
+      feedbackContent: e.detail.value
+    });
+  },
+
+  // 提交反馈
+  submitFeedback() {
+    if (!this.data.feedbackContent.trim()) {
+      wx.showToast({
+        title: '请输入反馈内容',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 这里可以添加提交到服务器的逻辑
+    console.log('反馈内容：', this.data.feedbackContent);
+    
+    wx.showToast({
+      title: '提交成功，感谢您的反馈！',
+      icon: 'success'
+    });
+    
+    this.hideFeedbackModal();
+  },
+
   navigateToAbout() {
     console.log('关于开发者');
-    
+         
     wx.showModal({
       title: '关于开发者',
-      content: '校园二手物品交易系统\r\n开发者：牛大果\n版本：1.0.0\n\n感谢您的使用！',
+      content: '开发者：牛大果\n 感谢您的使用！',
       showCancel: false,
       confirmText: '知道了'
     });

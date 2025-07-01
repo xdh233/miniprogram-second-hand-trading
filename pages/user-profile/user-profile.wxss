@@ -50,18 +50,6 @@
   border: 4rpx solid rgba(255, 255, 255, 0.3);
 }
 
-.rating-badge {
-  position: absolute;
-  bottom: -5rpx;
-  right: -5rpx;
-  background-color: #ff6b6b;
-  color: white;
-  font-size: 20rpx;
-  padding: 4rpx 8rpx;
-  border-radius: 10rpx;
-  transform: scale(0.8);
-}
-
 .user-details {
   flex: 1;
   padding-top: 10rpx;

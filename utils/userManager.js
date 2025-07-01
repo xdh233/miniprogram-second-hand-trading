@@ -21,7 +21,6 @@ class UserManager {
           avatar: '/images/default-avatar.png',
           phone: '13800138000',
           email: 'zhangsan@example.com',
-          rating: '信用优秀',
           bio: '我是狗。',
           createdAt: new Date().toISOString()
         },
@@ -34,7 +33,6 @@ class UserManager {
           avatar: '/images/default-avatar.png',
           phone: '13800138001',
           email: 'lisi@example.com',
-          rating: '信用良好',
           bio: '我不是狗也不累',
           createdAt: new Date().toISOString()
         },
@@ -47,7 +45,6 @@ class UserManager {
           avatar: '/images/default-avatar.png',
           phone: '13800138002',
           email: 'niudaguo@example.com',
-          rating: '信用优秀',
           bio: '累。',
           createdAt: new Date().toISOString()
         }
@@ -131,7 +128,6 @@ class UserManager {
         avatar: '/images/default-avatar.png',
         phone: phone || '',
         email: email || '',
-        rating: '信用良好',
         createdAt: new Date().toISOString()
       };
 
@@ -176,7 +172,6 @@ class UserManager {
         name: user.name,
         nickname: user.nickname,
         avatar: user.avatar,
-        rating: user.rating,
         loginTime: new Date().toISOString()
       };
 
@@ -331,31 +326,7 @@ class UserManager {
       (excludeUserId === null || user.id !== excludeUserId)
     );
   }
-  // 更新用户信用评级
-  updateUserRating(userId, rating) {
-    return new Promise((resolve, reject) => {
-      const users = this.getAllUsers();
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
-        reject({ code: 404, message: '用户不存在' });
-        return;
-      }
 
-      users[userIndex].rating = rating;
-      users[userIndex].updatedAt = new Date().toISOString();
-
-      if (this.saveUsers(users)) {
-        resolve({ 
-          code: 200, 
-          message: '信用评级更新成功',
-          data: { rating }
-        });
-      } else {
-        reject({ code: 500, message: '更新失败' });
-      }
-    });
-  }
   updateBio(newBio) {
     return new Promise((resolve, reject) => {
       const currentUser = this.getCurrentUser();

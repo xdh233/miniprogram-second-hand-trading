@@ -22,7 +22,6 @@
       <view class="user-info">
         <view class="avatar-wrapper" bindtap="onAvatarTap">
           <image class="avatar" src="{{userInfo.avatar || 'https://picsum.photos/120/120?random=avatar'}}" />
-          <view wx:if="{{userInfo.rating}}" class="rating-badge">{{userInfo.rating}}</view>
         </view>
         
         <view class="user-details">
