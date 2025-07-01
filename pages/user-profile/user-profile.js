@@ -1,5 +1,4 @@
 const userManager = require('../../utils/userManager');
-// 引入数据管理器
 const postManager = require('../../utils/postManager');
 const itemManager = require('../../utils/itemManager');
 
@@ -15,18 +14,16 @@ Page({
     error: null,
     
     // 内容切换
-    activeTab: 'posts', // 'posts' 或 'items'
+    activeTab: 'posts', // 'posts' 或 'sell' 或 'want'
     
     // 用户发布的内容
     userPosts: [],
-    userItems: [],
-    leftItems: [],
-    rightItems: [],
-    // 统计信息
-    stats: {
-      postsCount: 0,
-      itemsCount: 0
-    }
+    sellItems: [], // 在售商品
+    wantItems: [],  // 想要商品
+    leftSellItems: [],
+    rightSellItems: [],
+    leftWantItems: [],
+    rightWantItems: []
   },
 
   onLoad(options) {
@@ -96,7 +93,7 @@ Page({
     try {
       // 从实际的数据管理器获取数据
       let userPosts = [];
-      let userItems = [];
+      let allUserItems = [];
       
       // 获取用户发布的帖子
       if (typeof postManager !== 'undefined' && postManager.getAllPosts) {
@@ -107,31 +104,42 @@ Page({
       // 获取用户发布的商品
       if (typeof itemManager !== 'undefined' && itemManager.getAllItems) {
         const allItems = itemManager.getAllItems();
-        userItems = allItems.filter(item => item.sellerId === userId);
+        allUserItems = allItems.filter(item => item.sellerId === userId);
       }
+
+      // 按交易类型和状态分类商品
+      const sellItems = allUserItems.filter(item => 
+        item.tradeType === 'sell' && item.status === 'active'
+      );
       
-      console.log('准备分配商品到左右列，总商品数:', userItems.length);
-      console.log('商品数据:', userItems);
+      const wantItems = allUserItems.filter(item => 
+        item.tradeType === 'want' && item.status === 'active'
+      );
+
+      console.log('商品分类结果:', {
+        总商品数: allUserItems.length,
+        在售商品: sellItems.length,
+        求购商品: wantItems.length
+      });
       
-      // 重要：分配商品到左右两列
-      const { leftItems, rightItems } = this.distributeItems(userItems);
-      
-      console.log('分配结果 - 左列:', leftItems.length, '右列:', rightItems.length);
+      // 分配商品到左右两列
+      const { leftItems: leftSellItems, rightItems: rightSellItems } = this.distributeItems(sellItems);
+      const { leftItems: leftWantItems, rightItems: rightWantItems } = this.distributeItems(wantItems);
 
       this.setData({
         userPosts: userPosts,
-        userItems: userItems,
-        leftItems: leftItems,
-        rightItems: rightItems,
-        'stats.postsCount': userPosts.length,
-        'stats.itemsCount': userItems.length
+        sellItems: sellItems,
+        wantItems: wantItems,
+        leftSellItems: leftSellItems,
+        rightSellItems: rightSellItems,
+        leftWantItems: leftWantItems,
+        rightWantItems: rightWantItems
       });
       
       console.log('用户内容加载完成:', {
         postsCount: userPosts.length,
-        itemsCount: userItems.length,
-        leftItemsCount: leftItems.length,
-        rightItemsCount: rightItems.length
+        sellItemsCount: sellItems.length,
+        wantItemsCount: wantItems.length
       });
       
     } catch (error) {
@@ -139,16 +147,17 @@ Page({
       // 如果出错，至少要设置空数组
       this.setData({
         userPosts: [],
-        userItems: [],
-        leftItems: [],
-        rightItems: [],
-        'stats.postsCount': 0,
-        'stats.itemsCount': 0
+        sellItems: [],
+        wantItems: [],
+        leftSellItems: [],
+        rightSellItems: [],
+        leftWantItems: [],
+        rightWantItems: []
       });
     }
   },
 
-  // 关键：确保商品正确分配到左右两列
+  // 分配商品到左右两列
   distributeItems(items) {
     console.log('开始分配商品，输入:', items);
     
@@ -270,48 +279,6 @@ Page({
   onPullDownRefresh() {
     this.loadUserProfile().finally(() => {
       wx.stopPullDownRefresh();
-    });
-  },
-
-  // 显示更多操作
-  showMoreActions() {
-    const actions = [];
-    
-    if (!this.data.isCurrentUser) {
-      actions.push('举报用户');
-    }
-    
-    actions.push('分享');
-    
-    wx.showActionSheet({
-      itemList: actions,
-      success: (res) => {
-        const action = actions[res.tapIndex];
-        switch (action) {
-          case '举报用户':
-            this.reportUser();
-            break;
-          case '分享':
-            // 分享功能已通过onShareAppMessage实现
-            break;
-        }
-      }
-    });
-  },
-
-  // 举报用户
-  reportUser() {
-    wx.showModal({
-      title: '举报用户',
-      content: '确定要举报该用户吗？',
-      success: (res) => {
-        if (res.confirm) {
-          wx.showToast({
-            title: '举报已提交',
-            icon: 'success'
-          });
-        }
-      }
     });
   }
 });
