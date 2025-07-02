@@ -1,4 +1,4 @@
-// publish.js - 发布选择页面
+// publish.js - 发布选择页面（增加求购选项）
 const userManager = require('../../utils/userManager');
 
 Page({
@@ -45,18 +45,24 @@ Page({
   // 发布动态
   publishPost() {
     console.log('发布动态');
-  
     wx.navigateTo({
       url: '/pages/publish-post/publish-post'
     });
   },
 
-  // 发布商品
+  // 发布商品（出售）
   publishItem() {
-    console.log('发布商品');
-
+    console.log('发布闲置商品');
     wx.navigateTo({
-      url: '/pages/publish-item/publish-item'
+      url: '/pages/publish-item/publish-item?type=sell'
+    });
+  },
+
+  // 发布求购
+  publishBuyRequest() {
+    console.log('发布求购');
+    wx.navigateTo({
+      url: '/pages/publish-item/publish-item?type=buy'
     });
   },
 

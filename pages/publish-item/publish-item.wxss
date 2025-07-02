@@ -188,7 +188,38 @@ page {
   outline: none;
   background: transparent;
 }
+/* 价格提示样式 */
+/* 价格提示样式 */
+.price-hints {
+  margin-top: 12rpx;
+  padding: 16rpx 20rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #0096c3;
+}
 
+.hint-text {
+  display: block;
+  font-size: 22rpx;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 4rpx;
+}
+
+.hint-text:last-child {
+  margin-bottom: 0;
+}
+
+/* 价格输入框错误状态 */
+.price-input-wrapper.error {
+  border: 2rpx solid #ff4d4f;
+  background: #fff2f0;
+}
+
+.price-input-wrapper.error:focus-within {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 4rpx rgba(255, 77, 79, 0.1);
+}
 /* 选择器 */
 .picker-item {
   display: flex;

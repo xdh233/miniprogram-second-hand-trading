@@ -9,7 +9,6 @@ Page({
     title: '',
     description: '',
     price: '',
-    originalPrice: '',
     category: '',
     categoryName: '',
     categoryIndex: 0,
@@ -27,15 +26,30 @@ Page({
       { value: 'furniture', name: '家具家电' },
       { value: 'other', name: '其他' }
     ],
-    
+    tradeType: 'sell', // 默认为出售，可能的值：'sell', 'buy'
+    // 价格限制
+    priceConfig: {
+      min: 0.01,    // 最低价格 1分钱
+      max: 50000,   // 最高价格 5万元
+      maxLength: 8  // 最大输入长度（包含小数点）
+    },
     publishing: false
   },
 
-  onLoad() {
-    // 设置导航栏标题
-    wx.setNavigationBarTitle({
-      title: '发布商品'
-    });
+  onLoad(options) {
+    console.log('发布商品/求购页面加载', options);
+    
+    // 检查传入的类型参数
+    if (options.type) {
+      this.setData({
+        tradeType: options.type
+      });
+      
+      // 根据类型设置页面标题
+      wx.setNavigationBarTitle({
+        title: options.type === 'sell' ? '发布闲置' : '发布求购'
+      });
+    }
 
     // 检查登录状态
     if (!userManager.isLoggedIn()) {
@@ -66,40 +80,60 @@ Page({
   // 输入价格
   onPriceInput(e) {
     let value = e.detail.value;
+    
     // 只允许数字和小数点
     value = value.replace(/[^\d.]/g, '');
-    // 保证只有一个小数点
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    // 小数点后最多两位
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
+    
+    // 如果为空，直接设置
+    if (!value) {
+      this.setData({ price: '' });
+      return;
     }
     
+    // 防止以小数点开头
+    if (value.startsWith('.')) {
+      value = '0' + value;
+    }
+    
+    // 防止多个小数点
+    const dotIndex = value.indexOf('.');
+    if (dotIndex !== -1) {
+      // 有小数点的情况
+      const beforeDot = value.substring(0, dotIndex);
+      const afterDot = value.substring(dotIndex + 1);
+      
+      // 移除后面部分的所有小数点
+      const cleanAfterDot = afterDot.replace(/\./g, '');
+      
+      // 限制整数部分不超过5位
+      const limitedBeforeDot = beforeDot.substring(0, 5);
+      
+      // 限制小数部分不超过2位
+      const limitedAfterDot = cleanAfterDot.substring(0, 2);
+      
+      value = limitedBeforeDot + '.' + limitedAfterDot;
+    } else {
+      // 没有小数点的情况，限制整数部分不超过5位
+      value = value.substring(0, 5);
+    }
+    
+    // 检查数值是否超过上限
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue) && numericValue > this.data.priceConfig.max) {
+      wx.showToast({
+        title: `${this.data.tradeType === 'sell' ? '价格' : '预算'}不能超过${this.data.priceConfig.max}元`,
+        icon: 'none',
+        duration: 1000
+      });
+      // 保持原值不变
+      return;
+    }
+    
+    // 更新价格
     this.setData({
       price: value
     });
   },
-
-  // 输入原价
-  onOriginalPriceInput(e) {
-    let value = e.detail.value;
-    value = value.replace(/[^\d.]/g, '');
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
-    this.setData({
-      originalPrice: value
-    });
-  },
-
   // 选择图片
   chooseImages() {
     const currentCount = this.data.images.length;
@@ -154,39 +188,80 @@ Page({
   // 发布商品
   async publishItem() {
     const { title, price, category, description, images } = this.data;
-
+    const { priceConfig } = this.data;
+  
     if (!title.trim()) {
       wx.showToast({
-        title: '请输入商品标题',
+        title: `请输入${this.data.tradeType === 'sell' ? '商品标题' : '求购标题'}`,
         icon: 'none'
       });
       return;
     }
-
-    if (!price || parseFloat(price) <= 0) {
+  
+    // 价格验证 - 更严格的检查
+    if (!price) {
       wx.showToast({
-        title: '请输入正确的价格',
+        title: `请输入${this.data.tradeType === 'sell' ? '价格' : '预算'}`,
         icon: 'none'
       });
       return;
     }
-
+  
+    const numericPrice = parseFloat(price);
+    
+    // 检查价格是否为有效数字
+    if (isNaN(numericPrice)) {
+      wx.showToast({
+        title: `请输入有效的${this.data.tradeType === 'sell' ? '价格' : '预算'}`,
+        icon: 'none'
+      });
+      return;
+    }
+  
+    // 检查价格下限
+    if (numericPrice < priceConfig.min) {
+      wx.showToast({
+        title: `${this.data.tradeType === 'sell' ? '价格' : '预算'}不能低于${priceConfig.min}元`,
+        icon: 'none'
+      });
+      return;
+    }
+  
+    // 检查价格上限
+    if (numericPrice > priceConfig.max) {
+      wx.showToast({
+        title: `${this.data.tradeType === 'sell' ? '价格' : '预算'}不能超过${priceConfig.max}元`,
+        icon: 'none'
+      });
+      return;
+    }
+  
+    // 检查小数位数
+    const decimalPlaces = (price.split('.')[1] || '').length;
+    if (decimalPlaces > 2) {
+      wx.showToast({
+        title: '价格最多支持两位小数',
+        icon: 'none'
+      });
+      return;
+    }
+  
     if (!category) {
       wx.showToast({
-        title: '请选择商品分类',
+        title: `请选择${this.data.tradeType === 'sell' ? '商品' : '求购'}分类`,
         icon: 'none'
       });
       return;
     }
-
+  
     if (!description.trim()) {
       wx.showToast({
-        title: '请输入商品描述',
+        title: `请输入${this.data.tradeType === 'sell' ? '商品描述' : '需求描述'}`,
         icon: 'none'
       });
       return;
     }
-
+  
     if (images.length === 0) {
       wx.showToast({
         title: '请至少上传一张图片',
@@ -194,51 +269,58 @@ Page({
       });
       return;
     }
-
-    if (this.data.publishing) return;
-
+  
+    // 防止重复提交
+    if (this.data.publishing) {
+      return;
+    }
+  
+    // 继续发布流程...
     this.setData({ publishing: true });
-
+  
     wx.showLoading({
-      title: '发布中...',
+      title: this.data.tradeType === 'sell' ? '发布中...' : '求购发布中...',
       mask: true
     });
-
+  
     try {
       // 上传图片
       const imageUrls = await this.uploadImages();
       // 找到对应的分类ID
       const selectedCategory = this.data.categories.find(cat => cat.value === this.data.category);
-      const categoryId = selectedCategory ? this.getCategoryIdByValue(selectedCategory.value) : 1;
-
+      const categoryId = selectedCategory ? this.getCategoryIdByValue(selectedCategory.value) : 8;
+      const status = this.data.tradeType === 'sell' ? 'selling' : 'seeking';
+      
       // 创建商品数据
       const itemData = {
         title: title.trim(),
         description: description.trim(),
-        price: parseFloat(price),
-        originalPrice: this.data.originalPrice ? parseFloat(this.data.originalPrice) : null,
+        price: numericPrice, // 使用验证过的数字
         categoryId: categoryId, 
         images: imageUrls,
+        status: status,
+        tradeType: this.data.tradeType,
         sellerName: this.data.userInfo.name,
         sellerNickname: this.data.userInfo.nickname,
         sellerAvatar: this.data.userInfo.avatar
       };
-
+  
       // 使用 itemManager 发布商品
       await itemManager.publishItem(itemData, this.data.userInfo.id);
-
+  
       wx.hideLoading();
       wx.showToast({
-        title: '发布成功',
+        title: this.data.tradeType === 'sell' ? '发布成功' : '求购发布成功',
         icon: 'success'
       });
-
+  
       // 延迟返回，让用户看到成功提示
       setTimeout(() => {
         wx.switchTab({
           url: '/pages/market/market'
         });
       }, 1500);
+      
     } catch (error) {
       console.error('发布失败:', error);
       wx.hideLoading();
@@ -250,6 +332,7 @@ Page({
       this.setData({ publishing: false });
     }
   },
+
   // 根据分类值获取分类ID的映射
   getCategoryIdByValue(value) {
     const categoryMap = {

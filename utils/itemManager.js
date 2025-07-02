@@ -168,7 +168,7 @@ class ItemManager extends BaseManager {
           sellerNickname: itemData.sellerNickname || itemData.sellerName || '',
           sellerAvatar: itemData.sellerAvatar || '',
           status: 'active',
-          tradeType: 'sell',
+          tradeType: itemData.tradeType,
           createTime: new Date().toISOString(),
           viewCount: 0,
           likeCount: 0,

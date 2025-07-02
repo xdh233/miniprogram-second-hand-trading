@@ -6,7 +6,7 @@
     
     <!-- 商品图片 -->
     <view class="form-section">
-      <view class="section-title">商品图片 <text class="required">*</text></view>
+      <view class="section-title">{{tradeType === 'sell' ? '商品图片' : '参考图片'}} <text class="required">*</text></view>
       <view class="image-grid">
         <!-- 已选择的图片 -->
         <view class="image-item" 
@@ -37,10 +37,9 @@
 
     <!-- 商品标题 -->
     <view class="form-section">
-      <view class="section-title">商品标题 <text class="required">*</text></view>
-      <!-- 将 input 改为 textarea -->
+      <view class="section-title">{{tradeType === 'sell' ? '商品标题' : '求购标题'}} <text class="required">*</text></view>
       <textarea class="text-input"
-                placeholder="简洁描述商品特点，如：九成新 MacBook Pro 13寸"
+                placeholder="{{tradeType === 'sell' ? '简洁描述商品特点，如：九成新 MacBook Pro 13寸' : '简洁描述需求，如：求购 MacBook Pro 13寸'}}"
                 placeholder-class="input-placeholder"
                 value="{{title}}"
                 bindinput="onTitleInput"
@@ -51,30 +50,25 @@
 
     <!-- 价格信息 -->
     <view class="form-section">
-      <view class="section-title">价格信息 <text class="required">*</text></view>
+      <view class="section-title">{{tradeType === 'sell' ? '价格信息' : '预算信息'}} <text class="required">*</text></view>
       <view class="price-row">
         <view class="price-item">
-          <text class="price-label">出售价格</text>
+          <text class="price-label">{{tradeType === 'sell' ? '出售价格' : '预算价格'}}</text>
           <view class="price-input-wrapper">
             <text class="currency">¥</text>
             <input class="price-input"
-                   placeholder="0.00"
-                   placeholder-class="input-placeholder"
-                   value="{{price}}"
-                   bindinput="onPriceInput"
-                   type="digit"/>
+                  placeholder="{{tradeType === 'sell' ? '请输入出售价格' : '请输入预算价格'}}"
+                  placeholder-class="input-placeholder"
+                  value="{{price}}"
+                  bindinput="onPriceInput"
+                  type="digit"
+                  maxlength="8"/>
           </view>
-        </view>
-        <view class="price-item">
-          <text class="price-label">原价（可选）</text>
-          <view class="price-input-wrapper">
-            <text class="currency">¥</text>
-            <input class="price-input"
-                   placeholder="0.00"
-                   placeholder-class="input-placeholder"
-                   value="{{originalPrice}}"
-                   bindinput="onOriginalPriceInput"
-                   type="digit"/>
+          <!-- 价格提示 -->
+          <view class="price-hints">
+            <text class="hint-text">• 价格范围：¥0.01 - ¥50,000</text>
+            <text class="hint-text">• 最多支持两位小数</text>
+            <text class="hint-text">• 请输入真实合理的价格</text>
           </view>
         </view>
       </view>
@@ -82,7 +76,7 @@
 
     <!-- 商品分类 -->
     <view class="form-section">
-      <view class="section-title">商品分类 <text class="required">*</text></view>
+      <view class="section-title">{{tradeType === 'sell' ? '商品分类' : '求购分类'}} <text class="required">*</text></view>
       <view class="picker-item" bindtap="showCustomPicker">
         <text class="picker-text {{category ? '' : 'placeholder'}}">
           {{categoryName || '请选择分类'}}
@@ -108,11 +102,12 @@
         </picker-view>
       </view>
     </view>
+
     <!-- 商品描述 -->
     <view class="form-section">
-      <view class="section-title">商品描述 <text class="required">*</text></view>
+      <view class="section-title">{{tradeType === 'sell' ? '商品描述' : '需求描述'}} <text class="required">*</text></view>
       <textarea class="textarea-input"
-                placeholder="详细描述商品状况、购买时间、使用情况等..."
+                placeholder="{{tradeType === 'sell' ? '详细描述商品状况、购买时间、使用情况等...' : '详细描述需求、期望状况、使用场景等...'}}"
                 placeholder-class="input-placeholder"
                 value="{{description}}"
                 bindinput="onDescriptionInput"
@@ -123,7 +118,8 @@
 
     <!-- 发布提示 -->
     <view class="publish-tips">
-      <text class="tip-text">• 真实描述商品状况，上传清晰图片</text>
+      <text class="tip-text" wx:if="{{tradeType === 'sell'}}">• 真实描述商品状况，上传清晰图片</text>
+      <text class="tip-text" wx:if="{{tradeType === 'buy'}}">• 详细描述需求，便于卖家了解</text>
       <text class="tip-text">• 价格合理，诚信交易</text>
       <text class="tip-text">• 遵守校园二手交易规范</text>
     </view>
@@ -137,7 +133,7 @@
       bindtap="publishItem"
       disabled="{{publishing}}"
     >
-      {{publishing ? '发布中...' : '发布'}}
+      {{publishing ? (tradeType === 'sell' ? '发布中...' : '求购发布中...') : (tradeType === 'sell' ? '发布闲置' : '发布求购')}}
     </button>
   </view>
 
