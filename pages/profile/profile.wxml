@@ -33,13 +33,13 @@
 
         <view class="function-item" bindtap="navigateToMySold">
           <image class="function-icon" src="../../images/soldout.png" mode="aspectFill" />
-          <text class="function-text">我卖出的</text>
+          <text class="function-text">我的卖品</text>
           <text class="arrow">></text>
         </view>
 
         <view class="function-item" bindtap="navigateToMyBought">
           <image class="function-icon" src="../../images/cart_fill.png" mode="aspectFill" />
-          <text class="function-text">我买到的</text>
+          <text class="function-text">我的求购</text>
           <text class="arrow">></text>
         </view>
 

@@ -17,7 +17,7 @@
 
   <!-- 内容区域 -->
   <view wx:else>
-    <!-- 状态筛选标签 - 固定在顶部 -->
+    <!-- 状态筛选标签 - 四个分类 -->
     <view class="status-tabs">
       <view 
         wx:for="{{statusOptions}}" 
@@ -59,7 +59,7 @@
                 mode="aspectFill"
               />
               <!-- 状态标签 -->
-              <view class="status-tag {{item.status === '在售' ? 'status-selling' : 'status-sold'}}">
+              <view class="status-tag {{item.status === '在售' ? 'status-selling' : item.status === '已售出' ? 'status-sold' : 'status-inactive'}}">
                 {{item.status}}
               </view>
             </view>
@@ -73,8 +73,19 @@
               <view class="item-description">{{item.description}}</view>
               
               <!-- 商品价格 -->
-              <view class="item-price">¥{{item.price}}</view>
-              
+              <view class="item-price-section">
+                <text class="price-label">售价：</text>
+                <view class="item-price">¥{{item.price}}</view>
+                <!-- 只有在售状态才显示编辑按钮 -->
+                <view 
+                  wx:if="{{item.status === '在售'}}" 
+                  class="price-edit-btn"
+                  data-item-id="{{item.id}}"
+                  catchtap="showEditPrice"
+                >
+                  <image class="edit-icon" src="/images/change2.png" mode="aspectFit" />
+                </view>
+              </view>              
               <!-- 交易时间和统计信息 -->
               <view class="item-meta">
                 <text class="create-time">发布：{{item.createTime}}</text>
@@ -98,9 +109,9 @@
             <text class="sold-time">售出：{{item.soldTime}}</text>
           </view>
 
-          <!-- 简化的操作按钮 -->
+          <!-- 操作按钮区域 -->
           <view class="item-actions">
-            <!-- 在售状态的按钮 -->
+            <!-- 在售状态的按钮：标记售出、下架、删除 -->
             <block wx:if="{{item.status === '在售'}}">
               <button 
                 class="action-btn primary"
@@ -109,16 +120,90 @@
               >
                 标记售出
               </button>
+              <button 
+                class="action-btn secondary"
+                data-item-id="{{item.id}}"
+                catchtap="markAsInactive"
+              >
+                下架
+              </button>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
+              </button>
             </block>
 
-            <!-- 已售出状态 -->
+            <!-- 已售出状态：显示完成信息和删除按钮 -->
             <block wx:if="{{item.status === '已售出'}}">
               <view class="sold-info">
                 <text class="sold-text">🎉 交易已完成</text>
               </view>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
+              </button>
+            </block>
+
+            <!-- 已下架状态：重新上架和删除按钮 -->
+            <block wx:if="{{item.status === '已下架'}}">
+              <button 
+                class="action-btn primary"
+                data-item-id="{{item.id}}"
+                catchtap="markAsActive"
+              >
+                重新上架
+              </button>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
+              </button>
             </block>
           </view>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 价格修改弹窗 - 改进版本 -->
+  <view wx:if="{{showPriceModal}}" class="price-modal-overlay" catchtap="hidePriceModal">
+    <view class="price-modal" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">修改价格</text>
+      </view>
+      
+      <view class="modal-content">
+        <view class="price-input-section">
+          <text class="price-label">新价格</text>
+          <view class="price-input-wrapper">
+            <text class="currency-symbol">¥</text>
+            <input 
+              class="price-input"
+              type="digit"
+              value="{{editingPrice}}"
+              placeholder="请输入价格"
+              bindinput="onPriceInput"
+              focus="{{showPriceModal}}"
+            />
+          </view>
+        </view>
+        
+        <view class="price-tip">
+          <text class="tip-text">原价格：¥{{originalPrice}}</text>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <view class="modal-btn cancel-btn" bindtap="cancelPriceEdit">取消</view>
+        <view class="modal-btn confirm-btn {{!editingPrice || editingPrice <= 0 ? 'disabled' : ''}}" bindtap="confirmPriceEdit">确定</view>
       </view>
     </view>
   </view>

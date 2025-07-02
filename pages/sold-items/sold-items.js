@@ -9,16 +9,22 @@ Page({
     loading: true,
     error: null,
     
-    // 状态筛选
-    activeStatus: 'all', // 'all', 'selling', 'sold'
+    // 状态筛选 - 修改为四个分类
+    activeStatus: 'all', // 'all', 'selling', 'sold', 'withdrawn'
     statusOptions: [
       { key: 'all', label: '全部', count: 0 },
       { key: 'selling', label: '在售', count: 0 },
-      { key: 'sold', label: '已售出', count: 0 }
+      { key: 'sold', label: '已售出', count: 0 },
+      { key: 'withdrawn', label: '已下架', count: 0 }
     ],
     
     // 筛选后的商品列表
-    filteredItems: []
+    filteredItems: [],
+    // 修改价格
+    showPriceModal: false,
+    editingItemId: null,
+    editingPrice: '',
+    originalPrice: ''
   },
 
   onLoad() {
@@ -61,14 +67,14 @@ Page({
       if (typeof itemManager !== 'undefined' && itemManager.getUserItems) {
         soldItems = itemManager.getUserItems(this.data.currentUser.id);
         
-        // 转换状态字段：active -> 在售，sold -> 已售出
+        // 转换状态字段，保持原有的状态映射逻辑
         soldItems = soldItems.map(item => {
           let status = '在售'; // 默认状态
           if (item.status === 'active') {
             status = '在售';
           } else if (item.status === 'sold') {
             status = '已售出';
-          } else if (item.status === 'inactive') {
+          } else if (item.status === 'withdrawn') {
             status = '已下架';
           }
           
@@ -113,7 +119,8 @@ Page({
     const counts = {
       all: items.length,
       selling: items.filter(item => item.status === '在售').length,
-      sold: items.filter(item => item.status === '已售出').length
+      sold: items.filter(item => item.status === '已售出').length,
+      withdrawn: items.filter(item => item.status === '已下架').length
     };
     
     const statusOptions = this.data.statusOptions.map(option => ({
@@ -132,7 +139,8 @@ Page({
     if (activeStatus !== 'all') {
       const statusMap = {
         'selling': '在售',
-        'sold': '已售出'
+        'sold': '已售出',
+        'withdrawn': '已下架'
       };
       filteredItems = soldItems.filter(item => item.status === statusMap[activeStatus]);
     }
@@ -152,17 +160,6 @@ Page({
     const itemId = e.currentTarget.dataset.itemId;
     wx.navigateTo({
       url: `/pages/item-detail/item-detail?id=${itemId}`
-    });
-  },
-
-  // 编辑商品
-  editItem(e) {
-    if (e && e.stopPropagation) {
-      e.stopPropagation(); // 阻止事件冒泡
-    }
-    const itemId = e.currentTarget.dataset.itemId;
-    wx.navigateTo({
-      url: `/pages/edit-item/edit-item?id=${itemId}`
     });
   },
 
@@ -231,11 +228,91 @@ Page({
   async performMarkAsSold(itemId) {
     try {
       if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, '已售出');
+        await itemManager.updateItemStatus(itemId, 'sold'); // 传递原始状态值
       }
       
       wx.showToast({
         title: '标记成功，交易完成！',
+        icon: 'success'
+      });
+      
+      this.loadSoldItems();
+      
+    } catch (error) {
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 标记为已下架
+  markAsWithdrawn(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const itemId = e.currentTarget.dataset.itemId;
+    
+    wx.showModal({
+      title: '确认下架',
+      content: '确定要下架此商品吗？下架后可以重新上架。',
+      success: (res) => {
+        if (res.confirm) {
+          this.performMarkAsWithdrawn(itemId);
+        }
+      }
+    });
+  },
+
+  // 执行标记已下架
+  async performMarkAsWithdrawn(itemId) {
+    try {
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
+        await itemManager.updateItemStatus(itemId, 'withdrawn'); // 传递原始状态值
+      }
+      
+      wx.showToast({
+        title: '商品已下架',
+        icon: 'success'
+      });
+      
+      this.loadSoldItems();
+      
+    } catch (error) {
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 重新上架（从已下架状态恢复到在售）
+  markAsActive(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const itemId = e.currentTarget.dataset.itemId;
+    
+    wx.showModal({
+      title: '确认上架',
+      content: '确定要重新上架此商品吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.performMarkAsActive(itemId);
+        }
+      }
+    });
+  },
+
+  // 执行重新上架
+  async performMarkAsActive(itemId) {
+    try {
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
+        await itemManager.updateItemStatus(itemId, 'active'); // 传递原始状态值
+      }
+      
+      wx.showToast({
+        title: '商品已重新上架',
         icon: 'success'
       });
       
@@ -262,5 +339,113 @@ Page({
       title: '看看我在校园二手市场卖的好物',
       path: '/pages/index/index'
     };
-  }
+  },
+  // 添加这些方法：
+  showEditPrice(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.soldItems.find(item => item.id === itemId);
+    
+    this.setData({
+      showPriceModal: true,
+      editingItemId: itemId,
+      editingPrice: item.price.toString(),
+      originalPrice: item.price.toString()
+    });
+  },
+
+  hidePriceModal() {
+    this.setData({
+      showPriceModal: false,
+      editingItemId: null,
+      editingPrice: '',
+      originalPrice: ''
+    });
+  },
+
+  // 改进的价格输入验证
+  onPriceInput(e) {
+    let value = e.detail.value;
+    
+    // 只允许数字和小数点
+    value = value.replace(/[^\d.]/g, '');
+    
+    // 确保只有一个小数点
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // 限制小数点后两位
+    if (parts[1] && parts[1].length > 2) {
+      value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    
+    // 防止以小数点开头
+    if (value.startsWith('.')) {
+      value = '0' + value;
+    }
+    
+    this.setData({
+      editingPrice: value
+    });
+  },
+
+  async confirmPriceEdit() {
+    const { editingPrice, editingItemId, originalPrice } = this.data;
+    
+    // 验证价格
+    if (!editingPrice || editingPrice <= 0) {
+      wx.showToast({
+        title: '请输入有效价格',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 如果价格没有变化，直接关闭弹窗
+    if (parseFloat(editingPrice) === parseFloat(originalPrice)) {
+      this.hidePriceModal();
+      return;
+    }
+    
+    try {
+      // 调用商品管理器的更新价格方法
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemPrice) {
+        await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
+      } else {
+        // 如果没有专门的更新价格方法，可能需要调用通用的更新方法
+        // 这里需要根据你的 itemManager 实际方法来调整
+        throw new Error('价格更新方法不存在');
+      }
+      
+      wx.showToast({
+        title: '价格修改成功',
+        icon: 'success'
+      });
+      
+      // 关闭弹窗
+      this.hidePriceModal();
+      
+      // 重新加载数据
+      this.loadSoldItems();
+      
+    } catch (error) {
+      console.error('修改价格失败:', error);
+      wx.showToast({
+        title: error.message || '修改失败，请重试',
+        icon: 'none'
+      });
+    }
+  },
+
+  cancelPriceEdit() {
+    this.hidePriceModal();
+  },
+
+  stopPropagation() {
+    // 什么都不做，只是阻止事件冒泡
+  },
 });

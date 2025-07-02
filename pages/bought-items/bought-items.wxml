@@ -17,7 +17,7 @@
 
   <!-- 内容区域 -->
   <view wx:else>
-    <!-- 状态筛选标签 - 固定在顶部 -->
+    <!-- 状态筛选标签 - 四个分类 -->
     <view class="status-tabs">
       <view 
         wx:for="{{statusOptions}}" 
@@ -35,9 +35,9 @@
     <view class="items-container">
       <view wx:if="{{filteredItems.length === 0}}" class="empty-state">
         <image class="empty-icon" src="/images/empty-box.png" mode="aspectFit" />
-        <text class="empty-text">暂无购买记录</text>
+        <text class="empty-text">暂无求购记录</text>
         <text class="empty-tip">
-          {{activeStatus === 'all' ? '还没有购买过商品' : '该状态下暂无商品'}}
+          {{activeStatus === 'all' ? '还没有发布过求购' : '该状态下暂无求购'}}
         </text>
       </view>
 
@@ -59,8 +59,8 @@
                 mode="aspectFill"
               />
               <!-- 状态标签 -->
-              <view class="status-tag {{item.purchaseStatus === '待确认' ? 'status-pending' : 'status-completed'}}">
-                {{item.purchaseStatus}}
+              <view class="status-tag {{item.status === '求购中' ? 'status-seeking' : item.status === '已买到' ? 'status-bought' : 'status-inactive'}}">
+                {{item.status}}
               </view>
             </view>
 
@@ -72,66 +72,124 @@
               <!-- 商品描述 -->
               <view class="item-description">{{item.description}}</view>
               
-              <!-- 商品价格 -->
-              <view class="item-price">¥{{item.price}}</view>
-              
-              <!-- 购买时间和卖家信息 -->
+              <!-- 预算价格 -->
+              <view class="item-price-section">
+                <text class="price-label">预算：</text>
+                <view class="item-price">¥{{item.price}}</view>
+                <!-- 只有求购中状态才显示编辑按钮 -->
+                <view 
+                  wx:if="{{item.status === '求购中'}}" 
+                  class="price-edit-btn"
+                  data-item-id="{{item.id}}"
+                  catchtap="showEditPrice"
+                >
+                  <image class="edit-icon" src="/images/change.png" mode="aspectFit" />
+                </view>
+              </view>              
+              <!-- 发布时间和状态信息 -->
               <view class="item-meta">
-                <text class="purchase-time">购买：{{item.purchaseTime}}</text>
-                <view class="seller-tag">
-                  <text class="seller-label">卖家：{{item.sellerName}}</text>
+                <text class="create-time">发布：{{item.createTime}}</text>
+                <view wx:if="{{item.status === '已买到' && item.boughtTime}}" class="bought-tag">
+                  <text class="bought-time">买到：{{item.boughtTime}}</text>
                 </view>
               </view>
             </view>
           </view>
-
-          <!-- 卖家信息区域 -->
-          <view class="seller-info">
-            <view class="seller-details">
-              <image class="seller-avatar" src="{{item.sellerAvatar}}" />
-              <view class="seller-text">
-                <text class="seller-info-label">卖家信息</text>
-                <text class="seller-name">{{item.sellerName}}</text>
-              </view>
-            </view>
-            <text class="contact-info" wx:if="{{item.contactInfo}}">{{item.contactInfo}}</text>
-          </view>
-
-          <!-- 操作按钮 -->
+          
+          <!-- 操作按钮区域 -->
           <view class="item-actions">
-            <!-- 待确认状态的按钮 -->
-            <block wx:if="{{item.purchaseStatus === '待确认'}}">
-              <button 
-                class="action-btn secondary"
-                data-item-id="{{item.id}}"
-                catchtap="contactSeller"
-              >
-                联系卖家
-              </button>
+            <!-- 求购中状态的按钮：标记买到、下架、删除 -->
+            <block wx:if="{{item.status === '求购中'}}">
               <button 
                 class="action-btn primary"
                 data-item-id="{{item.id}}"
-                catchtap="confirmReceived"
+                catchtap="markAsBought"
               >
-                确认收货
+                标记买到
               </button>
-            </block>
-
-            <!-- 已完成状态 -->
-            <block wx:if="{{item.purchaseStatus === '已完成'}}">
-              <view class="completed-info">
-                <text class="completed-text">🎉 交易已完成</text>
-              </view>
               <button 
                 class="action-btn secondary"
                 data-item-id="{{item.id}}"
-                catchtap="rateItem"
+                catchtap="markAsInactive"
               >
-                评价
+                下架
+              </button>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
+              </button>
+            </block>
+
+            <!-- 已买到状态：显示完成信息和删除按钮 -->
+            <block wx:if="{{item.status === '已买到'}}">
+              <view class="bought-info">
+                <text class="bought-text">🎉 求购完成</text>
+              </view>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
+              </button>
+            </block>
+
+            <!-- 已下架状态：重新上架和删除按钮 -->
+            <block wx:if="{{item.status === '已下架'}}">
+              <button 
+                class="action-btn primary"
+                data-item-id="{{item.id}}"
+                catchtap="markAsActive"
+              >
+                重新上架
+              </button>
+              <button 
+                class="action-btn danger"
+                data-item-id="{{item.id}}"
+                catchtap="deleteItem"
+              >
+                删除
               </button>
             </block>
           </view>
         </view>
+      </view>
+    </view>
+  </view>
+  
+  <view wx:if="{{showPriceModal}}" class="price-modal-overlay" catchtap="hidePriceModal">
+    <view class="price-modal" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">修改预算</text>
+      </view>
+      
+      <view class="modal-content">
+        <view class="price-input-section">
+          <text class="price-label">新预算</text>
+          <view class="price-input-wrapper">
+            <text class="currency-symbol">¥</text>
+            <input 
+              class="price-input"
+              type="digit"
+              value="{{editingPrice}}"
+              placeholder="请输入预算"
+              bindinput="onPriceInput"
+              focus="{{showPriceModal}}"
+            />
+          </view>
+        </view>
+        
+        <view class="price-tip">
+          <text class="tip-text">原预算：¥{{originalPrice}}</text>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <view class="modal-btn cancel-btn" bindtap="cancelPriceEdit">取消</view>
+        <view class="modal-btn confirm-btn {{!editingPrice || editingPrice <= 0 ? 'disabled' : ''}}" bindtap="confirmPriceEdit">确定</view>
       </view>
     </view>
   </view>

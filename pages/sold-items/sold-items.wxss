@@ -27,7 +27,7 @@
   border: none;
 }
 
-/* 状态筛选标签 - 紧贴返回栏 */
+/* 状态筛选标签 - 四个分类布局 */
 .status-tabs {
   display: flex;
   background-color: white;
@@ -46,7 +46,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 25rpx 10rpx;
+  padding: 20rpx 8rpx;
   position: relative;
   min-width: 0;
   background-color: white;
@@ -67,23 +67,23 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 60rpx;
+  width: 50rpx;
   height: 4rpx;
   background-color: #0096c3;
   border-radius: 2rpx;
 }
 
 .tab-label {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: bold;
-  margin-bottom: 5rpx;
+  margin-bottom: 4rpx;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .tab-count {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #999;
   white-space: nowrap;
   transition: all 0.3s ease;
@@ -94,10 +94,10 @@
   transform: scale(1.1);
 }
 
-/* 商品列表容器 - 修正顶部间距 */
+/* 商品列表容器 */
 .items-container {
   padding: 20rpx;
-  margin-top: -80rpx; /* 减少顶部间距 */
+  margin-top: -90rpx; /* 为四个tab留出空间 */
 }
 
 /* 空状态 */
@@ -183,6 +183,10 @@
   background-color: #999;
 }
 
+.status-inactive {
+  background-color: #faad14;
+}
+
 /* 右侧信息区域 */
 .item-detail-section {
   flex: 1;
@@ -217,11 +221,41 @@
   -webkit-box-orient: vertical;
 }
 
+/* 价格区域布局 */
+.item-price-section {
+  display: flex;
+  align-items: center;
+  gap: 5rpx;
+  margin-bottom: 15rpx;
+}
+
+.price-label {
+  font-size: 36rpx;
+  color: #ff6b35;
+  font-weight: bold;
+}
+
 .item-price {
   font-size: 36rpx;
   font-weight: bold;
   color: #ff6b35;
-  margin-bottom: 15rpx;
+}
+
+.price-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx;
+  transition: all 0.2s ease;
+}
+
+.price-edit-btn:active {
+  transform: scale(0.9);
+}
+
+.edit-icon {
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .item-meta {
@@ -294,22 +328,28 @@
   flex-shrink: 0;
 }
 
-/* 简化的操作按钮区域 */
+/* 操作按钮区域 */
 .item-actions {
   display: flex;
   padding: 15rpx 20rpx;
   border-top: 1rpx solid #f0f0f0;
   background-color: #fafafa;
+  gap: 10rpx;
+  flex-wrap: wrap;
 }
 
 .action-btn {
   flex: 1;
-  padding: 12rpx 0;
+  min-width: 0;
+  padding: 12rpx 16rpx;
   border-radius: 6rpx;
-  font-size: 26rpx;
+  font-size: 24rpx;
   text-align: center;
   border: none;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-btn.primary {
@@ -321,48 +361,232 @@
   background-color: #007aa3;
 }
 
+.action-btn.secondary {
+  background-color: #faad14;
+  color: white;
+}
+
+.action-btn.secondary:active {
+  background-color: #d48806;
+}
+
+.action-btn.danger {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.action-btn.danger:active {
+  background-color: #d9363e;
+}
+
 /* 已售出信息 */
 .sold-info {
   flex: 1;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 15rpx 0;
 }
 
 .sold-text {
-  display: block;
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #52c41a;
   font-weight: bold;
+}
+/* 价格修改弹窗样式 - 参考设置页面样式 */
+.price-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 60rpx;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.price-modal {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  width: 100%;
+  max-width: 600rpx;
+  position: relative;
+  z-index: 10000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 弹窗头部 */
+.modal-header {
+  padding: 0;
+  text-align: center;
+  border-bottom: none;
+  margin-bottom: 40rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* 弹窗内容 */
+.modal-content {
+  padding: 0;
+}
+
+.price-input-section {
+  margin-bottom: 30rpx;
+}
+
+.modal-content .price-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  font-weight: 500;
+}
+
+.price-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2rpx solid #e5e5e5;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  min-height: 80rpx;
+}
+
+.price-input-wrapper:focus-within {
+  border-color: #0096c3;
+  background: white;
+}
+
+.currency-symbol {
+  font-size: 28rpx;
+  color: #666;
+  margin-right: 10rpx;
+  font-weight: 500;
+}
+
+.price-input {
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+  color: #333;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.price-tip {
+  text-align: center;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+  margin-bottom: 40rpx;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+
+/* 弹窗底部按钮 */
+.modal-footer {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.cancel-btn:active {
+  background: #e8e8e8;
+  transform: scale(0.98);
+}
+
+.confirm-btn {
+  background: #0096c3;
+  color: #fff;
+}
+
+.confirm-btn:active {
+  background: #007aa3;
+  transform: scale(0.98);
+}
+
+.confirm-btn:disabled,
+.confirm-btn.disabled {
+  background: #d9d9d9;
+  color: #999;
+  transform: none;
 }
 
 /* 响应式调整 */
 @media (max-width: 375px) {
-  .items-container {
-    margin-top: 85rpx; /* 小屏幕调整 */
+  .price-modal {
+    width: calc(100vw - 80rpx);
+    max-width: none;
+    padding: 30rpx;
   }
   
-  .item-main-content {
-    gap: 15rpx;
+  .price-input-wrapper {
+    padding: 0 15rpx;
+    min-height: 70rpx;
   }
   
-  .item-thumbnail {
-    width: 140rpx;
-    height: 140rpx;
-  }
-  
-  .item-title {
-    font-size: 30rpx;
-  }
-  
-  .item-price {
-    font-size: 32rpx;
-  }
-
-  .status-tabs {
+  .price-input {
+    height: 70rpx;
     font-size: 26rpx;
   }
   
-  .tab-label {
+  .modal-btn {
     font-size: 26rpx;
+    padding: 20rpx;
   }
 }
