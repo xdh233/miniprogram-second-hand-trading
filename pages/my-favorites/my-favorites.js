@@ -208,29 +208,17 @@ Page({
     const itemId = e.currentTarget.dataset.itemId;
     const item = this.data.favoriteItems.find(item => item.id === itemId);
     
-    if (item.contactInfo) {
-      wx.setClipboardData({
-        data: item.contactInfo,
-        success: () => {
-          wx.showToast({
-            title: '联系方式已复制',
-            icon: 'success'
-          });
-        }
+    // 直接跳转到聊天页面
+    const sellerId = item.sellerId || item.authorId;
+    if (sellerId) {
+      wx.navigateTo({
+        url: `/pages/chat/chat?userId=${sellerId}&itemId=${itemId}`
       });
     } else {
-      // 跳转到私聊页面
-      const authorId = item.authorId || item.sellerId;
-      if (authorId) {
-        wx.navigateTo({
-          url: `/pages/chat/chat?userId=${authorId}&userName=${item.authorName}`
-        });
-      } else {
-        wx.showToast({
-          title: '暂无联系方式',
-          icon: 'none'
-        });
-      }
+      wx.showToast({
+        title: '无法联系发布者',
+        icon: 'none'
+      });
     }
   },
 
@@ -283,23 +271,6 @@ Page({
     }
   },
 
-  // 分享商品
-  shareItem(e) {
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    const itemId = e.currentTarget.dataset.itemId;
-    const item = this.data.favoriteItems.find(item => item.id === itemId);
-    
-    wx.showShareMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline']
-    });
-    
-    // 设置当前分享的商品
-    this.currentShareItem = item;
-  },
-
   // 下拉刷新
   onPullDownRefresh() {
     this.loadFavoriteItems().finally(() => {
@@ -307,17 +278,8 @@ Page({
     });
   },
 
-  // 分享
+  // 分享 - 简化版本，只保留基本分享功能
   onShareAppMessage() {
-    if (this.currentShareItem) {
-      const item = this.currentShareItem;
-      return {
-        title: `${item.tradeType === 'sell' ? '推荐好物' : '求购信息'}：${item.title}`,
-        path: `/pages/item-detail/item-detail?id=${item.id}`,
-        imageUrl: item.images && item.images[0]
-      };
-    }
-    
     return {
       title: '我的收藏 - 校园二手市场',
       path: '/pages/index/index'

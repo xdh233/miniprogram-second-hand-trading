@@ -94,10 +94,10 @@
   transform: scale(1.1);
 }
 
-/* 商品列表容器 */
+/* 商品列表容器 - 修改margin-top为负数 */
 .items-container {
-  padding: 15rpx 20rpx 20rpx;
-  margin-top: 80rpx;
+  padding: 20rpx;
+  margin-top: -90rpx; /* 修改为负数，与my-bought-items和my-sold-items保持一致 */
 }
 
 /* 空状态 */
@@ -261,7 +261,7 @@
   white-space: nowrap;
 }
 
-/* 发布者信息区域 */
+/* 删除发布者信息相关样式
 .author-info {
   display: flex;
   justify-content: space-between;
@@ -309,8 +309,9 @@
   padding: 4rpx 8rpx;
   border-radius: 8rpx;
 }
+*/
 
-/* 操作按钮区域 */
+/* 操作按钮区域 - 调整为两个按钮的布局 */
 .item-actions {
   display: flex;
   padding: 15rpx 20rpx;
@@ -374,7 +375,7 @@
 /* 响应式调整 */
 @media (max-width: 375px) {
   .items-container {
-    margin-top: 75rpx;
+    margin-top: -85rpx; /* 小屏幕调整 */
   }
   
   .item-main-content {
