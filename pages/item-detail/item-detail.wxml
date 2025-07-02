@@ -36,7 +36,12 @@
       <view class="product-title">{{item.title}}</view>
       
       <!-- 商品价格 -->
-      <view class="product-price">¥{{item.price}}</view>
+      <view class="product-price-section">
+        <text class="price-label {{item.tradeType === 'sell' ? 'sell-label' : 'buy-label'}}">
+          {{item.tradeType === 'sell' ? '售价' : '预算'}}
+        </text>
+        <text class="product-price {{item.tradeType === 'sell' ? 'sell-price' : 'buy-price'}}">¥{{item.price}}</text>
+      </view>
       
       <!-- 商品描述 -->
       <view class="product-description">{{item.description}}</view>
@@ -231,8 +236,11 @@
       </view>
     </view>
     
-    <!-- 右侧联系卖家按钮 -->
-    <button class="contact-btn" bindtap="contactSeller">联系卖家</button>
+    <!-- 右侧按钮区域 -->
+    <view class="right-actions">
+      <button wx:if="{{item.tradeType === 'sell'}}" class="buy-btn" bindtap="onBuyItem">购买</button>
+      <button class="contact-btn" bindtap="contactSeller">私信</button>
+    </view>
   </view>
 
   <!-- 修改回复输入浮层部分 -->

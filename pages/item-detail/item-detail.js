@@ -673,5 +673,76 @@ Page({
     if (this.data.hasMore && !this.data.loadingMore) {
       this.loadComments();
     }
+  },
+  // 购买商品
+  onBuyItem() {
+    const item = this.data.item;
+    const currentUser = userManager.getCurrentUser();
+    const currentUserId = currentUser.id;
+
+    if (!item || !item.sellerId) {
+      wx.showToast({
+        title: '商品信息获取失败',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    if (item.sellerId === currentUserId) {
+      wx.showToast({
+        title: '不能购买自己的商品',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 显示购买确认弹窗
+    wx.showModal({
+      title: '确认购买',
+      content: `确定要购买《${item.title}》吗？\n价格：¥${item.price}\n`,
+      confirmText: '确认购买',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          this.processPurchase();
+        }
+      }
+    });
+  },
+
+  // 处理购买流程
+  async processPurchase() {
+    try {
+      wx.showLoading({
+        title: '处理中...',
+        mask: true
+      });
+
+      // 这里可以调用购买相关的API
+      // 例如：await itemManager.purchaseItem(this.data.itemId);
+      
+      // 模拟购买成功
+      setTimeout(() => {
+        wx.hideLoading();
+        wx.showToast({
+          title: '购买成功！',
+          icon: 'success',
+          duration: 2000
+        });
+        
+        // 可以跳转到订单页面或者聊天页面
+        // wx.navigateTo({
+        //   url: `/pages/order/order?itemId=${this.data.itemId}`
+        // });
+      }, 1500);
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('购买失败:', error);
+      wx.showToast({
+        title: error.message || '购买失败',
+        icon: 'none'
+      });
+    }
   }
 });
