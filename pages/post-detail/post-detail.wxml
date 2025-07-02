@@ -163,11 +163,10 @@
             
             <!-- 显示的回复 - 使用 displayReplies -->
             <view wx:for="{{item.displayReplies}}" 
-                  wx:for-item="reply" 
-                  wx:for-index="replyIndex"
-                  wx:key="{{reply.id}}"
-                  class="reply-item">
-              
+              wx:for-item="reply" 
+              wx:for-index="replyIndex"
+              wx:key="id">  <!-- 正确：直接写字段名 -->
+                      
               <view class="reply-content">
                 <text class="reply-author" bindtap="goToUserProfile" data-user-id="{{reply.userId}}">{{reply.userNickname}}</text>
                 <text wx:if="{{reply.isAuthor}}" class="author-tag-small">楼主</text>

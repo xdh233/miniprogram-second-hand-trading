@@ -255,7 +255,7 @@ class PostManager {
 
   // 添加主评论
   addCommentByPostId(postId, content) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         // 参数验证
         if (!content || typeof content !== 'string' || !content.trim()) {
@@ -303,6 +303,19 @@ class PostManager {
         if (this.saveComments(allComments)) {
           // 更新帖子的评论数
           this.updatePostCommentsCount(postId);
+          
+          // 创建通知
+          const notifyManager = require('./notifyManager');
+          await notifyManager.createPostCommentNotification(
+            currentUser.id,
+            currentUser.nickname || currentUser.name,
+            currentUser.avatar || '/images/default-avatar.png',
+            postId,
+            post.content,
+            post.userId,
+            content.trim()
+          );
+          
           resolve(newComment);
         } else {
           reject({ message: '评论失败，请重试' });
@@ -316,7 +329,7 @@ class PostManager {
 
   // 添加回复
   addReplyToComment(postId, parentCommentId, content, replyToUserId, replyToUserName) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         console.log('addReplyToComment 参数:', { postId, parentCommentId, content, replyToUserId, replyToUserName });
         
@@ -378,6 +391,21 @@ class PostManager {
         if (this.saveComments(allComments)) {
           // 7. 更新帖子的评论数
           this.updatePostCommentsCount(postId);
+          
+          // 8. 创建通知
+          const notifyManager = require('./notifyManager');
+          await notifyManager.createReplyCommentNotification(
+            currentUser.id,
+            currentUser.nickname || currentUser.name,
+            currentUser.avatar || '/images/default-avatar.png',
+            parentCommentId,
+            parentComment.content,
+            parentComment.userId,
+            content.trim(),
+            postId,
+            null
+          );
+          
           resolve(newReply);
         } else {
           reject({ message: '回复失败，请重试' });
@@ -537,27 +565,62 @@ class PostManager {
 
   // 点赞/取消点赞
   toggleLike(postId) {
-    return new Promise((resolve, reject) => {
-      const posts = this.getAllPosts();
-      const updatedPosts = posts.map(post => {
-        if (post.id === postId) {
-          const newLikeState = !post.isLiked;
-          return {
-            ...post,
-            isLiked: newLikeState,
-            likes: newLikeState ? post.likes + 1 : post.likes - 1
-          };
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 获取当前用户信息
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+        
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
         }
-        return post;
-      });
-      
-      if (this.savePosts(updatedPosts)) {
-        const updatedPost = updatedPosts.find(p => p.id === postId);
-        resolve({
-          isLiked: updatedPost.isLiked,
-          likes: updatedPost.likes
+
+        const posts = this.getAllPosts();
+        const post = posts.find(p => p.id === postId);
+        
+        if (!post) {
+          reject({ message: '帖子不存在' });
+          return;
+        }
+
+        const updatedPosts = posts.map(post => {
+          if (post.id === postId) {
+            const newLikeState = !post.isLiked;
+            return {
+              ...post,
+              isLiked: newLikeState,
+              likes: newLikeState ? post.likes + 1 : post.likes - 1
+            };
+          }
+          return post;
         });
-      } else {
+        
+        if (this.savePosts(updatedPosts)) {
+          const updatedPost = updatedPosts.find(p => p.id === postId);
+          
+          // 如果是点赞操作，创建通知
+          if (updatedPost.isLiked) {
+            const notifyManager = require('./notifyManager');
+            await notifyManager.createPostLikeNotification(
+              currentUser.id,
+              currentUser.nickname || currentUser.name,
+              currentUser.avatar || '/images/default-avatar.png',
+              postId,
+              post.content,
+              post.userId
+            );
+          }
+          
+          resolve({
+            isLiked: updatedPost.isLiked,
+            likes: updatedPost.likes
+          });
+        } else {
+          reject({ message: '操作失败' });
+        }
+      } catch (error) {
+        console.error('点赞操作失败:', error);
         reject({ message: '操作失败' });
       }
     });
@@ -575,30 +638,60 @@ class PostManager {
 
   // 评论点赞/取消点赞（支持主评论和回复）
   toggleCommentLike(commentId) {
-    return new Promise((resolve, reject) => {
-      const comments = this.getAllComment();
-      const commentIndex = comments.findIndex(c => c.id == commentId);
-      
-      if (commentIndex === -1) {
-        reject({ message: '评论不存在' });
-        return;
-      }
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 获取当前用户信息
+        const userManager = require('./userManager');
+        const currentUser = userManager.getCurrentUser();
+        
+        if (!currentUser) {
+          reject({ message: '请先登录' });
+          return;
+        }
 
-      const comment = comments[commentIndex];
-      if (comment.isLiked) {
-        comment.likes = Math.max(0, (comment.likes || 0) - 1);
-        comment.isLiked = false;
-      } else {
-        comment.likes = (comment.likes || 0) + 1;
-        comment.isLiked = true;
-      }
+        const comments = this.getAllComment();
+        const commentIndex = comments.findIndex(c => c.id == commentId);
+        
+        if (commentIndex === -1) {
+          reject({ message: '评论不存在' });
+          return;
+        }
 
-      if (this.saveComments(comments)) {
-        resolve({
-          isLiked: comment.isLiked,
-          likes: comment.likes
-        });
-      } else {
+        const comment = comments[commentIndex];
+        const wasLiked = comment.isLiked;
+        
+        if (comment.isLiked) {
+          comment.likes = Math.max(0, (comment.likes || 0) - 1);
+          comment.isLiked = false;
+        } else {
+          comment.likes = (comment.likes || 0) + 1;
+          comment.isLiked = true;
+        }
+
+        if (this.saveComments(comments)) {
+          // 如果是点赞操作，创建通知
+          if (!wasLiked && comment.isLiked) {
+            const notifyManager = require('./notifyManager');
+            await notifyManager.createCommentLikeNotification(
+              currentUser.id,
+              currentUser.nickname || currentUser.name,
+              currentUser.avatar || '/images/default-avatar.png',
+              commentId,
+              comment.content,
+              comment.userId,
+              comment.postId
+            );
+          }
+          
+          resolve({
+            isLiked: comment.isLiked,
+            likes: comment.likes
+          });
+        } else {
+          reject({ message: '操作失败' });
+        }
+      } catch (error) {
+        console.error('评论点赞操作失败:', error);
         reject({ message: '操作失败' });
       }
     });

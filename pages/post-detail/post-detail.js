@@ -1,5 +1,6 @@
 const postManager = require('../../utils/postManager');
 const userManager = require('../../utils/userManager');
+const commentManager = require('../../utils/commentManager');
 
 Page({
   data: {
@@ -122,8 +123,9 @@ Page({
       this.setData({ loadingMore: true });
       console.log('加载评论，postId:', this.data.postId, 'page:', page);
       
-      const comments = await postManager.getPostComments(
+      const comments = await commentManager.getComments(
         this.data.postId,
+        'post',
         page,
         this.data.pageSize,
         this.data.sortType
@@ -282,7 +284,7 @@ Page({
     try {
       console.log('提交评论，postId:', this.data.postId, 'content:', this.data.newCommentContent);
       
-      await postManager.addCommentByPostId(this.data.postId, this.data.newCommentContent);
+      await commentManager.addComment(this.data.postId, 'post', this.data.newCommentContent);
       
       this.setData({ newCommentContent: '' });
       
@@ -386,8 +388,9 @@ Page({
       });
       
       // 调用回复接口，需要传递主评论ID作为parentId
-      await postManager.addReplyToComment(
+      await commentManager.addReply(
         this.data.postId,
+        'post',
         replyingTo.id,  // 父评论ID（始终是主评论的ID）
         this.data.replyContent,
         replyToTarget?.userId || replyingTo.userId,
@@ -454,7 +457,7 @@ Page({
     const isReply = e.currentTarget.dataset.isReply;
     
     try {
-      const result = await postManager.toggleCommentLike(commentId);
+      const result = await commentManager.toggleCommentLike(commentId);
       
       // 更新对应的评论数据
       if (isReply) {

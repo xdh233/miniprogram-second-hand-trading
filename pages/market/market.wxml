@@ -16,6 +16,11 @@
           bindconfirm="onSearch" 
         />
       </view>
+      
+      <!-- 新增：圆形交易类型切换按钮 -->
+      <view class="trade-toggle-btn {{currentTradeType === 'buy' ? 'buy-mode' : ''}}" bindtap="toggleTradeType">
+        <text class="toggle-text">{{currentTradeType === 'sell' ? '卖' : '收'}}</text>
+      </view>
     </view>
 
     <!-- 分类标签栏 -->

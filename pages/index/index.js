@@ -1,5 +1,4 @@
 // pages/index/index.js - 修复版本
-
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
 const sharedTools = require('../../utils/sharedTools');

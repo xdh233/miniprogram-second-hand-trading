@@ -35,6 +35,10 @@ page {
   padding: 20rpx 30rpx;
   border-bottom: 1rpx solid #f0f0f0;
   flex-shrink: 0; /* 不被压缩 */
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  gap: 12px; /* 搜索框和按钮之间的间距 */
 }
 
 .search-box {
@@ -44,6 +48,7 @@ page {
   border-radius: 25rpx;
   padding: 12rpx 20rpx;
   height: 56rpx;
+  flex:1;
 }
 
 .search-icon {
@@ -60,7 +65,36 @@ page {
 .search-placeholder {
   color: #999;
 }
+/* 圆形交易类型切换按钮 */
+.trade-toggle-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #ff6b35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+  transition: all 0.2s ease;
+  flex-shrink: 0; /* 防止按钮被压缩 */
+}
 
+.trade-toggle-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.4);
+}
+
+.toggle-text {
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 求购模式时的颜色变化 */
+.trade-toggle-btn.buy-mode {
+  background-color: #0096c3;
+  box-shadow: 0 2px 8px rgba(0, 150, 195, 0.3);
+}
 /* 分类标签栏 - 固定高度 */
 .category-section {
   background-color: #fff;
@@ -85,7 +119,7 @@ page {
 }
 
 .category-tab.active {
-  color: #007aff;
+  color: #0096c3;
   background-color: #e8f4ff;
 }
 
@@ -231,7 +265,7 @@ page {
 }
 
 .trade-type.buy {
-  background-color: #007aff;
+  background-color: #0096c3;
 }
 
 /* 加载状态 */
@@ -292,7 +326,7 @@ page {
   width: 60rpx;
   height: 60rpx;
   border: 4rpx solid #f3f3f3;
-  border-top: 4rpx solid #007aff;
+  border-top: 4rpx solid #0096c3;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 40rpx;

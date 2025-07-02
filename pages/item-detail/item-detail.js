@@ -1,7 +1,7 @@
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const commentManager = require('../../utils/commentManager');
 const sharedTools = require('../../utils/sharedTools');
-
 Page({
   data: {
     itemId: null,
@@ -136,8 +136,9 @@ Page({
       this.setData({ loadingMore: true });
       console.log('加载评论，itemId:', this.data.itemId, 'page:', page);
       
-      const comments = await itemManager.getItemComments(
+      const comments = await commentManager.getComments(
         this.data.itemId,
+        'item',
         page,
         this.data.pageSize,
         this.data.sortType
@@ -309,7 +310,7 @@ Page({
     try {
       console.log('提交评论，itemId:', this.data.itemId, 'content:', this.data.newCommentContent);
       
-      await itemManager.addCommentByItemId(this.data.itemId, this.data.newCommentContent);
+      await commentManager.addComment(this.data.itemId,'item',this.data.newCommentContent);
       
       this.setData({ newCommentContent: '' });
       
@@ -415,8 +416,9 @@ Page({
       });
       
       // 调用回复接口，需要传递主评论ID作为parentId
-      await itemManager.addReplyToComment(
+      await commentManager.addReply(
         this.data.itemId,
+        'item',
         replyingTo.id,  // 父评论ID（始终是主评论的ID）
         this.data.replyContent,
         replyToTarget?.userId || replyingTo.userId,
@@ -492,7 +494,7 @@ Page({
     const isReply = e.currentTarget.dataset.isReply;
     
     try {
-      const result = await itemManager.toggleCommentLike(commentId);
+      const result = await commentManager.toggleCommentLike(commentId);
       
       // 更新对应的评论数据
       if (isReply) {
