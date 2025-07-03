@@ -65,23 +65,33 @@ Page({
       
       // 从商品管理器获取数据
       if (typeof itemManager !== 'undefined' && itemManager.getUserItems) {
-        soldItems = itemManager.getUserItems(this.data.currentUser.id);
+        const allUserItems = itemManager.getUserItems(this.data.currentUser.id);
+        
+        // 只获取出售类型的商品，过滤掉求购信息
+        const sellOnlyItems = allUserItems.filter(item => item.tradeType === 'sell');
+        
+        console.log('用户所有商品:', allUserItems.length);
+        console.log('出售商品:', sellOnlyItems.length);
         
         // 转换状态字段，保持原有的状态映射逻辑
-        soldItems = soldItems.map(item => {
-          let status = '在售'; // 默认状态
-          if (item.status === 'active') {
-            status = '在售';
+        soldItems = sellOnlyItems.map(item => {
+          let displayStatus = '在售'; // 显示用的状态
+          
+          // 状态映射：数据库状态 -> 显示状态
+          if (item.status === 'selling') {
+            displayStatus = '在售';
           } else if (item.status === 'sold') {
-            status = '已售出';
+            displayStatus = '已售出';
           } else if (item.status === 'withdrawn') {
-            status = '已下架';
+            displayStatus = '已下架';
           }
+          
+          console.log(`商品 ${item.id}(${item.title}): 原始状态=${item.status}, 显示状态=${displayStatus}`);
           
           return {
             ...item,
-            status: status,
-            // 确保有必要的字段
+            status: displayStatus, // 用于显示的状态
+            originalStatus: item.status, // 保留原始状态
             viewCount: item.viewCount || 0,
             likeCount: item.likeCount || 0,
             sellerId: item.sellerId,
@@ -89,10 +99,16 @@ Page({
             updateTime: item.updateTime || item.createTime
           };
         });
-        
       } else {
         console.log("没有商品数据");
       }
+      
+      console.log('处理后的商品列表:', soldItems.map(item => ({ 
+        id: item.id, 
+        title: item.title, 
+        status: item.status, 
+        originalStatus: item.originalStatus 
+      })));
       
       // 统计各状态数量
       this.updateStatusCounts(soldItems);
@@ -113,15 +129,24 @@ Page({
       });
     }
   },
-
   // 更新状态统计
   updateStatusCounts(items) {
+    console.log('=== 开始统计状态 ===');
+    console.log('待统计商品:', items.map(item => ({ 
+      id: item.id, 
+      title: item.title, 
+      status: item.status 
+    })));
+    
     const counts = {
       all: items.length,
       selling: items.filter(item => item.status === '在售').length,
       sold: items.filter(item => item.status === '已售出').length,
       withdrawn: items.filter(item => item.status === '已下架').length
     };
+    
+    console.log('状态统计结果:', counts);
+    console.log('=== 统计完成 ===');
     
     const statusOptions = this.data.statusOptions.map(option => ({
       ...option,
@@ -130,24 +155,112 @@ Page({
     
     this.setData({ statusOptions });
   },
-
-  // 筛选商品
-  filterItems() {
+  
+  // 3. 简化 filterItems 方法
+  async filterItems() {
     const { soldItems, activeStatus } = this.data;
+    console.log('=== 开始筛选商品 ===');
+    console.log('筛选状态:', activeStatus);
+    console.log('可筛选商品总数:', soldItems.length);
+    
     let filteredItems = soldItems;
     
     if (activeStatus !== 'all') {
+      // 状态筛选映射
       const statusMap = {
         'selling': '在售',
         'sold': '已售出',
         'withdrawn': '已下架'
       };
-      filteredItems = soldItems.filter(item => item.status === statusMap[activeStatus]);
+      
+      const targetStatus = statusMap[activeStatus];
+      console.log('目标状态:', targetStatus);
+      
+      filteredItems = soldItems.filter(item => item.status === targetStatus);
+      console.log('筛选结果:', filteredItems.map(item => ({ 
+        id: item.id, 
+        title: item.title, 
+        status: item.status 
+      })));
     }
+    
+    console.log('最终筛选数量:', filteredItems.length);
+    console.log('=== 筛选完成 ===');
     
     this.setData({ filteredItems });
   },
-
+  
+  // 4. 确保状态更新操作使用正确的原始状态值
+  async performMarkAsSold(itemId) {
+    try {
+      console.log('标记商品为已售出:', itemId);
+      
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
+        // 使用原始状态值 'sold'
+        await itemManager.updateItemStatus(itemId, 'sold');
+        console.log('商品状态更新为 sold 成功');
+      } else {
+        throw new Error('itemManager.updateItemStatus 方法不存在');
+      }
+      
+      wx.showToast({
+        title: '标记成功，交易完成！',
+        icon: 'success'
+      });
+      
+      // 重新加载数据
+      await this.loadSoldItems();
+      
+    } catch (error) {
+      console.error('标记售出失败:', error);
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
+  
+  async performMarkAsWithdrawn(itemId) {
+    try {
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
+        await itemManager.updateItemStatus(itemId, 'withdrawn');
+      }
+      
+      wx.showToast({
+        title: '商品已下架',
+        icon: 'success'
+      });
+      
+      this.loadSoldItems();
+      
+    } catch (error) {
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
+  
+  async performMarkAsActive(itemId) {
+    try {
+      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
+        await itemManager.updateItemStatus(itemId, 'selling');
+      }
+      
+      wx.showToast({
+        title: '商品已重新上架',
+        icon: 'success'
+      });
+      
+      this.loadSoldItems();
+      
+    } catch (error) {
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  },
   // 切换状态筛选
   switchStatus(e) {
     const status = e.currentTarget.dataset.status;
@@ -308,7 +421,7 @@ Page({
   async performMarkAsActive(itemId) {
     try {
       if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'active'); // 传递原始状态值
+        await itemManager.updateItemStatus(itemId, 'selling'); // 传递原始状态值
       }
       
       wx.showToast({

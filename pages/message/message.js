@@ -1,6 +1,7 @@
 // message.js - 消息页面（简化版）
 const userManager = require('../../utils/userManager');
 const messageManager = require('../../utils/messageManager');
+const sharedTools = require('../../utils/sharedTools');
 
 Page({
   data: {
@@ -54,7 +55,7 @@ Page({
         name: chat.userName,
         avatar: chat.userAvatar,
         lastMessage: chat.lastMessage,
-        time: this.formatTime(chat.lastMessageTime),
+        time: sharedTools.formatTimeAgo(chat.lastMessageTime),
         unreadCount: chat.unreadCount || 0,
         relatedItem: chat.relatedItem,
         isPinned: chat.isPinned || false,
@@ -84,30 +85,6 @@ Page({
 
     } catch (error) {
       console.error('加载消息失败:', error);
-    }
-  },
-
-  // 格式化时间显示
-  formatTime(timestamp) {
-    if (!timestamp) return '';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now - date;
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
-    if (diff < minute) {
-      return '刚刚';
-    } else if (diff < hour) {
-      return `${Math.floor(diff / minute)}分钟前`;
-    } else if (diff < day) {
-      return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-    } else if (diff < 7 * day) {
-      return `${Math.floor(diff / day)}天前`;
-    } else {
-      return `${date.getMonth() + 1}月${date.getDate()}日`;
     }
   },
 
@@ -146,7 +123,7 @@ Page({
         name: chat.userName,
         avatar: chat.userAvatar,
         lastMessage: chat.lastMessage,
-        time: this.formatTime(chat.lastMessageTime),
+        time: sharedTools.formatTimeAgo(chat.lastMessageTime),
         unreadCount: chat.unreadCount || 0,
         relatedItem: chat.relatedItem,
         isPinned: chat.isPinned || false,

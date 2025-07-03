@@ -1,6 +1,7 @@
 // pages/my-bought-items/my-bought-items.js
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const transactionManager = require('../../utils/transactionManager'); // 新增
 
 Page({
   data: {
@@ -15,13 +16,13 @@ Page({
       { key: 'all', label: '全部', count: 0 },
       { key: 'seeking', label: '求购中', count: 0 },
       { key: 'bought', label: '已买到', count: 0 },
-      { key: 'inactive', label: '已下架', count: 0 }
+      { key: 'withdrawn', label: '已下架', count: 0 } // 修改：inactive -> withdrawn
     ],
     
     // 筛选后的商品列表
     filteredItems: [],
     
-    // 新增：价格修改相关字段
+    // 价格修改相关字段
     showPriceModal: false,
     editingItemId: null,
     editingPrice: '',
@@ -57,55 +58,109 @@ Page({
     this.loadBoughtItems();
   },
 
-  // 加载我的求购商品
+  // ===== 修改：混合数据获取逻辑 =====
   async loadBoughtItems() {
     try {
       this.setData({ loading: true, error: null });
       
-      let boughtItems = [];
+      const currentUserId = this.data.currentUser.id;
+      let allBoughtItems = [];
       
-      // 从商品管理器获取我的求购数据
-      if (typeof itemManager !== 'undefined' && itemManager.getUserSeekingItems) {
-        boughtItems = itemManager.getUserSeekingItems(this.data.currentUser.id);
-      } else if (typeof itemManager !== 'undefined' && itemManager.getAllSeekingItems) {
-        // 如果有专门的求购商品管理
-        const allSeekingItems = itemManager.getAllSeekingItems();
-        boughtItems = allSeekingItems.filter(item => item.seekerId === this.data.currentUser.id);
-      } else {
-        console.log("没有求购数据");
-        // 模拟一些测试数据
-        boughtItems = this.generateMockData();
+      // 1. 获取求购发布的（从 items 表）
+      const myDemandItems = itemManager.getUserItems(currentUserId)
+        .filter(item => item.tradeType === 'buy') // 只要求购类型的
+        .map(item => ({
+          ...item,
+          sourceType: 'demand', // 标记为求购发布的
+          isDirect: false
+        }));
+      
+      // 2. 获取直接购买的（从 transactions 表）
+      let directPurchases = [];
+      if (typeof transactionManager !== 'undefined' && transactionManager.getTransactionsByBuyer) {
+        try {
+          const transactions = transactionManager.getTransactionsByBuyer(currentUserId);
+          
+          // 关联商品信息
+          directPurchases = await Promise.all(
+            transactions.map(async (transaction) => {
+              const item = itemManager.getItemById(transaction.item_id);
+              if (item) {
+                return {
+                  ...item,
+                  sourceType: 'purchase', // 标记为直接购买的
+                  isDirect: true,
+                  purchasePrice: transaction.amount,
+                  purchaseDate: transaction.created_at,
+                  transactionId: transaction.id,
+                  sellerInfo: {
+                    id: transaction.seller_id,
+                    name: item.sellerName || item.sellerNickname
+                  }
+                };
+              }
+              return null;
+            })
+          );
+          
+          // 过滤掉空值
+          directPurchases = directPurchases.filter(item => item !== null);
+        } catch (error) {
+          console.error('获取交易记录失败:', error);
+          directPurchases = [];
+        }
       }
       
-      // 转换和标准化数据
-      boughtItems = boughtItems.map(item => {
+      // 3. 合并两种类型的数据
+      allBoughtItems = [
+        ...myDemandItems,
+        ...directPurchases
+      ];
+      
+      // 4. 转换和标准化数据
+      allBoughtItems = allBoughtItems.map(item => {
         let status = '求购中'; // 默认状态
-        if (item.status === 'seeking' || item.status === 'active') {
-          status = '求购中';
-        } else if (item.status === 'bought' || item.status === 'completed') {
+        let statusType = 'demand'; // 状态类型：demand（求购）或 purchase（购买）
+        
+        if (item.isDirect) {
+          // 直接购买的都是已买到
           status = '已买到';
-        } else if (item.status === 'inactive') {
-          status = '已下架';
+          statusType = 'purchase';
+        } else {
+          // 求购发布的根据状态判断
+          statusType = 'demand';
+          if (item.status === 'seeking') {
+            status = '求购中';
+          } else if (item.status === 'bought') {
+            status = '已买到';
+          } else if (item.status === 'withdrawn') {
+            status = '已下架';
+          }
         }
         
         return {
           ...item,
           status: status,
-          // 确保有必要的字段
-          seekerId: item.seekerId || this.data.currentUser.id,
-          sellerName: item.sellerName || item.sellerNickname || '',
-          sellerAvatar: item.sellerAvatar || '/images/default-avatar.png',
+          statusType: statusType, // 新增：区分状态类型
+          displayPrice: item.isDirect ? item.purchasePrice : item.price,
+          displayDate: item.isDirect ? item.purchaseDate : item.createTime,
           createTime: item.createTime,
-          updateTime: item.updateTime || item.createTime,
-          boughtTime: item.boughtTime || item.soldTime
+          updateTime: item.updateTime || item.createTime
         };
       });
       
+      // 5. 按时间排序（最新的在前面）
+      allBoughtItems.sort((a, b) => {
+        const timeA = a.isDirect ? a.purchaseDate : a.updateTime || a.createTime;
+        const timeB = b.isDirect ? b.purchaseDate : b.updateTime || b.createTime;
+        return new Date(timeB) - new Date(timeA);
+      });
+      
       // 统计各状态数量
-      this.updateStatusCounts(boughtItems);
+      this.updateStatusCounts(allBoughtItems);
       
       this.setData({
-        boughtItems: boughtItems,
+        boughtItems: allBoughtItems,
         loading: false
       });
       
@@ -116,12 +171,15 @@ Page({
       console.error('加载求购记录失败:', error);
       this.setData({
         error: '加载失败，请重试',
-        loading: false
+        loading: false,
+        boughtItems: this.generateMockData() // 加载失败时使用模拟数据
       });
+      this.updateStatusCounts(this.data.boughtItems);
+      this.filterItems();
     }
   },
 
-  // 生成模拟数据（用于测试）
+  // 生成模拟数据（用于测试和降级）
   generateMockData() {
     return [
       {
@@ -129,33 +187,29 @@ Page({
         title: '求购 MacBook Pro 13寸',
         description: '预算8000-10000，要求9成新以上，性能良好',
         price: 9000,
+        displayPrice: 9000,
         images: ['/images/macbook.jpg'],
-        status: 'seeking',
+        status: '求购中',
         createTime: '2025-06-25',
-        seekerId: this.data.currentUser.id
+        tradeType: 'buy',
+        sourceType: 'demand',
+        isDirect: false
       },
       {
-        id: 'seeking_2', 
-        title: '求购耐克运动鞋',
-        description: 'Air Max系列，40-41码，8成新以上即可',
-        price: 400,
-        images: ['/images/shoes.jpg'],
-        status: 'bought',
+        id: 'transaction_1', 
+        title: '购买的 iPhone 13',
+        description: 'iPhone 13 Pro 128GB 深空灰色，九成新',
+        price: 4500,
+        displayPrice: 4500,
+        purchasePrice: 4500,
+        images: ['/images/phone1.jpg'],
+        status: '已买到',
         createTime: '2025-06-20',
-        boughtTime: '2025-06-28',
-        sellerName: '小红',
-        sellerAvatar: '/images/avatar2.jpg',
-        seekerId: this.data.currentUser.id
-      },
-      {
-        id: 'seeking_3',
-        title: '求购二手自行车',
-        description: '山地车或城市车都可以，要求刹车正常',
-        price: 300,
-        images: ['/images/bike.jpg'],
-        status: 'inactive',
-        createTime: '2025-06-15',
-        seekerId: this.data.currentUser.id
+        purchaseDate: '2025-06-28',
+        sellerInfo: { name: '张三' },
+        sourceType: 'purchase',
+        isDirect: true,
+        transactionId: 1001
       }
     ];
   },
@@ -166,7 +220,7 @@ Page({
       all: items.length,
       seeking: items.filter(item => item.status === '求购中').length,
       bought: items.filter(item => item.status === '已买到').length,
-      inactive: items.filter(item => item.status === '已下架').length
+      withdrawn: items.filter(item => item.status === '已下架').length
     };
     
     const statusOptions = this.data.statusOptions.map(option => ({
@@ -186,7 +240,7 @@ Page({
       const statusMap = {
         'seeking': '求购中',
         'bought': '已买到',
-        'inactive': '已下架'
+        'withdrawn': '已下架'
       };
       filteredItems = boughtItems.filter(item => item.status === statusMap[activeStatus]);
     }
@@ -204,18 +258,36 @@ Page({
   // 点击商品
   onItemTap(e) {
     const itemId = e.currentTarget.dataset.itemId;
-    wx.navigateTo({
-      url: `/pages/seeking-detail/seeking-detail?id=${itemId}`
-    });
+    const item = this.data.filteredItems.find(item => item.id === itemId);
+    
+    if (item && item.isDirect) {
+      // 直接购买的商品，跳转到商品详情页
+      wx.navigateTo({
+        url: `/pages/item-detail/item-detail?id=${itemId}`
+      });
+    } else {
+      // 求购发布的，跳转到求购详情页（如果有的话）
+      wx.navigateTo({
+        url: `/pages/item-detail/item-detail?id=${itemId}`
+      });
+    }
   },
 
-  // 删除求购
+  // ===== 修改：删除商品逻辑 =====
   deleteItem(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
     const itemId = e.currentTarget.dataset.itemId;
     const item = this.data.boughtItems.find(item => item.id === itemId);
+    
+    if (item.isDirect) {
+      wx.showToast({
+        title: '购买记录无法删除',
+        icon: 'none'
+      });
+      return;
+    }
     
     wx.showModal({
       title: '确认删除',
@@ -231,12 +303,7 @@ Page({
   // 执行删除
   async performDeleteItem(itemId) {
     try {
-      // 调用商品管理器的删除方法
-      if (typeof itemManager !== 'undefined' && itemManager.deleteSeekingItem) {
-        await itemManager.deleteSeekingItem(itemId);
-      } else if (typeof itemManager !== 'undefined' && itemManager.deleteItem) {
-        await itemManager.deleteItem(itemId);
-      }
+      await itemManager.deleteItem(itemId);
       
       wx.showToast({
         title: '删除成功',
@@ -254,12 +321,21 @@ Page({
     }
   },
 
-  // 标记为已买到
+  // ===== 修改：标记为已买到（只对求购有效）=====
   markAsBought(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
     const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.boughtItems.find(item => item.id === itemId);
+    
+    if (item.isDirect) {
+      wx.showToast({
+        title: '该商品已经是购买状态',
+        icon: 'none'
+      });
+      return;
+    }
     
     wx.showModal({
       title: '确认买到',
@@ -275,11 +351,7 @@ Page({
   // 执行标记已买到
   async performMarkAsBought(itemId) {
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateSeekingStatus) {
-        await itemManager.updateSeekingStatus(itemId, 'bought');
-      } else if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'bought');
-      }
+      await itemManager.updateItemStatus(itemId, 'bought');
       
       wx.showToast({
         title: '标记成功，求购完成！',
@@ -296,32 +368,37 @@ Page({
     }
   },
 
-  // 标记为已下架
-  markAsInactive(e) {
+  // ===== 修改：下架逻辑（只对求购有效）=====
+  markAsWithdrawn(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
     const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.boughtItems.find(item => item.id === itemId);
+    
+    if (item.isDirect) {
+      wx.showToast({
+        title: '购买记录无法下架',
+        icon: 'none'
+      });
+      return;
+    }
     
     wx.showModal({
       title: '确认下架',
       content: '确定要下架此求购吗？下架后可以重新上架。',
       success: (res) => {
         if (res.confirm) {
-          this.performMarkAsInactive(itemId);
+          this.performMarkAsWithdrawn(itemId);
         }
       }
     });
   },
 
   // 执行标记已下架
-  async performMarkAsInactive(itemId) {
+  async performMarkAsWithdrawn(itemId) {
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateSeekingStatus) {
-        await itemManager.updateSeekingStatus(itemId, 'inactive');
-      } else if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'inactive');
-      }
+      await itemManager.updateItemStatus(itemId, 'withdrawn');
       
       wx.showToast({
         title: '求购已下架',
@@ -344,6 +421,15 @@ Page({
       e.stopPropagation();
     }
     const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.boughtItems.find(item => item.id === itemId);
+    
+    if (item.isDirect) {
+      wx.showToast({
+        title: '购买记录无法重新上架',
+        icon: 'none'
+      });
+      return;
+    }
     
     wx.showModal({
       title: '确认上架',
@@ -359,11 +445,7 @@ Page({
   // 执行重新上架
   async performMarkAsActive(itemId) {
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateSeekingStatus) {
-        await itemManager.updateSeekingStatus(itemId, 'seeking');
-      } else if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'active');
-      }
+      await itemManager.updateItemStatus(itemId, 'seeking');
       
       wx.showToast({
         title: '求购已重新上架',
@@ -380,35 +462,29 @@ Page({
     }
   },
 
-  // 下拉刷新
-  onPullDownRefresh() {
-    this.loadBoughtItems().finally(() => {
-      wx.stopPullDownRefresh();
+  // ===== 修改：价格编辑（只对求购有效）=====
+  showEditPrice(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.boughtItems.find(item => item.id === itemId);
+    
+    if (item.isDirect) {
+      wx.showToast({
+        title: '购买记录的价格无法修改',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    this.setData({
+      showPriceModal: true,
+      editingItemId: itemId,
+      editingPrice: item.price.toString(),
+      originalPrice: item.price.toString()
     });
   },
-
-  // 分享
-  onShareAppMessage() {
-    return {
-      title: '看看我在校园二手市场的求购信息',
-      path: '/pages/index/index'
-    };
-  },
-  // 显示价格修改弹窗
-showEditPrice(e) {
-  if (e && e.stopPropagation) {
-    e.stopPropagation();
-  }
-  const itemId = e.currentTarget.dataset.itemId;
-  const item = this.data.boughtItems.find(item => item.id === itemId);
-  
-  this.setData({
-    showPriceModal: true,
-    editingItemId: itemId,
-    editingPrice: item.price.toString(),
-    originalPrice: item.price.toString()
-  });
-},
 
   // 隐藏价格修改弹窗
   hidePriceModal() {
@@ -468,21 +544,7 @@ showEditPrice(e) {
     }
     
     try {
-      // 调用商品管理器的更新价格方法
-      if (typeof itemManager !== 'undefined' && itemManager.updateSeekingPrice) {
-        await itemManager.updateSeekingPrice(editingItemId, parseFloat(editingPrice));
-      } else if (typeof itemManager !== 'undefined' && itemManager.updateItemPrice) {
-        await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
-      } else {
-        // 如果没有专门的方法，使用通用更新方法
-        const itemIndex = this.data.boughtItems.findIndex(item => item.id === editingItemId);
-        if (itemIndex !== -1) {
-          const updatedItems = [...this.data.boughtItems];
-          updatedItems[itemIndex].price = parseFloat(editingPrice);
-          this.setData({ boughtItems: updatedItems });
-          this.filterItems(); // 重新筛选以更新显示
-        }
-      }
+      await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
       
       wx.showToast({
         title: '预算修改成功',
@@ -512,5 +574,20 @@ showEditPrice(e) {
   // 阻止事件冒泡
   stopPropagation() {
     // 什么都不做，只是阻止事件冒泡
+  },
+
+  // 下拉刷新
+  onPullDownRefresh() {
+    this.loadBoughtItems().finally(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  // 分享
+  onShareAppMessage() {
+    return {
+      title: '看看我在校园二手市场的求购和购买记录',
+      path: '/pages/index/index'
+    };
   }
 });

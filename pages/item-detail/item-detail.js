@@ -2,6 +2,8 @@ const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
 const commentManager = require('../../utils/commentManager');
 const sharedTools = require('../../utils/sharedTools');
+const transactionManager = require('../../utils/transactionManager');
+
 Page({
   data: {
     itemId: null,
@@ -19,6 +21,10 @@ Page({
     pageSize: 20,
     sortType: 'hot',
     isLiked: false, // 收藏状态
+    
+    isSold: false,
+    isWithdrawn: false,
+    canPurchase: false,
     
     // 回复相关字段（与 Item-detail 保持一致）
     showReplyInput: false,
@@ -68,6 +74,9 @@ Page({
   // 加载商品详情
   async loadItemDetail() {
     const itemId = this.data.itemId;
+    console.log('=== loadItemDetail 开始 ===');
+    console.log('itemId:', itemId, 'type:', typeof itemId);
+    
     if (!itemId) {
       console.error('itemId为空:', itemId);
       wx.showToast({
@@ -82,11 +91,17 @@ Page({
       console.log('正在加载商品的ID:', itemId);
 
       const item = await itemManager.getItemDetail(itemId);
-      console.log('获取到的商品数据:', item);
+      console.log('itemManager.getItemDetail 返回结果:', item);
+      console.log('item 类型:', typeof item);
+      console.log('item 是否为null:', item === null);
+      console.log('item 是否为undefined:', item === undefined);
 
       if (!item) {
+        console.error('商品不存在，item为:', item);
         throw new Error('商品不存在');
       }
+
+      console.log('商品数据验证通过，item.status:', item.status);
 
       // 格式化发布时间
       item.formattedPublishTime = sharedTools.formatTime(item.createTime);
@@ -97,21 +112,51 @@ Page({
       // 设置收藏状态
       const isLiked = item.isLiked || false;
 
+      // ===== 安全的状态判断 =====
+      console.log('开始状态判断，item.status:', item.status);
+      const itemStatus = (item && typeof item.status === 'string') ? item.status : 'selling';
+      console.log('处理后的itemStatus:', itemStatus);
+      
+      const isSold = itemStatus === 'sold';
+      const isWithdrawn = itemStatus === 'withdrawn';
+      const canPurchase = item && item.tradeType === 'sell' && !isSold && !isWithdrawn;
+      
+      console.log('状态判断结果:', { isSold, isWithdrawn, canPurchase });
+
+      // 判断当前用户是否是商品发布者
+      const currentUser = userManager.getCurrentUser();
+      const isOwner = currentUser && currentUser.id === item.sellerId;
+
+      console.log('设置页面数据...');
       this.setData({
         item: item,
         isLiked: isLiked,
+        isSold: isSold,
+        isWithdrawn: isWithdrawn,
+        canPurchase: canPurchase,
+        isOwner: isOwner,
         loading: false
       });
 
       // 设置页面标题
+      let titleSuffix = '';
+      if (isSold) {
+        titleSuffix = '（已售出）';
+      } else if (isWithdrawn) {
+        titleSuffix = '（已下架）';
+      }
       wx.setNavigationBarTitle({
-        title: '商品详情'
+        title: `商品详情${titleSuffix}`
       });
 
-      console.log('商品详情加载成功:', itemId);
+      console.log('商品详情加载成功:', itemId, '状态:', itemStatus);
+      console.log('=== loadItemDetail 完成 ===');
 
     } catch (error) {
-      console.error('加载商品详情失败:', error);
+      console.error('=== loadItemDetail 异常 ===');
+      console.error('错误详情:', error);
+      console.error('错误堆栈:', error.stack);
+      
       this.setData({ loading: false });
       
       wx.showToast({
@@ -647,7 +692,31 @@ Page({
       });
       return;
     }
-    
+    if (item.status === 'sold') {
+      wx.showModal({
+        title: '提示',
+        content: '该商品已售出，您还要联系卖家吗？',
+        success: (res) => {
+          if (res.confirm) {
+            this.navigateToChat();
+          }
+        }
+      });
+      return;
+    }
+  
+    if (item.status === 'withdrawn') {
+      wx.showModal({
+        title: '提示',
+        content: '该商品已下架，您还要联系卖家吗？',
+        success: (res) => {
+          if (res.confirm) {
+            this.navigateToChat();
+          }
+        }
+      });
+      return;
+    }
     wx.navigateTo({
       url: `/pages/chat/chat?userId=${item.sellerId}&itemId=${this.data.itemId}`
     });
@@ -679,7 +748,7 @@ Page({
     const item = this.data.item;
     const currentUser = userManager.getCurrentUser();
     const currentUserId = currentUser.id;
-
+  
     if (!item || !item.sellerId) {
       wx.showToast({
         title: '商品信息获取失败',
@@ -687,7 +756,22 @@ Page({
       });
       return;
     }
-    
+  
+    // ===== 新增：检查商品状态 =====
+    if (item.status === 'sold') {
+      wx.showToast({
+        title: '商品已售出',
+        icon: 'none'
+      });
+      return;
+    }
+    if (item.status === 'withdrawn') {
+      wx.showToast({
+        title: '商品已下架',
+        icon: 'none'
+      });
+      return;
+    }
     if (item.sellerId === currentUserId) {
       wx.showToast({
         title: '不能购买自己的商品',
@@ -695,54 +779,113 @@ Page({
       });
       return;
     }
-
-    // 显示购买确认弹窗
-    wx.showModal({
-      title: '确认购买',
-      content: `确定要购买《${item.title}》吗？\n价格：¥${item.price}\n`,
-      confirmText: '确认购买',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) {
-          this.processPurchase();
-        }
-      }
-    });
+  
+    // 检查用户余额是否足够
+    this.checkBalanceAndShowPurchaseModal();
   },
 
-  // 处理购买流程
-  async processPurchase() {
+  // 检查余额并显示购买弹窗
+  async checkBalanceAndShowPurchaseModal() {
     try {
-      wx.showLoading({
-        title: '处理中...',
-        mask: true
+      const item = this.data.item;
+      const currentUser = userManager.getCurrentUser();
+      
+      // 获取当前用户余额
+      const balanceResult = await userManager.getUserBalance();
+      const userBalance = balanceResult.data.balance;
+      const itemPrice = parseFloat(item.price) || 0;
+
+      console.log('用户余额:', userBalance, '商品价格:', itemPrice);
+
+      if (userBalance < itemPrice) {
+        // 余额不足，显示充值提示
+        wx.showModal({
+          title: '余额不足',
+          content: `您的余额：¥${userBalance.toFixed(2)}\n商品价格：¥${itemPrice.toFixed(2)}\n还需要：¥${(itemPrice - userBalance).toFixed(2)}\n\n是否前往充值？`,
+          confirmText: '去充值',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              console.log("用户点击了去充值");
+              // 跳转到个人中心充值
+              wx.switchTab({
+                url: '/pages/profile/profile'
+              });
+            }
+          }
+        });
+        return;
+      }
+
+      // 余额足够，显示购买确认弹窗
+      wx.showModal({
+        title: '确认购买',
+        content: `确定要购买《${item.title}》吗？\n价格：¥${itemPrice.toFixed(2)}\n您的余额：¥${userBalance.toFixed(2)}\n购买后余额：¥${(userBalance - itemPrice).toFixed(2)}`,
+        confirmText: '确认购买',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            this.processPurchase();
+          }
+        }
       });
 
-      // 这里可以调用购买相关的API
-      // 例如：await itemManager.purchaseItem(this.data.itemId);
-      
-      // 模拟购买成功
-      setTimeout(() => {
-        wx.hideLoading();
-        wx.showToast({
-          title: '购买成功！',
-          icon: 'success',
-          duration: 2000
-        });
-        
-        // 可以跳转到订单页面或者聊天页面
-        // wx.navigateTo({
-        //   url: `/pages/order/order?itemId=${this.data.itemId}`
-        // });
-      }, 1500);
-
     } catch (error) {
-      wx.hideLoading();
-      console.error('购买失败:', error);
+      console.error('检查余额失败:', error);
       wx.showToast({
-        title: error.message || '购买失败',
+        title: '获取余额信息失败',
         icon: 'none'
       });
     }
-  }
+  },
+
+  // 处理购买流程 - 真实的余额转账
+  async processPurchase() {
+    try {
+      wx.showLoading({ title: '处理中...', mask: true });
+  
+      const item = this.data.item;
+      const currentUser = userManager.getCurrentUser();
+      const itemPrice = parseFloat(item.price) || 0;
+  
+      // 调用 TransactionManager 处理购买
+      await transactionManager.processPurchase(
+        currentUser.id,     // 买家ID
+        item.sellerId,      // 卖家ID  
+        item.id,           // 商品ID
+        itemPrice,         // 金额
+        item.title         // 商品标题
+      );
+  
+      // 更新商品状态为已售出
+      await itemManager.updateItemStatus(item.id, 'sold');
+  
+      wx.hideLoading();
+      wx.showToast({ title: '购买成功！', icon: 'success' });
+  
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 2000);
+  
+    } catch (error) {
+      wx.hideLoading();
+      console.error('购买失败:', error);
+      
+      if (error.message === '余额不足') {
+        wx.showModal({
+          title: '余额不足',
+          content: '您的余额不足，是否前往充值？',
+          confirmText: '去充值',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: '/pages/profile/profile' });
+            }
+          }
+        });
+      } else {
+        wx.showToast({ title: error.message || '购买失败', icon: 'none' });
+      }
+    }
+  },
+
 });

@@ -1,6 +1,7 @@
-// market.js - 只添加交易类型切换功能，保持原有布局
+// market.js - 修复版本：过滤已售出商品
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const categoryConfig = require('../../utils/categoryConfig'); // 引入统一分类配置
 
 Page({
   data: {
@@ -8,22 +9,9 @@ Page({
     items: [],
     leftItems: [],
     rightItems: [],
-    categories: [
-      { id: 'all', name: '全部' },
-      { id: 1, name: '数码电子' },
-      { id: 2, name: '生活用品' },
-      { id: 3, name: '学习用品' },
-      { id: 4, name: '服装配饰' },
-      { id: 5, name: '运动器材' },
-      { id: 6, name: '化妆护肤' },
-      { id: 7, name: '书籍文具' },
-      { id: 8, name: '家具家电' },
-      { id: 9, name: '美食零食' },
-      { id: 10, name: '手工艺品' },
-      { id: 11, name: '其他' }
-    ],
+    categories: [ ],
     currentCategory: 'all',
-    // 新增：交易类型筛选，默认显示卖的商品
+    // 交易类型筛选，默认显示卖的商品
     currentTradeType: 'sell', // 'sell' | 'buy'
     loading: false,
     refreshing: false,
@@ -35,6 +23,9 @@ Page({
 
   onLoad() {
     console.log('闲置市场页面加载');
+    this.setData({
+      categories: categoryConfig.getMarketCategories()
+    });
     this.checkLoginStatus();
   },
 
@@ -81,7 +72,31 @@ Page({
     }
   },
 
-  // 统一的加载方法 - 添加交易类型筛选
+  // ===== 修复：添加状态筛选逻辑 =====
+  // 过滤可展示的商品
+  filterDisplayableItems(items) {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+    
+    return items.filter(item => {
+      // 1. 按交易类型筛选
+      if (item.tradeType !== this.data.currentTradeType) {
+        return false;
+      }
+      
+      // 2. 按状态筛选 - 只显示活跃状态的商品
+      if (this.data.currentTradeType === 'sell') {
+        // 卖品：只显示在售的，排除已售出、已下架的
+        return item.status === 'selling';
+      } else {
+        // 求购：只显示求购中的，排除已买到、已下架的
+        return item.status === 'seeking';
+      }
+    });
+  },
+
+  // 统一的加载方法 - 添加状态筛选
   async loadItems(refresh = false) {
     if (this.data.loading) return;
     
@@ -91,9 +106,14 @@ Page({
       const page = refresh ? 1 : this.data.currentPage;
       const keyword = this.data.confirmKeyword.trim();
       const categoryId = this.data.currentCategory;
-      const tradeType = this.data.currentTradeType; // 新增交易类型筛选
       
-      console.log('加载参数:', { page, keyword, categoryId, tradeType, refresh });
+      console.log('加载参数:', { 
+        page, 
+        keyword, 
+        categoryId, 
+        tradeType: this.data.currentTradeType,
+        refresh 
+      });
       
       let result;
       
@@ -104,11 +124,13 @@ Page({
           filters.categoryId = categoryId;
         }
         
-        // 获取所有筛选结果
+        // 获取所有搜索结果
         let allResults = await itemManager.searchItems(keyword, filters);
+        console.log('搜索原始结果数量:', allResults.length);
         
-        // 新增：按交易类型筛选
-        allResults = allResults.filter(item => item.tradeType === tradeType);
+        // 应用筛选逻辑：交易类型 + 状态
+        allResults = this.filterDisplayableItems(allResults);
+        console.log('筛选后结果数量:', allResults.length);
         
         // 手动实现分页
         const pageSize = 10;
@@ -126,20 +148,21 @@ Page({
         };
         
       } else {
-        // 无搜索词且在"全部"分类，获取所有商品然后筛选
+        // 无搜索词且在"全部"分类，获取所有商品
         result = await itemManager.getItems(page, 10);
+        console.log('获取原始商品数量:', result.items?.length || 0);
         
-        // 按交易类型筛选
-        let allItems = result.items || [];
-        allItems = allItems.filter(item => item.tradeType === tradeType);
+        // ✅ 应用筛选逻辑：交易类型 + 状态
+        let filteredItems = this.filterDisplayableItems(result.items || []);
+        console.log('筛选后商品数量:', filteredItems.length);
         
         const currentItems = refresh ? [] : (this.data.items || []);
-        const items = [...currentItems, ...allItems];
+        const items = refresh ? filteredItems : [...currentItems, ...filteredItems];
         
         result = {
           items: items,
-          hasMore: result.hasMore, // 这里可能需要调整分页逻辑
-          total: allItems.length
+          hasMore: result.hasMore && filteredItems.length > 0,
+          total: filteredItems.length
         };
       }
       
@@ -157,7 +180,8 @@ Page({
       });
       
       console.log('加载完成:', {
-        itemsCount: result.items?.length || 0,
+        显示商品数: result.items?.length || 0,
+        交易类型: this.data.currentTradeType,
         hasMore: result.hasMore,
         currentPage: this.data.currentPage
       });
@@ -208,13 +232,13 @@ Page({
       currentPage: 1,
       hasMore: true,
       searchKeyword: '', // 切换分类时清空搜索
-      confirmKeyword:''
+      confirmKeyword: ''
     });
     
     this.loadItems(true);
   },
 
-  // 新增：切换交易类型（卖/买）
+  // 切换交易类型（卖/买）
   toggleTradeType() {
     const newTradeType = this.data.currentTradeType === 'sell' ? 'buy' : 'sell';
     console.log('切换交易类型:', this.data.currentTradeType, '->', newTradeType);
@@ -229,8 +253,9 @@ Page({
     });
     
     // 显示切换提示
+    const statusText = newTradeType === 'sell' ? '在售商品' : '求购商品';
     wx.showToast({
-      title: newTradeType === 'sell' ? '切换到：在售商品' : '切换到：求购商品',
+      title: `切换到：${statusText}`,
       icon: 'none',
       duration: 1000
     });
@@ -263,7 +288,7 @@ Page({
     }
   },
   
-  // 触底加载更多 - 简化版本
+  // 触底加载更多
   onReachBottom() {
     console.log('=== 触底加载更多 ===');
     console.log('hasMore:', this.data.hasMore);
@@ -274,6 +299,13 @@ Page({
       this.loadItems(false);
     } else {
       console.log('不满足加载更多的条件');
+      if (!this.data.hasMore) {
+        wx.showToast({
+          title: '没有更多商品了',
+          icon: 'none',
+          duration: 1000
+        });
+      }
     }
   },
 
@@ -286,7 +318,7 @@ Page({
   async onSearch(e) {
     const keyword = e.detail.value || this.data.searchKeyword;
     
-    console.log('搜索商品:', keyword);
+    console.log('搜索商品:', keyword, '交易类型:', this.data.currentTradeType);
     
     // 重置分页状态
     this.setData({

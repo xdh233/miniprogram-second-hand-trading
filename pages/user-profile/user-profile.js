@@ -1,6 +1,7 @@
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
 const itemManager = require('../../utils/itemManager');
+const sharedTools = require('../../utils/sharedTools');
 
 Page({
   data: {
@@ -14,16 +15,16 @@ Page({
     error: null,
     
     // 内容切换
-    activeTab: 'posts', // 'posts' 或 'sell' 或 'want'
+    activeTab: 'posts', // 'posts' 或 'sell' 或 'buy'
     
     // 用户发布的内容
     userPosts: [],
     sellItems: [], // 在售商品
-    wantItems: [],  // 想要商品
+    buyItems: [],  // 想要商品
     leftSellItems: [],
     rightSellItems: [],
-    leftWantItems: [],
-    rightWantItems: []
+    leftBuyItems: [],
+    rightBuyItems: []
   },
 
   onLoad(options) {
@@ -32,7 +33,7 @@ Page({
     // 获取目标用户ID
     const targetUserId = parseInt(options.userId);
     const currentUser = userManager.getCurrentUser();
-    
+    console.log("userId:",targetUserId);
     if (!targetUserId) {
       this.setData({
         error: '用户不存在',
@@ -91,68 +92,96 @@ Page({
   // 加载用户发布的内容
   async loadUserContent(userId) {
     try {
+      console.log('开始加载用户内容，userId:', userId, '类型:', typeof userId);
+      
       // 从实际的数据管理器获取数据
       let userPosts = [];
       let allUserItems = [];
       
       // 获取用户发布的帖子
-      if (typeof postManager !== 'undefined' && postManager.getAllPosts) {
-        const allPosts = postManager.getAllPosts();
-        userPosts = allPosts.filter(post => post.authorId === userId);
+      if (typeof postManager !== 'undefined' && postManager.getAll) {
+        const allPosts = postManager.getAll();
+        console.log('所有帖子:', allPosts);
+        
+        // 使用 userId 而不是 authorId
+        userPosts = allPosts.filter(post => {
+          console.log('对比帖子userId:', post.userId, '目标userId:', userId);
+          return post.userId === userId;
+        });
+        
+        // 格式化帖子时间 - 添加这部分
+        userPosts = userPosts.map(post => ({
+          ...post,
+          // 添加格式化的时间显示
+          formattedTime: sharedTools.formatTimeAgo(post.createTime),
+          // 保留原始时间
+          originalTime: post.createTime
+        }));
+        
+        console.log('筛选并格式化后的用户帖子:', userPosts);
       }
       
-      // 获取用户发布的商品
-      if (typeof itemManager !== 'undefined' && itemManager.getAllItems) {
-        const allItems = itemManager.getAllItems();
-        allUserItems = allItems.filter(item => item.sellerId === userId);
+      // 获取用户发布的商品的部分保持不变
+      if (typeof itemManager !== 'undefined' && itemManager.getAll) {
+        const allItems = itemManager.getAll();
+        console.log('所有商品:', allItems);
+        
+        allUserItems = allItems.filter(item => {
+          console.log('对比商品sellerId:', item.sellerId, '目标userId:', userId);
+          return item.sellerId === userId;
+        });
+        
+        console.log('筛选后的用户商品:', allUserItems);
       }
-
+  
       // 按交易类型和状态分类商品
-      const sellItems = allUserItems.filter(item => 
-        item.tradeType === 'sell' && item.status === 'active'
-      );
+      const sellItems = allUserItems.filter(item => {
+        console.log('检查在售商品:', item.title, 'tradeType:', item.tradeType, 'status:', item.status);
+        return item.tradeType === 'sell' && item.status === 'selling';
+      });
       
-      const wantItems = allUserItems.filter(item => 
-        item.tradeType === 'want' && item.status === 'active'
-      );
-
+      const buyItems = allUserItems.filter(item => {
+        console.log('检查求购商品:', item.title, 'tradeType:', item.tradeType, 'status:', item.status);
+        return item.tradeType === 'buy' && item.status === 'seeking';
+      });
+  
       console.log('商品分类结果:', {
         总商品数: allUserItems.length,
         在售商品: sellItems.length,
-        求购商品: wantItems.length
+        求购商品: buyItems.length,
+        用户帖子: userPosts.length
       });
       
       // 分配商品到左右两列
       const { leftItems: leftSellItems, rightItems: rightSellItems } = this.distributeItems(sellItems);
-      const { leftItems: leftWantItems, rightItems: rightWantItems } = this.distributeItems(wantItems);
-
+      const { leftItems: leftBuyItems, rightItems: rightBuyItems } = this.distributeItems(buyItems);
+  
       this.setData({
         userPosts: userPosts,
         sellItems: sellItems,
-        wantItems: wantItems,
+        buyItems: buyItems,
         leftSellItems: leftSellItems,
         rightSellItems: rightSellItems,
-        leftWantItems: leftWantItems,
-        rightWantItems: rightWantItems
+        leftBuyItems: leftBuyItems,
+        rightBuyItems: rightBuyItems
       });
       
       console.log('用户内容加载完成:', {
         postsCount: userPosts.length,
         sellItemsCount: sellItems.length,
-        wantItemsCount: wantItems.length
+        buyItemsCount: buyItems.length
       });
       
     } catch (error) {
       console.error('加载用户内容失败:', error);
-      // 如果出错，至少要设置空数组
       this.setData({
         userPosts: [],
         sellItems: [],
-        wantItems: [],
+        buyItems: [],
         leftSellItems: [],
         rightSellItems: [],
-        leftWantItems: [],
-        rightWantItems: []
+        leftBuyItems: [],
+        rightBuyItems: []
       });
     }
   },

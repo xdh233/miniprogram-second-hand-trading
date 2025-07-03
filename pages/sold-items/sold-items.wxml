@@ -123,7 +123,7 @@
               <button 
                 class="action-btn secondary"
                 data-item-id="{{item.id}}"
-                catchtap="markAsInactive"
+                catchtap="markAsWithdrawn"
               >
                 下架
               </button>

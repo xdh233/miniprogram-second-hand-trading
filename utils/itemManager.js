@@ -1,5 +1,7 @@
 const BaseManager = require('./baseManager');  
 const sharedTools = require('./sharedTools');
+const categoryConfig = require('./categoryConfig'); // 引入统一分类配置
+
 class ItemManager extends BaseManager {
   constructor() {
     super('campus_items');
@@ -13,27 +15,6 @@ class ItemManager extends BaseManager {
     if (items.length === 0) {
       this.createMockData();
     }
-    
-    const categories = this.getCategories();
-    if (categories.length === 0) {
-      this.initCategories();
-    }
-  }
-
-  // 初始化商品分类
-  initCategories() {
-    const categories = [
-      { id: 1, name: '数码电子', icon: '📱' },
-      { id: 2, name: '生活用品', icon: '🏠' },
-      { id: 3, name: '学习用品', icon: '📚' },
-      { id: 4, name: '服装配饰', icon: '👕' },
-      { id: 5, name: '运动器材', icon: '⚽' },
-      { id: 6, name: '化妆护肤', icon: '💄' },
-      { id: 7, name: '食品零食', icon: '🍿' },
-      { id: 8, name: '其他商品', icon: '🎁' }
-    ];
-    
-    wx.setStorageSync(this.CATEGORIES_KEY, categories);
   }
 
   // 创建模拟数据
@@ -46,12 +27,12 @@ class ItemManager extends BaseManager {
         price: '4500',
         images: ['/images/phone1.jpg', '/images/phone1.jpg'],
         categoryId: 1,
-        category: '数码电子',
+        category: categoryConfig.getCategoryNameById(1),
         sellerId: 1,
         sellerName: '张三',
         sellerNickname: '三张',
         sellerAvatar: '/images/default-avatar.jpg',
-        status: 'active',
+        status: 'selling',
         tradeType: 'sell',
         createTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         timeAgo: '2天前',
@@ -66,18 +47,38 @@ class ItemManager extends BaseManager {
         price: '315',
         images: ['/images/xbox.png'],
         categoryId: 1,
-        category: '数码电子',
+        category: categoryConfig.getCategoryNameById(1),
         sellerId: 2,
         sellerName: '李四',
         sellerNickname: '四李',
         sellerAvatar: '/images/default-avatar.jpg',
-        status: 'active',
+        status: 'selling',
         tradeType: 'sell',
         createTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         timeAgo: '一天前',
         viewCount: 120,
         likeCount: 7,
         comments: 0
+      },
+      {
+        id: 3,
+        title: '护眼台灯LED书桌灯',
+        description: '护眼台灯LED书桌灯 白色 全新未拆封 三档调光 USB充电 适合学习办公使用',
+        price: '88',
+        images: ['/images/lamp1.jpg'],
+        categoryId: 2,
+        category: categoryConfig.getCategoryNameById(2),
+        sellerId: 2,
+        sellerName: '李四',
+        sellerNickname: '四李',
+        sellerAvatar: '/images/default-avatar.jpg',
+        status: 'selling',
+        tradeType: 'sell',
+        createTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        timeAgo: '两天前',
+        viewCount: 85,
+        likeCount: 12,
+        comments: 3
       }
       // ... 其他商品数据
     ];
@@ -102,10 +103,12 @@ class ItemManager extends BaseManager {
       }
     });
   }
+
   // 通过id获取
   getItemById(itemId) {
     return this.getById(itemId);
   }
+
   // 获取商品列表
   getItems(page = 1, limit = 10) {
     return new Promise((resolve) => {
@@ -152,9 +155,7 @@ class ItemManager extends BaseManager {
           return;
         }
 
-        const categories = this.getCategories();
-        const category = categories.find(cat => cat.id === itemData.categoryId);
-
+        const category = categoryConfig.getCategoryNameById(itemData.categoryId);
         const newItem = {
           id: Date.now(),
           title: itemData.title,
@@ -167,7 +168,7 @@ class ItemManager extends BaseManager {
           sellerName: itemData.sellerName || '',
           sellerNickname: itemData.sellerNickname || itemData.sellerName || '',
           sellerAvatar: itemData.sellerAvatar || '',
-          status: 'active',
+          status: itemData.status,
           tradeType: itemData.tradeType,
           createTime: new Date().toISOString(),
           viewCount: 0,
@@ -262,7 +263,7 @@ class ItemManager extends BaseManager {
   searchItems(keyword, filters = {}) {
     return new Promise((resolve) => {
       const items = this.getAll();
-      let filteredItems = items.filter(item => item.status === 'active');
+      let filteredItems = items.filter(item => item.status === 'selling' || item.status === 'seeking');
 
       if (keyword && keyword.trim()) {
         const lowerKeyword = keyword.toLowerCase();
@@ -314,6 +315,139 @@ class ItemManager extends BaseManager {
     return items
       .filter(item => item.sellerId === sellerId)
       .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+  }
+
+  // 更新商品状态
+  updateItemStatus(itemId, newStatus) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('更新商品状态:', { itemId, newStatus });
+        
+        // 验证状态值
+        const validStatuses = ['sold', 'withdrawn', 'selling', 'seeking', 'bought'];
+        if (!validStatuses.includes(newStatus)) {
+          reject({ code: 400, message: '无效的状态值' });
+          return;
+        }
+
+        // 获取商品
+        const item = this.getById(itemId);
+        if (!item) {
+          reject({ code: 404, message: '商品不存在' });
+          return;
+        }
+
+        // 更新状态和更新时间
+        const updatedItem = {
+          ...item,
+          status: newStatus,
+          updateTime: new Date().toISOString()
+        };
+
+        // 如果是标记为已售出，添加售出时间
+        if (newStatus === 'sold') {
+          updatedItem.soldTime = new Date().toISOString();
+        }
+
+        // 保存更新
+        const result = this.update(itemId, updatedItem);
+        
+        if (result) {
+          console.log('商品状态更新成功:', updatedItem);
+          resolve({
+            code: 200,
+            message: '状态更新成功',
+            data: updatedItem
+          });
+        } else {
+          reject({ code: 500, message: '更新失败' });
+        }
+
+      } catch (error) {
+        console.error('更新商品状态失败:', error);
+        reject({ code: 500, message: '更新失败' });
+      }
+    });
+  }
+
+  // 更新商品价格
+  updateItemPrice(itemId, newPrice) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('更新商品价格:', { itemId, newPrice });
+        
+        // 验证价格
+        if (!newPrice || newPrice <= 0) {
+          reject({ code: 400, message: '价格必须大于0' });
+          return;
+        }
+
+        // 获取商品
+        const item = this.getById(itemId);
+        if (!item) {
+          reject({ code: 404, message: '商品不存在' });
+          return;
+        }
+
+        // 更新价格和更新时间
+        const updatedItem = {
+          ...item,
+          price: newPrice.toString(),
+          updateTime: new Date().toISOString()
+        };
+
+        // 保存更新
+        const result = this.update(itemId, updatedItem);
+        
+        if (result) {
+          console.log('商品价格更新成功:', updatedItem);
+          resolve({
+            code: 200,
+            message: '价格更新成功',
+            data: updatedItem
+          });
+        } else {
+          reject({ code: 500, message: '更新失败' });
+        }
+
+      } catch (error) {
+        console.error('更新商品价格失败:', error);
+        reject({ code: 500, message: '更新失败' });
+      }
+    });
+  }
+
+  // 删除商品
+  deleteItem(itemId) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('删除商品:', itemId);
+        
+        // 检查商品是否存在
+        const item = this.getById(itemId);
+        if (!item) {
+          reject({ code: 404, message: '商品不存在' });
+          return;
+        }
+
+        // 执行删除
+        const result = this.delete(itemId);
+        
+        if (result) {
+          console.log('商品删除成功:', itemId);
+          resolve({
+            code: 200,
+            message: '删除成功'
+          });
+        } else {
+          reject({ code: 500, message: '删除失败' });
+        }
+
+      } catch (error) {
+        console.error('删除商品失败:', error);
+        reject({ code: 500, message: '删除失败' });
+      }
+    });
   }
 }
 

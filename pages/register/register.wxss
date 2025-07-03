@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0096c3 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,6 +26,7 @@
 
 .input-group {
   margin-bottom: 30rpx;
+  position: relative;
 }
 
 .input-group input {
@@ -36,30 +37,146 @@
   padding: 0 20rpx;
   font-size: 32rpx;
   box-sizing: border-box;
+  transition: border-color 0.3s ease;
 }
 
 .input-group input:focus {
-  border-color: #667eea;
+  border-color: #0096c3;
+  outline: none;
+}
+
+/* 错误状态样式 */
+.input-group input.error {
+  border-color: #ff4757;
+  background-color: #fff5f5;
+}
+
+/* 错误提示文字 */
+.error-text {
+  color: #ff4757;
+  font-size: 24rpx;
+  margin-top: 10rpx;
+  margin-left: 10rpx;
+  line-height: 1.4;
 }
 
 .register-btn {
   width: 100%;
   height: 80rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0096c3 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 10rpx;
   font-size: 32rpx;
   margin-top: 40rpx;
+  transition: all 0.3s ease;
 }
 
-.register-btn[loading] {
+.register-btn:active {
+  transform: scale(0.98);
+}
+
+.register-btn.loading {
   opacity: 0.7;
+  transform: none;
+}
+
+.register-btn[disabled] {
+  opacity: 0.6;
+  transform: none;
+}
+
+/* 清空按钮样式 */
+.clear-btn {
+  width: 100%;
+  height: 60rpx;
+  background: transparent;
+  color: #999;
+  border: 2rpx solid #e5e5e5;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+  transition: all 0.3s ease;
+}
+
+.clear-btn:active {
+  background-color: #f5f5f5;
+  border-color: #d0d0d0;
 }
 
 .login-link {
   text-align: center;
-  color: #667eea;
+  color: #0096c3;
   font-size: 28rpx;
   margin-top: 40rpx;
+  transition: color 0.3s ease;
+}
+
+.login-link:active {
+  color: #764ba2;
+}
+
+/* 成功状态样式（可选） */
+.input-group input.success {
+  border-color: #2ed573;
+  background-color: #f8fff8;
+}
+
+/* 响应式调整 */
+@media (max-width: 500rpx) {
+  .form {
+    padding: 40rpx 30rpx;
+  }
+  
+  .title {
+    font-size: 42rpx;
+    margin-bottom: 50rpx;
+  }
+  
+  .input-group input {
+    height: 70rpx;
+    font-size: 30rpx;
+  }
+  
+  .register-btn {
+    height: 70rpx;
+    font-size: 30rpx;
+  }
+}
+/* 在原有CSS基础上添加以下样式 */
+
+.input-hint {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 5rpx;
+  margin-left: 10rpx;
+  line-height: 1.2;
+}
+
+.format-tips {
+  margin-top: 40rpx;
+  padding: 20rpx;
+  background-color: #f8f9fa;
+  border-radius: 10rpx;
+  border-left: 4rpx solid #667eea;
+}
+
+.tips-title {
+  display: block;
+  font-size: 26rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 15rpx;
+}
+
+.tips-item {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 8rpx;
+}
+
+.tips-item:last-child {
+  margin-bottom: 0;
 }

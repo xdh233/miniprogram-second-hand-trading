@@ -141,6 +141,22 @@ page {
   font-weight: bold;
 }
 
+/* 余额显示特殊样式 */
+/* 修复后 */
+.balance-item {
+  min-height: 80rpx; /* 确保有足够空间 */
+}
+
+.balance-amount {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0096c3;
+  margin-right: 16rpx;
+  display: inline-block; /* 确保显示 */
+  min-width: 100rpx;
+  text-align: right;
+}
+
 /* 响应式处理 */
 @media (max-width: 400px) {
   .user-name {
@@ -253,4 +269,172 @@ page {
 
 .feedback-submit-btn:active {
   background: #0096c3;
+}
+
+/* 充值弹窗样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 60rpx;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  width: 100%;
+  max-width: 600rpx;
+  position: relative;
+  z-index: 10000;
+}
+
+.recharge-modal {
+  max-width: 640rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+/* 当前余额显示 */
+.current-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 32rpx;
+}
+
+.balance-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.balance-value {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0096c3;
+}
+
+/* 快速充值金额 */
+.quick-amounts {
+  margin-bottom: 32rpx;
+}
+
+.quick-amount-title {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+  font-weight: 500;
+}
+
+.amount-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.amount-btn {
+  text-align: center;
+  padding: 20rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: #666;
+  background: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.amount-btn.selected {
+  background: #0096c3;
+  color: #fff;
+  border-color: #0096c3;
+}
+
+.amount-btn:active {
+  transform: scale(0.98);
+}
+
+/* 自定义金额输入 */
+.custom-amount {
+  margin-bottom: 32rpx;
+}
+
+.amount-label {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+  font-weight: 500;
+  display: block;
+}
+
+.amount-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  background: #fafafa;
+  padding: 16rpx 20rpx;
+}
+
+.amount-input-wrapper:focus-within {
+  border-color: #0096c3;
+  background: white;
+}
+
+.currency-symbol {
+  font-size: 28rpx;
+  color: #666;
+  margin-right: 8rpx;
+  font-weight: 500;
+}
+
+.amount-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 20rpx;
+}
+
+.modal-button {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.modal-button.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.modal-button.confirm {
+  background: #0096c3;
+  color: #fff;
 }

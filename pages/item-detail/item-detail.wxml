@@ -30,6 +30,14 @@
         <view class="seller-info">
           <text class="seller-name">{{item.sellerNickname || item.sellerName}}</text>
         </view>
+        
+        <!-- 状态标志 - 根据不同状态显示不同图标 -->
+        <view wx:if="{{isSold}}" class="status-badge sold-badge">
+          <image class="status-icon" src="/images/sold.png" mode="aspectFit"></image>
+        </view>
+        <view wx:elif="{{isWithdrawn}}" class="status-badge withdrawn-badge">
+          <image class="status-icon" src="/images/withdrawn.png" mode="aspectFit"></image>
+        </view>
       </view>
 
       <!-- 商品标题 -->
@@ -37,12 +45,10 @@
       
       <!-- 商品价格 -->
       <view class="product-price-section">
-        <text class="price-label {{item.tradeType === 'sell' ? 'sell-label' : 'buy-label'}}">
-          {{item.tradeType === 'sell' ? '售价' : '预算'}}
+        <text class="product-price {{item.tradeType === 'sell' ? 'sell-price' : 'buy-price'}}">
+          {{item.tradeType === 'sell' ? '售价：' : '预算：'}}¥{{item.price}}
         </text>
-        <text class="product-price {{item.tradeType === 'sell' ? 'sell-price' : 'buy-price'}}">¥{{item.price}}</text>
       </view>
-      
       <!-- 商品描述 -->
       <view class="product-description">{{item.description}}</view>
       
@@ -111,7 +117,7 @@
           
           <!-- 主评论项 -->
           <view class="comment-item main-comment">
-            <image class="comment-avatar" src="{{item.userAvatar}}" mode="aspectFill" />
+            <image class="comment-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
             <view class="comment-main">
               <!-- 第一行：昵称+楼主标签 -->
               <view class="comment-header">
@@ -238,8 +244,31 @@
     
     <!-- 右侧按钮区域 -->
     <view class="right-actions">
-      <button wx:if="{{item.tradeType === 'sell'}}" class="buy-btn" bindtap="onBuyItem">购买</button>
-      <button class="contact-btn" bindtap="contactSeller">私信</button>
+      <!-- 购买按钮 - 只在可购买时显示 -->
+      <button wx:if="{{canPurchase}}" class="buy-btn" bindtap="onBuyItem">购买</button>
+      
+      <!-- 已售出状态 -->
+      <view wx:elif="{{isSold && item.tradeType === 'sell'}}" class="status-display sold-status">
+        <text class="status-text">已售出</text>
+      </view>
+      
+      <!-- 已下架状态 -->
+      <view wx:elif="{{isWithdrawn && item.tradeType === 'sell'}}" class="status-display withdrawn-status">
+        <text class="status-text">已下架</text>
+      </view>
+      
+      <!-- 私信按钮 - 不是自己的商品且商品在售时才显示 -->
+      <button wx:if="{{!isOwner && !isSold && !isWithdrawn}}" class="contact-btn" bindtap="contactSeller">私信</button>
+      
+      <!-- 如果是自己的商品，显示提示 -->
+      <view wx:elif="{{isOwner}}" class="owner-tip">
+        <text class="owner-tip-text">这是您发布的商品</text>
+      </view>
+      
+      <!-- 商品已下架或已售出时，非卖家用户看到的提示 -->
+      <view wx:elif="{{!isOwner && (isSold || isWithdrawn)}}" class="unavailable-tip">
+        <text class="unavailable-text">{{isSold ? '该商品已售出' : '该商品已下架'}}</text>
+      </view>
     </view>
   </view>
 

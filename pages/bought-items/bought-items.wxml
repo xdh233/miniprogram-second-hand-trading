@@ -110,7 +110,7 @@
               <button 
                 class="action-btn secondary"
                 data-item-id="{{item.id}}"
-                catchtap="markAsInactive"
+                catchtap="markAsWithdrawn"
               >
                 下架
               </button>
@@ -126,17 +126,26 @@
             <!-- 已买到状态：显示完成信息和删除按钮 -->
             <block wx:if="{{item.status === '已买到'}}">
               <view class="bought-info">
-                <text class="bought-text">🎉 求购完成</text>
+                <!-- 根据状态类型显示不同的标志 -->
+                <text wx:if="{{item.statusType === 'demand'}}" class="bought-text">求购完成</text>
+                <text wx:elif="{{item.statusType === 'purchase'}}" class="bought-text">直接购买</text>
               </view>
+              
+              <!-- 只有求购类型的才能删除 -->
               <button 
+                wx:if="{{item.statusType === 'demand'}}"
                 class="action-btn danger"
                 data-item-id="{{item.id}}"
                 catchtap="deleteItem"
               >
                 删除
               </button>
+              
+              <!-- 直接购买的显示购买信息 -->
+              <view wx:if="{{item.statusType === 'purchase'}}" class="purchase-info">
+                <text class="purchase-price">实付：¥{{item.purchasePrice}}</text>
+              </view>
             </block>
-
             <!-- 已下架状态：重新上架和删除按钮 -->
             <block wx:if="{{item.status === '已下架'}}">
               <button 

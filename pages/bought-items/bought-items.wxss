@@ -164,6 +164,7 @@
   background-color: #f5f5f5;
 }
 
+/* ===== 新增：状态标签区分样式 ===== */
 .status-tag {
   position: absolute;
   top: 8rpx;
@@ -179,11 +180,16 @@
   background-color: #0096c3;
 }
 
+/* 已买到状态根据类型区分颜色 */
 .status-bought {
-  background-color: #52c41a;
+  background-color: #52c41a; /* 默认绿色（求购完成） */
 }
 
-.status-inactive {
+.status-bought.purchase {
+  background-color: #2196f3; /* 蓝色（直接购买） */
+}
+
+.status-withdrawn {
   background-color: #faad14;
 }
 
@@ -221,35 +227,6 @@
   -webkit-box-orient: vertical;
 }
 
-.item-price {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #0096c3;
-}
-
-.item-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 15rpx;
-}
-
-.create-time {
-  font-size: 24rpx;
-  color: #999;
-  flex-shrink: 0;
-}
-
-.bought-tag {
-  display: flex;
-  gap: 15rpx;
-}
-
-.bought-time {
-  font-size: 22rpx;
-  color: #52c41a;
-  white-space: nowrap;
-}
 /* 预算价格区域布局 */
 .item-price-section {
   display: flex;
@@ -286,6 +263,152 @@
   width: 48rpx;
   height: 48rpx;
 }
+
+.item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 15rpx;
+}
+
+.create-time {
+  font-size: 24rpx;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.bought-tag {
+  display: flex;
+  gap: 15rpx;
+}
+
+/* ===== 新增：操作按钮区域样式 ===== */
+.item-actions {
+  display: flex;
+  padding: 15rpx 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #fafafa;
+  gap: 10rpx;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 12rpx 16rpx;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  text-align: center;
+  border: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 主要操作按钮 */
+.action-btn.primary {
+  background-color: #0096c3;
+  color: white;
+}
+
+.action-btn.primary:active {
+  background-color: #007aa3;
+}
+
+/* 次要操作按钮 */
+.action-btn.secondary {
+  background-color: #faad14;
+  color: white;
+}
+
+.action-btn.secondary:active {
+  background-color: #d48806;
+}
+
+/* 危险操作按钮 */
+.action-btn.danger {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.action-btn.danger:active {
+  background-color: #d9363e;
+}
+
+/* ===== 新增：已买到信息样式 ===== */
+.bought-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 300rpx;
+  padding: 15rpx 10rpx;
+  border-radius: 8rpx;
+  margin-right: 10rpx;
+}
+
+/* 求购完成样式 */
+.bought-info.demand-completed {
+  background: linear-gradient(135deg, #e8f5e8, #d4edda);
+  border-left: 4rpx solid #28a745;
+}
+
+/* 直接购买样式 */
+.bought-info.direct-purchase {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-left: 4rpx solid #2196f3;
+}
+
+.bought-text {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.demand-completed .bought-text {
+  color: #28a745;
+}
+
+.direct-purchase .bought-text {
+  color: #2196f3;
+}
+
+.bought-time {
+  font-size: 22rpx;
+  color: #666;
+}
+
+/* ===== 新增：购买详情样式 ===== */
+.purchase-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  margin-top: 8rpx;
+}
+
+.purchase-price {
+  font-weight: bold;
+  color: #2196f3;
+}
+
+/* ===== 新增：购买记录提示样式 ===== */
+.purchase-note {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15rpx;
+}
+
+.note-text {
+  font-size: 22rpx;
+  color: #999;
+  font-style: italic;
+}
+
+/* ===== 价格修改弹窗样式 ===== */
 .price-modal-overlay {
   position: fixed;
   top: 0;
@@ -411,7 +534,7 @@
   color: #666;
 }
 
-/* 弹窗底部按钮 - 参考设置页面样式 */
+/* 弹窗底部按钮 */
 .modal-footer {
   display: flex;
   gap: 20rpx;
@@ -447,7 +570,7 @@
 }
 
 .confirm-btn:active {
-  background: #1573cc;
+  background: #007aa3;
   transform: scale(0.98);
 }
 
@@ -458,107 +581,16 @@
   transform: none;
 }
 
-/* 响应式调整 */
-@media (max-width: 375px) {
-  .price-modal {
-    width: calc(100vw - 80rpx);
-    max-width: none;
-    padding: 30rpx;
-  }
-  
-  .price-input-wrapper {
-    padding: 0 15rpx;
-    min-height: 70rpx;
-  }
-  
-  .price-input {
-    height: 70rpx;
-    font-size: 26rpx;
-  }
-  
-  .modal-btn {
-    font-size: 26rpx;
-    padding: 20rpx;
-  }
-}
-
-/* 操作按钮区域 - 支持多个按钮布局 */
-.item-actions {
-  display: flex;
-  padding: 15rpx 20rpx;
-  border-top: 1rpx solid #f0f0f0;
-  background-color: #fafafa;
-  gap: 10rpx;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  flex: 1;
-  min-width: 0;
-  padding: 12rpx 16rpx;
-  border-radius: 6rpx;
-  font-size: 24rpx;
-  text-align: center;
-  border: none;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 主要操作按钮 */
-.action-btn.primary {
-  background-color: #0096c3;
-  color: white;
-}
-
-.action-btn.primary:active {
-  background-color: #0096c3;
-}
-
-/* 次要操作按钮 */
-.action-btn.secondary {
-  background-color: #faad14;
-  color: white;
-}
-
-.action-btn.secondary:active {
-  background-color: #d48806;
-}
-
-/* 危险操作按钮 */
-.action-btn.danger {
-  background-color: #ff4d4f;
-  color: white;
-}
-
-.action-btn.danger:active {
-  background-color: #d9363e;
-}
-
-/* 已买到信息 */
-.bought-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15rpx 0;
-}
-
-.bought-text {
-  font-size: 26rpx;
-  color: #52c41a;
-  font-weight: bold;
-}
-
-/* 响应式调整 */
+/* ===== 响应式调整 ===== */
 @media (max-width: 375px) {
   .items-container {
-    margin-top: 105rpx; /* 小屏幕调整 */
+    margin-top: 120rpx; /* 小屏幕调整 */
+    padding: 15rpx;
   }
   
   .item-main-content {
     gap: 15rpx;
+    padding: 15rpx;
   }
   
   .item-thumbnail {
@@ -589,5 +621,40 @@
   .action-btn {
     font-size: 22rpx;
     padding: 10rpx 12rpx;
+  }
+
+  .bought-info {
+    padding: 12rpx 8rpx;
+  }
+
+  .purchase-details {
+    gap: 2rpx;
+  }
+
+  .purchase-seller,
+  .purchase-price,
+  .purchase-date {
+    font-size: 36rpx;
+  }
+
+  .price-modal {
+    width: calc(100vw - 80rpx);
+    max-width: none;
+    padding: 30rpx;
+  }
+  
+  .price-input-wrapper {
+    padding: 0 15rpx;
+    min-height: 70rpx;
+  }
+  
+  .price-input {
+    height: 70rpx;
+    font-size: 26rpx;
+  }
+  
+  .modal-btn {
+    font-size: 26rpx;
+    padding: 20rpx;
   }
 }

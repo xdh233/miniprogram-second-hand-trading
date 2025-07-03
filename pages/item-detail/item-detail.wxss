@@ -118,41 +118,143 @@
   display: block;
   margin-bottom: 4rpx;
 }
+/* 已售出标志（卖家信息区域） */
+.sold-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.sold-icon {
+  width: 128rpx;    /* 可以调整图标大小 */
+  height: 128rpx;   /* 可以调整图标大小 */
+}
+.withdrawn-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon {
+  width: 128rpx;
+  height: 128rpx;
+}
+
+/* 底部已售出状态 */
+.sold-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  background: #f5f5f5;
+  padding: 16rpx 12rpx;
+  border-radius: 20rpx;
+  min-width: 120rpx;
+  height: 56rpx;
+}
+
+.sold-status-text {
+  font-size: 26rpx;
+  color: #999;
+  font-weight: 500;
+}
+
+
+/* 底部状态显示样式 */
+.status-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 24rpx;
+  border-radius: 25rpx;
+  min-width: 120rpx;
+}
+
+.sold-status {
+  background-color: #f5f5f5;
+  border: 1rpx solid #d9d9d9;
+}
+
+.withdrawn-status {
+  background-color: #fff7e6;
+  border: 1rpx solid #ffd666;
+}
+
+.status-text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.sold-status .status-text {
+  color: #8c8c8c;
+}
+
+.withdrawn-status .status-text {
+  color: #d48806;
+}
+
+/* 不可用提示样式 */
+.unavailable-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 24rpx;
+}
+
+.unavailable-text {
+  font-size: 26rpx;
+  color: #999;
+}
+/* 商品拥有者提示 */
+.owner-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 24rpx;
+  background: #e8f4fd;
+  border-radius: 20rpx;
+  min-width: 160rpx;
+  height: 36rpx;
+}
+
+.owner-tip-text {
+  font-size: 24rpx;
+  color: #0096c3;
+  font-weight: 500;
+}
 /* 商品标题 */
 .product-title {
   font-size: 36rpx;
   font-weight: 600;
   color: #333;
-  margin-bottom: 15rpx;
+  margin-bottom: 20rpx;
   line-height: 1.4;
 }
 
 /* 商品价格区域 */
 .product-price-section {
+  display: flex;
+  align-items: baseline;    /* 改回 baseline，让文字基线对齐 */
+  gap: 0rpx;
+  margin-top: -50rpx; 
   margin-bottom: 20rpx;
 }
 
-/* 商品价格 */
+/* 价格样式 */
 .product-price {
-  font-size: 48rpx;
+  font-size: 36rpx;
   font-weight: bold;
-  display: block;
   line-height: 1.2;
 }
 
+/* 售价 - 橙色 */
 .sell-price {
-  color: #ff8c00; /* 橙色 */
+  color: #ff8c00;
 }
 
+/* 预算 - 蓝色 */
 .buy-price {
   color: #0096c3;
-}
-
-.price-label {
-  font-size: 48rpx; /* 改为和价格相同大小 */
-  font-weight: bold; /* 改为和价格相同粗细 */
-  margin-right: 0rpx;
 }
 
 /* 商品描述 */
@@ -757,7 +859,7 @@
   font-weight: 500;
   text-align: center;
   width: 200rpx !important; /* 减少最小宽度 */
-  height: 56rpx; /* 减小高度 */
+  height: 64rpx; /* 减小高度 */
   line-height: 1;
   transition: all 0.3s ease;
   display: flex;

@@ -1,13 +1,10 @@
-<!-- pages/user-profile/user-profile.wxml -->
 <view class="profile-container">
-  <!-- 加载状态 -->
   <view wx:if="{{loading}}" class="loading-wrapper">
     <view class="loading">
       <text>加载中...</text>
     </view>
   </view>
 
-  <!-- 错误状态 -->
   <view wx:elif="{{error}}" class="error-wrapper">
     <view class="error">
       <text>{{error}}</text>
@@ -15,9 +12,7 @@
     </view>
   </view>
 
-  <!-- 用户信息 -->
   <view wx:else class="profile-content">
-    <!-- 用户头部信息 -->
     <view class="user-header">
       <view class="user-info">
         <view class="avatar-wrapper" bindtap="onAvatarTap">
@@ -34,7 +29,6 @@
         </view>
       </view>
 
-      <!-- 操作按钮 -->
       <view class="action-buttons">
         <button wx:if="{{isCurrentUser}}" class="edit-btn" bindtap="editProfile">
           编辑资料
@@ -42,13 +36,9 @@
         <button wx:else class="message-btn" bindtap="sendMessage">
           私信
         </button>
-        <button class="message-btn" bindtap="sendMessage">
-          私信
-        </button>
       </view>
     </view>
 
-    <!-- 内容切换标签 -->
     <view class="content-tabs">
       <view 
         class="tab-item {{activeTab === 'posts' ? 'active' : ''}}" 
@@ -65,15 +55,14 @@
         在售
       </view>
       <view 
-        class="tab-item {{activeTab === 'want' ? 'active' : ''}}" 
-        data-tab="want" 
+        class="tab-item {{activeTab === 'buy' ? 'active' : ''}}" 
+        data-tab="buy" 
         bindtap="switchTab"
       >
         想要
       </view>
     </view>
 
-    <!-- 动态列表 -->
     <view wx:if="{{activeTab === 'posts'}}" class="posts-list">
       <view wx:if="{{userPosts.length === 0}}" class="empty-state">
         <text>还没有发布动态</text>
@@ -88,7 +77,8 @@
         >
           <view class="post-header">
             <text class="post-title">{{item.title}}</text>
-            <text class="post-time">{{item.createTime}}</text>
+            <!-- 修改这里：使用格式化后的时间 -->
+            <text class="post-time">{{item.formattedTime}}</text>
           </view>
           <view wx:if="{{item.content}}" class="post-content">
             {{item.content}}
@@ -116,136 +106,106 @@
         </view>
       </view>
     </view>
-
-    <!-- 在售商品列表 -->
-    <view wx:if="{{activeTab === 'sell'}}" style="background: #f5f5f5;">
-      <view wx:if="{{sellItems.length > 0}}" style="display: flex; padding: 15rpx;">
-        <!-- 左列 -->
-        <view style="width: 50%; padding-right: 10rpx;">
+    
+    <view wx:if="{{activeTab === 'sell'}}">
+      <view wx:if="{{sellItems.length > 0}}" class="items-grid">
+        <view class="column left-column">
           <view 
+            class="item-card" 
             wx:for="{{leftSellItems}}" 
             wx:key="id" 
-            style="background: white; margin-bottom: 20rpx; border-radius: 12rpx; overflow: hidden; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);"
-            data-id="{{item.id}}" 
-            bindtap="navigateToItemDetail"
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
           >
-            <view style="position: relative; height: 300rpx;">
-              <image 
-                src="{{item.images[0] || '/images/placeholder.png'}}" 
-                mode="aspectFill"
-                style="width: 100%; height: 100%; display: block;"
-              />
-            </view>
-            <view style="padding: 20rpx;">
-              <view style="font-size: 28rpx; color: #333; line-height: 1.4; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;">{{item.title}}</view>
-              <view wx:if="{{item.description}}" style="font-size: 24rpx; color: #666; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;">{{item.description}}</view>
-              <view style="font-size: 32rpx; color: #ff6b35; font-weight: bold; margin-bottom: 12rpx;">¥{{item.price}}</view>
-              <view style="display: flex; justify-content: space-between; align-items: center;">
-                <text wx:if="{{item.views}}" style="font-size: 22rpx; color: #999;">{{item.views}}次浏览</text>
-                <text wx:if="{{item.created_at}}" style="font-size: 22rpx; color: #999;">{{item.created_at}}</text>
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <view class="status-tag" wx:if="{{item.status !== 'selling'}}">
+                <text wx:if="{{item.status === 'sold'}}">已售出</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已下架</text>
               </view>
+            </view>
+            <view class="item-info">
+              <view class="item-title">{{item.title}}</view>
+              <view class="item-price">¥{{item.price}}</view>
             </view>
           </view>
         </view>
 
-        <!-- 右列 -->
-        <view style="width: 50%; padding-left: 10rpx;">
+        <view class="column right-column">
           <view 
+            class="item-card" 
             wx:for="{{rightSellItems}}" 
             wx:key="id" 
-            style="background: white; margin-bottom: 20rpx; border-radius: 12rpx; overflow: hidden; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);"
-            data-id="{{item.id}}" 
-            bindtap="navigateToItemDetail"
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
           >
-            <view style="position: relative; height: 300rpx;">
-              <image 
-                src="{{item.images[0] || '/images/placeholder.png'}}" 
-                mode="aspectFill"
-                style="width: 100%; height: 100%; display: block;"
-              />
-            </view>
-            <view style="padding: 20rpx;">
-              <view style="font-size: 28rpx; color: #333; line-height: 1.4; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;">{{item.title}}</view>
-              <view wx:if="{{item.description}}" style="font-size: 24rpx; color: #666; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;">{{item.description}}</view>
-              <view style="font-size: 32rpx; color: #ff6b35; font-weight: bold; margin-bottom: 12rpx;">¥{{item.price}}</view>
-              <view style="display: flex; justify-content: space-between; align-items: center;">
-                <text wx:if="{{item.views}}" style="font-size: 22rpx; color: #999;">{{item.views}}次浏览</text>
-                <text wx:if="{{item.created_at}}" style="font-size: 22rpx; color: #999;">{{item.created_at}}</text>
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <view class="status-tag" wx:if="{{item.status !== 'selling'}}">
+                <text wx:if="{{item.status === 'sold'}}">已售出</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已下架</text>
               </view>
+            </view>
+            <view class="item-info">
+              <view class="item-title">{{item.title}}</view>
+              <view class="item-price">¥{{item.price}}</view>
             </view>
           </view>
         </view>
       </view>
-
-      <!-- 空状态 -->
-      <view wx:else style="text-align: center; padding: 100rpx 0; color: #999; font-size: 28rpx; background-color: white;">
-        <text>暂无在售商品</text>
+      <view wx:else class="empty-state">
+        <view class="empty-text">暂无在售商品</view>
       </view>
     </view>
 
-    <!-- 想要商品列表 -->
-    <view wx:if="{{activeTab === 'want'}}" style="background: #f5f5f5;">
-      <view wx:if="{{wantItems.length > 0}}" style="display: flex; padding: 15rpx;">
-        <!-- 左列 -->
-        <view style="width: 50%; padding-right: 10rpx;">
+    <view wx:if="{{activeTab === 'buy'}}">
+      <view wx:if="{{buyItems.length > 0}}" class="items-grid">
+        <view class="column left-column">
           <view 
-            wx:for="{{leftWantItems}}" 
+            class="item-card" 
+            wx:for="{{leftBuyItems}}" 
             wx:key="id" 
-            style="background: white; margin-bottom: 20rpx; border-radius: 12rpx; overflow: hidden; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);"
-            data-id="{{item.id}}" 
-            bindtap="navigateToItemDetail"
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
           >
-            <view style="position: relative; height: 300rpx;">
-              <image 
-                src="{{item.images[0] || '/images/placeholder.png'}}" 
-                mode="aspectFill"
-                style="width: 100%; height: 100%; display: block;"
-              />
-            </view>
-            <view style="padding: 20rpx;">
-              <view style="font-size: 28rpx; color: #333; line-height: 1.4; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;">{{item.title}}</view>
-              <view wx:if="{{item.description}}" style="font-size: 24rpx; color: #666; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;">{{item.description}}</view>
-              <view style="font-size: 32rpx; color: #4CAF50; font-weight: bold; margin-bottom: 12rpx;">¥{{item.price}}</view>
-              <view style="display: flex; justify-content: space-between; align-items: center;">
-                <text wx:if="{{item.views}}" style="font-size: 22rpx; color: #999;">{{item.views}}次浏览</text>
-                <text wx:if="{{item.created_at}}" style="font-size: 22rpx; color: #999;">{{item.created_at}}</text>
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <view class="status-tag" wx:if="{{item.status !== 'seeking'}}">
+                <text wx:if="{{item.status === 'bought'}}">已买到</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已取消</text>
               </view>
+            </view>
+            <view class="item-info">
+              <view class="item-title">{{item.title}}</view>
+              <view class="item-price want-price">¥{{item.price}}</view>
             </view>
           </view>
         </view>
 
-        <!-- 右列 -->
-        <view style="width: 50%; padding-left: 10rpx;">
+        <view class="column right-column">
           <view 
-            wx:for="{{rightWantItems}}" 
+            class="item-card" 
+            wx:for="{{rightBuyItems}}" 
             wx:key="id" 
-            style="background: white; margin-bottom: 20rpx; border-radius: 12rpx; overflow: hidden; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);"
-            data-id="{{item.id}}" 
-            bindtap="navigateToItemDetail"
+            bindtap="navigateToItemDetail" 
+            data-id="{{item.id}}"
           >
-            <view style="position: relative; height: 300rpx;">
-              <image 
-                src="{{item.images[0] || '/images/placeholder.png'}}" 
-                mode="aspectFill"
-                style="width: 100%; height: 100%; display: block;"
-              />
-            </view>
-            <view style="padding: 20rpx;">
-              <view style="font-size: 28rpx; color: #333; line-height: 1.4; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;">{{item.title}}</view>
-              <view wx:if="{{item.description}}" style="font-size: 24rpx; color: #666; margin-bottom: 12rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;">{{item.description}}</view>
-              <view style="font-size: 32rpx; color: #4CAF50; font-weight: bold; margin-bottom: 12rpx;">¥{{item.price}}</view>
-              <view style="display: flex; justify-content: space-between; align-items: center;">
-                <text wx:if="{{item.views}}" style="font-size: 22rpx; color: #999;">{{item.views}}次浏览</text>
-                <text wx:if="{{item.created_at}}" style="font-size: 22rpx; color: #999;">{{item.created_at}}</text>
+            <view class="item-image-container">
+              <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
+              <view class="status-tag" wx:if="{{item.status !== 'seeking'}}">
+                <text wx:if="{{item.status === 'bought'}}">已买到</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已取消</text>
               </view>
+            </view>
+            <view class="item-info">
+              <view class="item-title">{{item.title}}</view>
+              <view class="item-price want-price">¥{{item.price}}</view>
             </view>
           </view>
         </view>
       </view>
-
-      <!-- 空状态 -->
-      <view wx:else style="text-align: center; padding: 100rpx 0; color: #999; font-size: 28rpx; background-color: white;">
-        <text>暂无求购信息</text>
+      <view wx:else class="empty-state">
+        <view class="empty-text">暂无求购信息</view>
       </view>
     </view>
   </view>

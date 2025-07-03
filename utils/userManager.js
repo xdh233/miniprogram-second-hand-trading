@@ -22,7 +22,8 @@ class UserManager {
           phone: '13800138000',
           email: 'zhangsan@example.com',
           bio: '我是狗。',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          balance: 50.00
         },
         {
           id: 2,
@@ -34,7 +35,8 @@ class UserManager {
           phone: '13800138001',
           email: 'lisi@example.com',
           bio: '我不是狗也不累',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          balance: 50.00
         },
         {
           id: 3,
@@ -46,7 +48,8 @@ class UserManager {
           phone: '13800138002',
           email: 'niudaguo@example.com',
           bio: '累。',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          balance: 300.00
         }
       ];
       
@@ -88,8 +91,13 @@ class UserManager {
       }
 
       // 学号格式验证
-      if (!/^[SB]\d{8}$/.test(studentId)) {
-        reject({ code: 400, message: '学号格式不正确，应为8位数字' });
+      const isValidStudentId = /^[SB]\d{8}$/.test(studentId) || /^\d{8}$/.test(studentId);
+    
+      if (!isValidStudentId) {
+        reject({ 
+          code: 400, 
+          message: '学号格式不正确，支持格式：S/B开头+8位数字 或 直接8位数字' 
+        });
         return;
       }
 
@@ -128,6 +136,7 @@ class UserManager {
         avatar: '/images/default-avatar.png',
         phone: phone || '',
         email: email || '',
+        balance: 0, // 新用户初始余额为0
         createdAt: new Date().toISOString()
       };
 
@@ -172,6 +181,7 @@ class UserManager {
         name: user.name,
         nickname: user.nickname,
         avatar: user.avatar,
+        balance: user.balance || 0, // 添加余额信息
         loginTime: new Date().toISOString()
       };
 
@@ -265,6 +275,41 @@ class UserManager {
     });
   }
 
+  // 获取用户余额
+  getUserBalance(userId = null) {
+    return new Promise((resolve, reject) => {
+      let targetUserId = userId;
+      
+      // 如果没有指定用户ID，使用当前登录用户
+      if (!targetUserId) {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser) {
+          reject({ code: 401, message: '请先登录' });
+          return;
+        }
+        targetUserId = currentUser.id;
+      }
+
+      const users = this.getAllUsers();
+      const user = users.find(u => u.id === targetUserId);
+      
+      if (!user) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      resolve({
+        code: 200,
+        data: { 
+          balance: user.balance || 0,
+          userId: user.id,
+          studentId: user.studentId,
+          name: user.name
+        }
+      });
+    });
+  }
+
   // 修改密码
   changePassword(oldPassword, newPassword) {
     return new Promise((resolve, reject) => {
@@ -318,6 +363,7 @@ class UserManager {
       return false;
     }
   }
+
   // 检查昵称是否已存在
   isNicknameExist(nickname, excludeUserId = null) {
     const users = this.getAllUsers();
@@ -372,6 +418,7 @@ class UserManager {
       }
     });
   }
+
   // 更新用户昵称
   updateNickname(newNickname) {
     return new Promise((resolve, reject) => {
@@ -423,6 +470,7 @@ class UserManager {
       }
     });
   }
+
   // 调试方法：获取所有用户
   debugGetAllUsers() {
     return this.getAllUsers();
@@ -439,6 +487,129 @@ class UserManager {
       console.error('清空数据失败:', error);
       return false;
     }
+  } 
+
+  // 更新指定用户的余额（用于购买流程中的转账）
+  updateUserBalanceById(userId, amount, operation = 'add', description = '') {
+    return new Promise((resolve, reject) => {
+      // 参数验证
+      if (!userId) {
+        reject({ code: 400, message: '用户ID不能为空' });
+        return;
+      }
+
+      if (typeof amount !== 'number' || amount < 0) {
+        reject({ code: 400, message: '金额必须为非负数' });
+        return;
+      }
+
+      // 精确到分的处理
+      const amountInCents = Math.round(amount * 100);
+      const finalAmount = amountInCents / 100;
+
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(u => u.id === userId);
+      
+      if (userIndex === -1) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      const currentBalance = users[userIndex].balance || 0;
+      let newBalance;
+
+      // 根据操作类型计算新余额
+      switch (operation) {
+        case 'add': // 增加余额
+          newBalance = currentBalance + finalAmount;
+          break;
+        case 'subtract': // 减少余额
+          if (currentBalance < finalAmount) {
+            reject({ code: 400, message: '余额不足' });
+            return;
+          }
+          newBalance = currentBalance - finalAmount;
+          break;
+        case 'set': // 直接设置余额
+          newBalance = finalAmount;
+          break;
+        default:
+          reject({ code: 400, message: '操作类型无效' });
+          return;
+      }
+
+      // 确保余额不为负数
+      if (newBalance < 0) {
+        reject({ code: 400, message: '余额不能为负数' });
+        return;
+      }
+
+      // 更新用户余额
+      users[userIndex].balance = Math.round(newBalance * 100) / 100; // 精确到分
+      users[userIndex].updatedAt = new Date().toISOString();
+
+      if (this.saveUsers(users)) {
+        // 如果更新的是当前登录用户，同时更新登录状态
+        const currentUser = this.getCurrentUser();
+        if (currentUser && currentUser.id === userId) {
+          const updatedLoginInfo = {
+            ...currentUser,
+            balance: users[userIndex].balance,
+            updateTime: new Date().toISOString()
+          };
+          wx.setStorageSync(this.CURRENT_USER_KEY, updatedLoginInfo);
+        }
+        
+        resolve({
+          code: 200,
+          message: '余额更新成功',
+          data: { 
+            userId: userId,
+            previousBalance: currentBalance,
+            newBalance: users[userIndex].balance,
+            amount: finalAmount,
+            operation
+          }
+        });
+      } else {
+        reject({ code: 500, message: '余额更新失败' });
+      }
+    });
+  }
+
+  // 获取指定用户的余额（支持传入用户ID）
+  getUserBalance(userId = null) {
+    return new Promise((resolve, reject) => {
+      let targetUserId = userId;
+      
+      // 如果没有指定用户ID，使用当前登录用户
+      if (!targetUserId) {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser) {
+          reject({ code: 401, message: '请先登录' });
+          return;
+        }
+        targetUserId = currentUser.id;
+      }
+
+      const users = this.getAllUsers();
+      const user = users.find(u => u.id === targetUserId);
+      
+      if (!user) {
+        reject({ code: 404, message: '用户不存在' });
+        return;
+      }
+
+      resolve({
+        code: 200,
+        data: { 
+          balance: user.balance || 0,
+          userId: user.id,
+          studentId: user.studentId,
+          name: user.name
+        }
+      });
+    });
   }
 }
 

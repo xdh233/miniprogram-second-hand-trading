@@ -68,7 +68,15 @@ Page({
   // 初始化聊天
   async initChat(otherUserId, itemId, postId) {
     try {
+      console.log('初始化聊天，参数:', { otherUserId, itemId, postId });
+      
       const otherUser = await userManager.getUserInfo(otherUserId);
+      console.log('获取对方用户信息:', otherUser);
+      
+      // 检查用户信息是否有效
+      if (!otherUser || !otherUser.data || !otherUser.data.userInfo) {
+        throw new Error('无法获取用户信息');
+      }
       
       // 检查是否已存在聊天
       const existingChat = messageManager.findExistingChat(
@@ -85,19 +93,31 @@ Page({
         // 如果传入了新的itemId，更新商品卡片
         if (itemId && itemId != existingChat.relatedItem?.id) {
           console.log('需要更新商品，原商品ID:', existingChat.relatedItem?.id, '新商品ID:', itemId);
-          const newItem = await this.getItemInfo(itemId);
-          chatData.relatedItem = newItem;
-          
-          // 更新聊天记录中的商品信息
-          const updateResult = messageManager.updateChatItem(chatData.chatId, newItem);
-          console.log('更新结果:', updateResult);
+          try {
+            const newItem = await this.getItemInfo(itemId);
+            if (newItem) {
+              chatData.relatedItem = newItem;
+              
+              // 更新聊天记录中的商品信息
+              const updateResult = messageManager.updateChatItem(chatData.chatId, newItem);
+              console.log('更新结果:', updateResult);
+            }
+          } catch (itemError) {
+            console.error('获取商品信息失败:', itemError);
+            // 商品获取失败不影响聊天初始化
+          }
         }
 
       } else {
         // 如果不存在，创建新聊天
         let relatedItem = null;
         if (itemId) {
-          relatedItem = await this.getItemInfo(itemId);
+          try {
+            relatedItem = await this.getItemInfo(itemId);
+          } catch (itemError) {
+            console.error('获取商品信息失败:', itemError);
+            // 商品获取失败不影响聊天创建
+          }
         }
         
         chatData = messageManager.getOrCreateChat(
@@ -114,24 +134,53 @@ Page({
         relatedItem: chatData.relatedItem, // 使用原有的商品信息
         showItemCard: !!chatData.relatedItem
       });
-      // 设置对方名称
+      
+      // 设置对方名称 - 添加安全检查
+      const title = otherUser.data.userInfo.nickname || 
+                    otherUser.data.userInfo.name || 
+                    '聊天';
       wx.setNavigationBarTitle({
-        title: otherUser.nickname
+        title: title
       });
+      
       this.loadMessages();
-  
+
     } catch (error) {
       console.error('初始化聊天失败:', error);
+      wx.showToast({
+        title: '初始化聊天失败',
+        icon: 'none'
+      });
+      
+      // 延迟返回上一页
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1500);
     }
   },
 
-  // 获取商品信息
+  // 修复 getItemInfo 方法
   async getItemInfo(itemId) {
     console.log('获取商品信息, itemId:', itemId);
-    const item = itemManager.getItemById(itemId);
-
-    console.log('返回商品信息:', item);
-    return item;
+    
+    try {
+      if (!itemId) {
+        throw new Error('商品ID为空');
+      }
+      
+      const item = itemManager.getItemById(parseInt(itemId));
+      
+      if (!item) {
+        throw new Error('商品不存在');
+      }
+      
+      console.log('返回商品信息:', item);
+      return item;
+      
+    } catch (error) {
+      console.error('获取商品信息失败:', error);
+      throw error;
+    }
   },
 
   // 加载消息
@@ -275,15 +324,35 @@ Page({
     }
   },
 
-  // 发送图片消息
+  // 修复发送图片消息的方法
   sendImageMessage() {
     wx.chooseMedia({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
+      mediaType: ['image'], // 明确指定只选择图片
       success: async (res) => {
-        const tempFilePath = res.tempFilePaths[0];
+        console.log('选择图片成功，返回数据:', res);
         
+        let tempFilePath = '';
+        
+        // 兼容不同的返回格式
+        if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+          // 旧版本格式
+          tempFilePath = res.tempFilePaths[0];
+        } else if (res.tempFiles && res.tempFiles.length > 0) {
+          // 新版本格式
+          tempFilePath = res.tempFiles[0].tempFilePath;
+        } else {
+          console.error('未找到有效的图片路径:', res);
+          wx.showToast({
+            title: '选择图片失败',
+            icon: 'none'
+          });
+          return;
+        }
+        
+        console.log('图片路径:', tempFilePath);
         wx.showLoading({ title: '发送中...' });
 
         try {
@@ -323,10 +392,62 @@ Page({
         } finally {
           wx.hideLoading();
         }
+      },
+      fail: (error) => {
+        console.error('选择图片失败:', error);
+        if (error.errMsg && !error.errMsg.includes('cancel')) {
+          wx.showToast({
+            title: '选择图片失败',
+            icon: 'none'
+          });
+        }
       }
     });
   },
 
+  // 抽取图片处理逻辑
+  async processSelectedImage(tempFilePath) {
+    wx.showLoading({ title: '发送中...' });
+
+    try {
+      // 这里应该上传图片到服务器，暂时使用本地路径
+      const imageUrl = tempFilePath;
+
+      const result = await messageManager.sendMessage(
+        this.data.userInfo.id,
+        this.data.otherUser.id,
+        {
+          type: 'image',
+          content: '[图片]',
+          imageUrl: imageUrl
+        }
+      );
+
+      const newMessage = {
+        ...result.data,
+        isSelf: true,
+        showTime: this.shouldShowTime(result.data.timestamp),
+        timeDisplay: this.formatDetailTime(result.data.timestamp)
+      };
+
+      this.setData({
+        messages: [...this.data.messages, newMessage]
+      });
+
+      // 强制滚动到底部
+      this.scrollToBottom();
+
+    } catch (error) {
+      console.error('发送图片失败:', error);
+      wx.showToast({
+        title: '发送失败',
+        icon: 'none'
+      });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+  
   // 发送商品消息
   async sendItemMessage() {
     if (!this.data.relatedItem) return;

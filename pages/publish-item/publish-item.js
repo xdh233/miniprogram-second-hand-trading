@@ -1,6 +1,7 @@
 // pages/publish-item/publish-item.js - 发布商品页面
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const categoryConfig = require('../../utils/categoryConfig'); // 引入统一分类配置
 
 Page({
   data: {
@@ -17,15 +18,7 @@ Page({
     maxImages: 9,
     
     // 分类选项
-    categories: [
-      { value: 'books', name: '教材书籍' },
-      { value: 'electronics', name: '数码电子' },
-      { value: 'clothing', name: '服装配饰' },
-      { value: 'sports', name: '运动用品' },
-      { value: 'daily', name: '生活用品' },
-      { value: 'furniture', name: '家具家电' },
-      { value: 'other', name: '其他' }
-    ],
+    categories: [ ],
     tradeType: 'sell', // 默认为出售，可能的值：'sell', 'buy'
     // 价格限制
     priceConfig: {
@@ -38,7 +31,10 @@ Page({
 
   onLoad(options) {
     console.log('发布商品/求购页面加载', options);
-    
+    // 初始化分类数据
+    this.setData({
+      categories: categoryConfig.getAllCategories()
+    });
     // 检查传入的类型参数
     if (options.type) {
       this.setData({
@@ -288,7 +284,7 @@ Page({
       const imageUrls = await this.uploadImages();
       // 找到对应的分类ID
       const selectedCategory = this.data.categories.find(cat => cat.value === this.data.category);
-      const categoryId = selectedCategory ? this.getCategoryIdByValue(selectedCategory.value) : 8;
+      const categoryId = categoryConfig.getCategoryIdByValue(this.data.category);
       const status = this.data.tradeType === 'sell' ? 'selling' : 'seeking';
       
       // 创建商品数据
@@ -296,7 +292,7 @@ Page({
         title: title.trim(),
         description: description.trim(),
         price: numericPrice, // 使用验证过的数字
-        categoryId: categoryId, 
+        category: categoryConfig.getCategoryNameById(categoryId), // 添加分类名称
         images: imageUrls,
         status: status,
         tradeType: this.data.tradeType,
@@ -333,20 +329,6 @@ Page({
     }
   },
 
-  // 根据分类值获取分类ID的映射
-  getCategoryIdByValue(value) {
-    const categoryMap = {
-      'electronics': 1,
-      'daily': 2, 
-      'books': 3,
-      'clothing': 4,
-      'sports': 5,
-      'makeup': 6,
-      'snacks': 7,
-      'other': 8
-    };
-    return categoryMap[value] || 8; // 默认为"其他商品"
-  },
   // 上传图片
   async uploadImages() {
     if (this.data.images.length === 0) return [];

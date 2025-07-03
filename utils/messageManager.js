@@ -1,4 +1,5 @@
 // utils/messageManager.js - 消息管理工具类
+const sharedTools = require('./sharedTools');
 
 class MessageManager {
   constructor() {
@@ -18,6 +19,11 @@ class MessageManager {
 
   // 创建模拟数据
   createMockData() {
+    const now = new Date();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  
     const mockChats = [
       {
         id: this.generateId(),
@@ -26,7 +32,7 @@ class MessageManager {
         userName: '四李',
         userAvatar: '/images/default-avatar.jpg',
         lastMessage: '这个台灯还在吗？我想要',
-        lastMessageTime: this.formatTime(new Date(Date.now() - 30 * 60 * 1000)),
+        lastMessageTime: thirtyMinutesAgo.toISOString(), 
         lastMessageType: 'text',
         unreadCount: 2,
         isOnline: true,
@@ -38,11 +44,11 @@ class MessageManager {
           price: '80',
           image: '/images/lamp1.jpg'
         },
-        status: 'active',
-        createdTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        status: 'selling',
+        createdTime: twoHoursAgo.toISOString() 
       }
     ];
-
+  
     const mockMessages = [
       {
         id: this.generateId(),
@@ -51,7 +57,7 @@ class MessageManager {
         receiverId: 1,
         type: 'text',
         content: '你好，请问这个台灯还在吗？',
-        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        timestamp: oneHourAgo.toISOString(), // 正确 ✅
         status: 'read',
         isDeleted: false
       },
@@ -62,12 +68,12 @@ class MessageManager {
         receiverId: 1,
         type: 'text',
         content: '我想要这个台灯，可以当面交易吗？',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        timestamp: thirtyMinutesAgo.toISOString(), // 正确 ✅
         status: 'delivered',
         isDeleted: false
       }
     ];
-
+  
     wx.setStorageSync(this.CHATS_KEY, mockChats);
     wx.setStorageSync(this.MESSAGES_KEY, mockMessages);
     console.log('初始化消息模拟数据');
@@ -82,27 +88,6 @@ class MessageManager {
   generateChatId(userId1, userId2) {
     const ids = [userId1, userId2].sort();
     return `chat_${ids[0]}_${ids[1]}`;
-  }
-
-  // 格式化时间
-  formatTime(date) {
-    const now = new Date();
-    const diff = now - date;
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
-    if (diff < minute) {
-      return '刚刚';
-    } else if (diff < hour) {
-      return `${Math.floor(diff / minute)}分钟前`;
-    } else if (diff < day) {
-      return `${Math.floor(diff / hour)}小时前`;
-    } else if (diff < 7 * day) {
-      return `${Math.floor(diff / day)}天前`;
-    } else {
-      return date.toLocaleDateString();
-    }
   }
 
   // 获取所有聊天
