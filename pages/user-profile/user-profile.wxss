@@ -23,7 +23,7 @@
   padding: 10rpx 30rpx;
 }
 
-/* 用户头部信息 (此部分无改动) */
+/* 用户头部信息 */
 .user-header {
   background: linear-gradient(135deg, #0096c3 0%, #00b4db 100%);
   padding: 40rpx 30rpx 30rpx;
@@ -43,6 +43,7 @@
   height: 120rpx;
   border-radius: 60rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.3);
+  background-color: #ffffff; 
 }
 .user-details {
   flex: 1;
@@ -99,7 +100,7 @@
   border-color: #4ecdc4;
 }
 
-/* 内容切换标签 (此部分无改动) */
+/* 内容切换标签 */
 .content-tabs {
   display: flex;
   background-color: white;
@@ -129,8 +130,6 @@
   border-radius: 2rpx;
 }
 
-/* 动态列表 (此部分无改动) */
-/* ... 您已有的 .posts-list 样式 ... */
 /* 动态列表 */
 .posts-list {
   background-color: white;
@@ -139,6 +138,7 @@
 .post-item {
   padding: 30rpx;
   border-bottom: 1rpx solid #f0f0f0;
+  position: relative;
 }
 
 .post-item:last-child {
@@ -148,7 +148,7 @@
 .post-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 15rpx;
 }
 
@@ -160,10 +160,32 @@
   margin-right: 20rpx;
 }
 
-.post-time {
-  font-size: 24rpx;
-  color: #999;
-  white-space: nowrap;
+/* 删除按钮样式 */
+.post-actions-btn {
+  display: flex;
+  align-items: center;
+}
+
+.delete-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  background-color: #0096c3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2rpx 8rpx rgba(255, 71, 87, 0.3);
+}
+
+.delete-btn:active {
+  transform: scale(0.9);
+  background-color: #0096c3;
+}
+
+.delete-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .post-content {
@@ -186,34 +208,26 @@
   border-radius: 10rpx;
 }
 
-.post-actions {
+/* 新增：时间在底部的样式 */
+.post-time-wrapper {
   display: flex;
-  gap: 40rpx;
+  justify-content: flex-end;
+  margin-top: 10rpx;
 }
 
-.action-item {
-  display: flex;
-  align-items: center;
+.post-time {
   font-size: 24rpx;
   color: #999;
 }
 
-.action-item .icon {
-  margin-right: 8rpx;
-  font-size: 26rpx;
-}
-
-
-/* --- 全新的/修改过的商品列表样式 --- */
-/* 从 market.wxss 复制并适配 */
-
+/* 商品列表样式 */
 .items-grid {
   width: 100%;
   box-sizing: border-box;
-  padding: 20rpx 10rpx; /* 增加内外边距 */
-  display: flex; /* 使用 flex 实现双列 */
-  flex-wrap: wrap; /* 允许换行，虽然这里主要靠JS分配 */
-  background: #f5f5f5; /* 确保背景色统一 */
+  padding: 20rpx 10rpx;
+  display: flex;
+  flex-wrap: wrap;
+  background: #f5f5f5;
 }
 
 .column {

@@ -5,10 +5,10 @@
     <!-- 个人信息头部 -->
     <view class="user-header">
       <view class="user-info">
-        <image class="user-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" />
+        <image class="user-avatar" src="{{avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"  />
         <view class="user-details">
           <view class="user-name">{{userInfo.name || '未填写昵称'}}</view>
-          <view class="user-id">学号: {{userInfo.studentId}}</view>
+          <view class="user-id">学号: {{userInfo.student_id}}</view>
         </view>
         <view class="settings-btn" bindtap="navigateToSettings">
           <image class="function-icon" src="../../images/settings.png" mode="aspectFill" />

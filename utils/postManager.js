@@ -1,122 +1,77 @@
 const BaseManager = require('./baseManager');  
 const sharedTools = require('./sharedTools');
+const apiConfig = require('../utils/apiConfig'); // 引入API配置
 
 class PostManager extends BaseManager {
   constructor() {
     super('campus_posts');
-    this.init();
-  }
-
-  init() {
-    const posts = this.getAll();
-    if (posts.length === 0) {
-      this.createMockData();
-    }
-  }
-
-  createMockData() {
-    const testPosts = [
-      {
-        id: 1,
-        userId: 1,
-        userName: '张三',
-        userNickname: '三张',          
-        userAvatar: '/images/default-avatar.png',
-        content: '新开的铁锅炖的小酥肉很好吃，但是阿姨和小哥们都呆呆的。',
-        images: [],
-        likes: 5,
-        comments: 2,
-        isLiked: false,
-        createTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        timeAgo: '2小时前'
-      },
-      {
-        id: 2,
-        userId: 2,
-        userName: '李四',
-        userNickname: '四李',
-        userAvatar: '/images/default-avatar.png',
-        content: '图书馆怎么这么多拍照的，我明年一定要到点就跑路。',
-        images: ["/images/default-avatar.png","/images/xbox.png"],
-        likes: 8,
-        comments: 3,
-        isLiked: false,
-        createTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        timeAgo: '5小时前'
-      },
-      {
-        id: 3,
-        userId: 3,
-        userName: '牛大果',
-        userNickname: '蛋黄',
-        userAvatar: '/images/default-avatar.png',
-        content: '我要快点写完软工课设！！！！！',
-        images: [],
-        likes: 8,
-        comments: 3,
-        isLiked: false,
-        createTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        timeAgo: '1秒前'
-      },
-      {
-        id: 4,
-        userId: 1,
-        userName: '张三',
-        userNickname: '三张',
-        userAvatar: '/images/default-avatar.png',
-        content: '再也没有期末考试了（本科阶段）',
-        images: [],
-        likes: 12,
-        comments: 6,
-        isLiked: true,
-        createTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        timeAgo: '1天前'
-      }
-    ];
-    this.save(testPosts);
-    console.log('初始化动态模拟数据');
   }
 
   // 获取单个动态详情
   getPostDetail(postId) {
     return new Promise((resolve, reject) => {
-      console.log('getPostDetail 被调用，postId:', postId, '类型:', typeof postId);
+      console.log('getPostDetail 被调用，postId:', postId);
       
-      const post = this.getById(postId);
-      console.log('找到的帖子:', post);
-      
-      if (post) {
-        post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
-        resolve(post);
-      } else {
-        console.log('未找到帖子，postId:', postId);
-        reject({ message: '动态不存在' });
-      }
+      apiConfig.get(`/posts/${postId}`)
+        .then(post => {
+          if (post) {
+            post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+            // 🔧 使用 apiConfig 的方法处理图片URL
+            post = apiConfig.processPostImages(post);
+            resolve(post);
+          } else {
+            reject({ message: '动态不存在' });
+          }
+        })
+        .catch(error => {
+          console.error('获取动态详情失败:', error);
+          reject({ message: '获取动态详情失败' });
+        });
     });
   }
+
   // 通过id获取
-  getPostById(itemId) {
-    return this.getById(itemId);
+  getPostById(postId) {
+    return new Promise((resolve, reject) => {
+      apiConfig.get(`/posts/${postId}`)
+        .then(post => {
+          if (post) {
+            // 🔧 使用 apiConfig 的方法处理图片URL
+            post = apiConfig.processPostImages(post);
+          }
+          resolve(post);
+        })
+        .catch(error => {
+          reject(error);
+        });
+    });
   }
+
   // 获取动态列表（分页）
   getPosts(page = 1, limit = 10) {
-    return new Promise((resolve) => {
-      const allPosts = this.getAll();
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      
-      allPosts.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-      
-      const posts = allPosts.slice(startIndex, endIndex);
-      const hasMore = endIndex < allPosts.length;
-      
-      setTimeout(() => {
-        resolve({
-          posts: posts,
-          hasMore: hasMore,
-          total: allPosts.length
+    return new Promise((resolve, reject) => {
+      apiConfig.get('/posts', { page, limit })
+        .then(data => {
+          // 处理时间显示
+          if (data.posts && Array.isArray(data.posts)) {
+            data.posts.forEach(post => {
+              post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+            });
+            
+            // 🔧 使用 apiConfig 的方法批量处理图片URL
+            data.posts = apiConfig.processPostImages(data.posts);
+          }
+          
+          resolve({
+            posts: data.posts || data,
+            hasMore: data.hasMore || false,
+            total: data.total || 0
+          });
+        })
+        .catch(error => {
+          console.error('获取动态列表失败:', error);
+          reject(error);
         });
-      }, 500);
     });
   }
 
@@ -136,41 +91,52 @@ class PostManager extends BaseManager {
         return;
       }
 
-      const newPost = {
-        id: Date.now(),
+      const postData = {
         userId: currentUser.id,
-        userName: currentUser.name,
-        userNickname: currentUser.nickname || currentUser.name,
-        userAvatar: '/images/default-avatar.png',
-        content: content,
-        images: images,
-        likes: 0,
-        comments: 0,
-        isLiked: false,
-        createTime: new Date().toISOString(),
-        timeAgo: '刚刚'
+        content: content.trim(),
+        images: images
       };
 
-      if (this.add(newPost)) {
-        resolve(newPost);
-      } else {
-        reject({ message: '发布失败，请重试' });
-      }
+      apiConfig.post('/posts', postData)
+        .then(newPost => {
+          // 添加时间显示
+          newPost.timeAgo = '刚刚';
+          // 🔧 使用 apiConfig 的方法处理图片URL
+          newPost = apiConfig.processPostImages(newPost);
+          resolve(newPost);
+        })
+        .catch(error => {
+          console.error('发布动态失败:', error);
+          reject({ message: '发布失败，请重试' });
+        });
     });
   }
 
   // 搜索动态
   searchPosts(keyword) {
-    return new Promise((resolve) => {
-      const allPosts = this.getAll();
-      const results = allPosts.filter(post => 
-        post.content.includes(keyword) || 
-        post.userNickname.includes(keyword)
-      );
-      
-      setTimeout(() => {
-        resolve(results);
-      }, 300);
+    return new Promise((resolve, reject) => {
+      if (!keyword || !keyword.trim()) {
+        resolve([]);
+        return;
+      }
+
+      apiConfig.get('/posts/search', { keyword: keyword.trim() })
+        .then(posts => {
+          // 处理时间显示
+          if (Array.isArray(posts)) {
+            posts.forEach(post => {
+              post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+            });
+            
+            // 🔧 使用 apiConfig 的方法批量处理图片URL
+            posts = apiConfig.processPostImages(posts);
+          }
+          resolve(posts);
+        })
+        .catch(error => {
+          console.error('搜索动态失败:', error);
+          reject(error);
+        });
     });
   }
 
@@ -186,40 +152,18 @@ class PostManager extends BaseManager {
           return;
         }
 
-        const post = this.getById(postId);
-        if (!post) {
-          reject({ message: '帖子不存在' });
-          return;
-        }
-
-        const newLikeState = !post.isLiked;
-        const updatedPost = {
-          ...post,
-          isLiked: newLikeState,
-          likes: newLikeState ? (post.likes || 0) + 1 : Math.max(0, (post.likes || 0) - 1)
-        };
-
-        const result = this.update(postId, updatedPost);
-        if (result) {
-          if (newLikeState) {
-            const notifyManager = require('./notifyManager');
-            await notifyManager.createPostLikeNotification(
-              currentUser.id,
-              currentUser.nickname || currentUser.name,
-              currentUser.avatar || '/images/default-avatar.png',
-              postId,
-              post.content,
-              post.userId
-            );
-          }
-          
-          resolve({
-            isLiked: updatedPost.isLiked,
-            likes: updatedPost.likes
+        apiConfig.post(`/posts/${postId}/like`, { userId: currentUser.id })
+          .then(result => {
+            resolve({
+              isLiked: result.isLiked,
+              likes: result.likes
+            });
+          })
+          .catch(error => {
+            console.error('点赞操作失败:', error);
+            reject({ message: '操作失败' });
           });
-        } else {
-          reject({ message: '操作失败' });
-        }
+
       } catch (error) {
         console.error('点赞操作失败:', error);
         reject({ message: '操作失败' });
@@ -229,7 +173,68 @@ class PostManager extends BaseManager {
 
   // 更新动态评论数（供commentManager调用）
   updateCommentsCount(postId, count) {
-    return this.update(postId, { comments: count });
+    return apiConfig.put(`/posts/${postId}/comments-count`, { count });
+  }
+
+  // 删除动态
+  deletePost(postId) {
+    return new Promise((resolve, reject) => {
+      const userManager = require('./userManager');
+      const currentUser = userManager.getCurrentUser();
+      
+      if (!currentUser) {
+        reject({ message: '请先登录' });
+        return;
+      }
+
+      console.log('发送删除请求，postId:', postId);
+
+      apiConfig.delete(`/posts/${postId}`)
+        .then(result => {
+          console.log('删除动态成功:', result);
+          // 后端返回的数据结构：{ message: '删除成功', deletedPost: postId, cascadeInfo: {...} }
+          resolve({
+            success: true,
+            message: result.message || '删除成功',
+            data: result
+          });
+        })
+        .catch(error => {
+          console.error('删除动态失败:', error);
+          reject({ 
+            success: false,
+            message: error.message || '删除失败'
+          });
+        });
+    });
+  }
+
+  // 获取用户发布的动态
+  getUserPosts(userId, page = 1, limit = 10) {
+    return new Promise((resolve, reject) => {
+      apiConfig.get(`/posts/users/${userId}`, { page, limit })
+        .then(data => {
+          // 处理时间显示
+          if (data.posts && Array.isArray(data.posts)) {
+            data.posts.forEach(post => {
+              post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+            });
+            
+            // 🔧 使用 apiConfig 的方法批量处理图片URL
+            data.posts = apiConfig.processPostImages(data.posts);
+          }
+          
+          resolve({
+            posts: data.posts || data,
+            hasMore: data.hasMore || false,
+            total: data.total || 0
+          });
+        })
+        .catch(error => {
+          console.error('获取用户动态失败:', error);
+          reject(error);
+        });
+    });
   }
 }
 

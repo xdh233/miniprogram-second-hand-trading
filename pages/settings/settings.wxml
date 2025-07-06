@@ -10,7 +10,8 @@
           <text class="item-text">头像</text>
         </view>
         <view class="item-right">
-          <image class="current-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <!-- 使用 apiConfig 处理头像URL -->
+          <image class="current-avatar" src="{{avatarUrl}}" mode="aspectFill" />
           <image class="arrow-icon" src="../../images/arrow-right.png" mode="aspectFit" />
         </view>
       </view>
@@ -55,7 +56,10 @@
 
   <!-- 通知设置 -->
   <view class="section">
-    <view class="section-title">通知设置</view>
+    <view class="section-title">
+      通知设置
+      <view class="loading-indicator" wx:if="{{isSettingsLoading}}">加载中...</view>
+    </view>
     <view class="section-content">
       <!-- 评论通知 -->
       <view class="setting-item">
@@ -64,7 +68,7 @@
           <text class="item-text">评论通知</text>
         </view>
         <view class="item-right">
-          <switch checked="{{settings.commentNotify}}" bindchange="toggleCommentNotify" />
+          <switch checked="{{settings.commentNotify}}" bindchange="toggleCommentNotify" disabled="{{isSettingsLoading}}" />
         </view>
       </view>
 
@@ -75,9 +79,10 @@
           <text class="item-text">点赞通知</text>
         </view>
         <view class="item-right">
-          <switch checked="{{settings.likeNotify}}" bindchange="toggleLikeNotify" />
+          <switch checked="{{settings.likeNotify}}" bindchange="toggleLikeNotify" disabled="{{isSettingsLoading}}" />
         </view>
       </view>
+
     </view>
   </view>
 
@@ -96,7 +101,7 @@
   </view>
 
   <!-- 昵称修改弹窗 -->
-  <view class="modal-mask" wx:if="{{showNicknameModal}}">
+  <view class="modal-mask" wx:if="{{showNicknameModal}}" bindtap="cancelNickname">
     <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">修改昵称</view>
       <input 
@@ -110,13 +115,15 @@
       <view class="error-text" wx:if="{{nicknameError}}">{{nicknameError}}</view>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelNickname">取消</view>
-        <view class="modal-button confirm {{nicknameError ? 'disabled' : ''}}" bindtap="confirmNickname">确定</view>
+        <view class="modal-button confirm {{nicknameError || isLoading ? 'disabled' : ''}}" bindtap="confirmNickname">
+          {{isLoading ? '保存中...' : '确定'}}
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 简介修改弹窗 -->
-  <view class="modal-mask" wx:if="{{showBioModal}}">
+  <view class="modal-mask" wx:if="{{showBioModal}}" bindtap="cancelBio">
     <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">修改个人简介</view>
       <textarea 
@@ -130,23 +137,18 @@
       <view class="char-count">{{tempBio.length || 0}}/50</view>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelBio">取消</view>
-        <view class="modal-button confirm" bindtap="confirmBio">确定</view>
+        <view class="modal-button confirm {{isLoading ? 'disabled' : ''}}" bindtap="confirmBio">
+          {{isLoading ? '保存中...' : '确定'}}
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 性别选择弹窗 -->
-  <view class="modal-mask" wx:if="{{showGenderModal}}">
+  <view class="modal-mask" wx:if="{{showGenderModal}}" bindtap="cancelGender">
     <view class="modal-content" catchtap="stopPropagation">
       <view class="modal-title">选择性别</view>
       <view class="gender-options">
-        <view 
-          class="gender-option {{tempGender === '男' ? 'selected' : ''}}"
-          data-gender="男"
-          bindtap="selectGender"
-        >
-          <text>男</text>
-        </view>
         <view 
           class="gender-option {{tempGender === '女' ? 'selected' : ''}}"
           data-gender="女"
@@ -155,16 +157,25 @@
           <text>女</text>
         </view>
         <view 
-          class="gender-option {{tempGender === '保密' ? 'selected' : ''}}"
-          data-gender="保密"
+          class="gender-option {{tempGender === '男' ? 'selected' : ''}}"
+          data-gender="男"
           bindtap="selectGender"
         >
-          <text>保密</text>
+          <text>男</text>
+        </view>
+        <view 
+          class="gender-option {{tempGender === '未设置' ? 'selected' : ''}}"
+          data-gender="未设置"
+          bindtap="selectGender"
+        >
+          <text>未设置</text>
         </view>
       </view>
       <view class="modal-buttons">
         <view class="modal-button cancel" bindtap="cancelGender">取消</view>
-        <view class="modal-button confirm" bindtap="confirmGender">确定</view>
+        <view class="modal-button confirm {{isLoading ? 'disabled' : ''}}" bindtap="confirmGender">
+          {{isLoading ? '保存中...' : '确定'}}
+        </view>
       </view>
     </view>
   </view>

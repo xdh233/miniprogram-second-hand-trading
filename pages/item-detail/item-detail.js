@@ -92,10 +92,31 @@ Page({
 
       const item = await itemManager.getItemDetail(itemId);
       console.log('itemManager.getItemDetail 返回结果:', item);
-      console.log('item 类型:', typeof item);
-      console.log('item 是否为null:', item === null);
-      console.log('item 是否为undefined:', item === undefined);
+      // 在 loadItemDetail 方法中，获取到 item 数据后立即添加：
 
+      console.log('=== 原始商品数据调试 ===');
+      console.log('完整商品对象:', item);
+      console.log('商品对象键名:', Object.keys(item));
+      console.log('图片字段 item.images:', item.images);
+      console.log('图片字段类型:', typeof item.images);
+      console.log('是否为数组:', Array.isArray(item.images));
+
+      // 检查其他可能的图片字段名
+      console.log('item.image_urls:', item.image_urls);
+      console.log('item.imageUrls:', item.imageUrls);
+      console.log('item.photos:', item.photos);
+      console.log('item.pictures:', item.pictures);
+
+      // 检查 processItemImages 是否被正确调用
+      console.log('processItemImages 调用前的图片:', item.images);
+
+      // 如果 item.images 存在但为空或格式不对
+      if (item.images) {
+        console.log('图片数据详情:');
+        console.log('- 长度:', item.images.length);
+        console.log('- 第一张图片:', item.images[0]);
+        console.log('- 完整数组:', JSON.stringify(item.images));
+      }
       if (!item) {
         console.error('商品不存在，item为:', item);
         throw new Error('商品不存在');
@@ -103,14 +124,40 @@ Page({
 
       console.log('商品数据验证通过，item.status:', item.status);
 
-      // 格式化发布时间
-      item.formattedPublishTime = sharedTools.formatTime(item.createTime);
+      // 格式化发布时间 - 修改字段映射
+      item.formattedPublishTime = sharedTools.formatTime(item.createTime || item.create_time);
 
       // 增加浏览次数
       itemManager.incrementViewCount(itemId);
 
       // 设置收藏状态
       const isLiked = item.isLiked || false;
+
+      // ===== 数据字段映射处理 =====
+      // 处理卖家信息字段映射
+      if (!item.sellerId && item.seller_id) {
+        item.sellerId = item.seller_id;
+      }
+      if (!item.sellerName && item.seller_name) {
+        item.sellerName = item.seller_name;
+      }
+      if (!item.sellerNickname) {
+        item.sellerNickname = item.seller_nickname || item.sellerName || item.seller_name;
+      }
+      if (!item.sellerAvatar && item.seller_avatar) {
+        item.sellerAvatar = item.seller_avatar;
+      }
+      
+      // 处理商品字段映射
+      if (!item.tradeType && item.trade_type) {
+        item.tradeType = item.trade_type;
+      }
+      if (!item.viewCount && item.view_count !== undefined) {
+        item.viewCount = item.view_count;
+      }
+      if (!item.likeCount && item.like_count !== undefined) {
+        item.likeCount = item.like_count;
+      }
 
       // ===== 安全的状态判断 =====
       console.log('开始状态判断，item.status:', item.status);
@@ -223,6 +270,32 @@ Page({
     
     // 先创建所有评论的映射，并初始化replies数组
     allComments.forEach(comment => {
+      // 处理评论字段映射
+      if (!comment.userId && comment.user_id) {
+        comment.userId = comment.user_id;
+      }
+      if (!comment.userNickname && comment.user_nickname) {
+        comment.userNickname = comment.user_nickname;
+      }
+      if (!comment.userAvatar && comment.avatar) {
+        comment.userAvatar = comment.avatar;
+      }
+      if (!comment.parentId && comment.parent_id) {
+        comment.parentId = comment.parent_id;
+      }
+      if (!comment.createTime && comment.create_time) {
+        comment.createTime = comment.create_time;
+      }
+      if (!comment.replyToUserId && comment.reply_to_user_id) {
+        comment.replyToUserId = comment.reply_to_user_id;
+      }
+      if (!comment.replyToUserName && comment.reply_to_user_name) {
+        comment.replyToUserName = comment.reply_to_user_name;
+      }
+      comment.isAuthor = comment.userId === this.data.item.sellerId;
+      // 格式化时间
+      comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
+      
       comment.replies = [];
       comment.showAllReplies = false; // 控制是否显示所有回复
       commentMap.set(comment.id, comment);
@@ -790,13 +863,9 @@ Page({
       const item = this.data.item;
       const currentUser = userManager.getCurrentUser();
       
-      // 获取当前用户余额
-      const balanceResult = await userManager.getUserBalance();
-      const userBalance = balanceResult.data.balance;
+      // ✅ 直接使用本地用户信息中的余额，不调用API
+      const userBalance = currentUser.balance || 0;
       const itemPrice = parseFloat(item.price) || 0;
-
-      console.log('用户余额:', userBalance, '商品价格:', itemPrice);
-
       if (userBalance < itemPrice) {
         // 余额不足，显示充值提示
         wx.showModal({
@@ -856,10 +925,7 @@ Page({
         itemPrice,         // 金额
         item.title         // 商品标题
       );
-  
-      // 更新商品状态为已售出
-      await itemManager.updateItemStatus(item.id, 'sold');
-  
+
       wx.hideLoading();
       wx.showToast({ title: '购买成功！', icon: 'success' });
   
@@ -878,7 +944,7 @@ Page({
           confirmText: '去充值',
           success: (res) => {
             if (res.confirm) {
-              wx.navigateTo({ url: '/pages/profile/profile' });
+              wx.switchTab({ url: '/pages/profile/profile' });
             }
           }
         });

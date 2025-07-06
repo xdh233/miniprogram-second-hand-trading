@@ -1,8 +1,13 @@
 // pages/my-sold-items/my-sold-items.js
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
+const sharedTools = require('../../utils/sharedTools');
+const { priceProcess, PriceMixin } = require('../../utils/priceProcess'); // 引入价格处理工具
 
 Page({
+  // 混入价格处理方法
+  ...PriceMixin,
+
   data: {
     currentUser: null,
     soldItems: [],
@@ -20,11 +25,18 @@ Page({
     
     // 筛选后的商品列表
     filteredItems: [],
+    
     // 修改价格
     showPriceModal: false,
     editingItemId: null,
     editingPrice: '',
-    originalPrice: ''
+    originalPrice: '',
+    
+    // 价格配置
+    priceConfig: {
+      max: 99999,
+      min: 0.01
+    }
   },
 
   onLoad() {
@@ -63,12 +75,17 @@ Page({
       
       let soldItems = [];
       
-      // 从商品管理器获取数据
-      if (typeof itemManager !== 'undefined' && itemManager.getUserItems) {
-        const allUserItems = itemManager.getUserItems(this.data.currentUser.id);
+      // 使用 itemManager 的 getUserItems 方法（注意：这是异步方法）
+      try {
+        console.log('从 itemManager 获取用户商品...');
+        const allUserItems = await itemManager.getUserItems(this.data.currentUser.id);
+        
+        console.log('获取到的用户商品:', allUserItems);
         
         // 只获取出售类型的商品，过滤掉求购信息
-        const sellOnlyItems = allUserItems.filter(item => item.tradeType === 'sell');
+        const sellOnlyItems = allUserItems.filter(item => 
+          item.tradeType === 'sell' || item.trade_type === 'sell'
+        );
         
         console.log('用户所有商品:', allUserItems.length);
         console.log('出售商品:', sellOnlyItems.length);
@@ -89,18 +106,28 @@ Page({
           console.log(`商品 ${item.id}(${item.title}): 原始状态=${item.status}, 显示状态=${displayStatus}`);
           
           return {
-            ...item,
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            price: parseFloat(item.price),
+            images: item.images || [],
+            tradeType: item.tradeType || item.trade_type,
+            category: item.category,
+            condition: item.condition,
             status: displayStatus, // 用于显示的状态
             originalStatus: item.status, // 保留原始状态
-            viewCount: item.viewCount || 0,
-            likeCount: item.likeCount || 0,
-            sellerId: item.sellerId,
-            createTime: item.createTime,
-            updateTime: item.updateTime || item.createTime
+            viewCount: item.viewCount || item.view_count || 0,
+            likeCount: item.likeCount || item.like_count || 0,
+            sellerId: item.sellerId || item.seller_id,
+            createTime: sharedTools.formatTime(item.createTime) || sharedTools.formatTime(item.created_at),
+            updateTime: sharedTools.formatTime(item.updateTime) || sharedTools.formatTime(item.updated_at) || item.createTime || item.created_at
           };
         });
-      } else {
-        console.log("没有商品数据");
+        
+      } catch (error) {
+        console.error('从 itemManager 获取商品失败:', error);
+        // 如果获取失败，设置空数组
+        soldItems = [];
       }
       
       console.log('处理后的商品列表:', soldItems.map(item => ({ 
@@ -129,6 +156,7 @@ Page({
       });
     }
   },
+
   // 更新状态统计
   updateStatusCounts(items) {
     console.log('=== 开始统计状态 ===');
@@ -156,7 +184,7 @@ Page({
     this.setData({ statusOptions });
   },
   
-  // 3. 简化 filterItems 方法
+  // 筛选商品
   async filterItems() {
     const { soldItems, activeStatus } = this.data;
     console.log('=== 开始筛选商品 ===');
@@ -190,18 +218,14 @@ Page({
     this.setData({ filteredItems });
   },
   
-  // 4. 确保状态更新操作使用正确的原始状态值
+  // 标记商品为已售出
   async performMarkAsSold(itemId) {
     try {
       console.log('标记商品为已售出:', itemId);
       
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        // 使用原始状态值 'sold'
-        await itemManager.updateItemStatus(itemId, 'sold');
-        console.log('商品状态更新为 sold 成功');
-      } else {
-        throw new Error('itemManager.updateItemStatus 方法不存在');
-      }
+      // 使用 itemManager 的方法
+      const result = await itemManager.updateItemStatus(itemId, 'sold');
+      console.log('商品状态更新成功:', result);
       
       wx.showToast({
         title: '标记成功，交易完成！',
@@ -219,48 +243,103 @@ Page({
       });
     }
   },
-  
+
+  // 执行标记已下架
   async performMarkAsWithdrawn(itemId) {
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'withdrawn');
-      }
+      const result = await itemManager.updateItemStatus(itemId, 'withdrawn');
+      console.log('商品下架成功:', result);
       
       wx.showToast({
         title: '商品已下架',
         icon: 'success'
       });
       
-      this.loadSoldItems();
+      await this.loadSoldItems();
       
     } catch (error) {
+      console.error('下架失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
       });
     }
   },
-  
+
+  // 执行重新上架
   async performMarkAsActive(itemId) {
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'selling');
-      }
+      const result = await itemManager.updateItemStatus(itemId, 'selling');
+      console.log('商品重新上架成功:', result);
       
       wx.showToast({
         title: '商品已重新上架',
         icon: 'success'
       });
       
-      this.loadSoldItems();
+      await this.loadSoldItems();
       
     } catch (error) {
+      console.error('重新上架失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
       });
     }
   },
+
+  // 执行删除
+  async performDeleteItem(itemId) {
+    // 添加调试日志
+    console.log('performDeleteItem - itemId:', itemId);
+    console.log('performDeleteItem - itemId type:', typeof itemId);
+    
+    if (!itemId) {
+      wx.showToast({
+        title: '商品ID不存在',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    try {
+      // 确保 itemId 是字符串或数字
+      const validItemId = String(itemId).trim();
+      if (!validItemId) {
+        throw new Error('无效的商品ID');
+      }
+      
+      console.log('删除商品 ID:', validItemId);
+      const result = await itemManager.deleteItem(validItemId);
+      console.log('商品删除成功:', result);
+      
+      wx.showToast({
+        title: '删除成功',
+        icon: 'success'
+      });
+      
+      // 重新加载数据
+      await this.loadSoldItems();
+      
+    } catch (error) {
+      console.error('删除失败:', error);
+      
+      // 更详细的错误处理
+      let errorMessage = '删除失败';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.code && error.message) {
+        errorMessage = error.message;
+      }
+      
+      wx.showToast({
+        title: errorMessage,
+        icon: 'none',
+        duration: 2000
+      });
+    }
+  },
+
   // 切换状态筛选
   switchStatus(e) {
     const status = e.currentTarget.dataset.status;
@@ -282,7 +361,28 @@ Page({
       e.stopPropagation();
     }
     const itemId = e.currentTarget.dataset.itemId;
-    const item = this.data.soldItems.find(item => item.id === itemId);
+    
+    // 添加调试日志
+    console.log('deleteItem - itemId:', itemId);
+    console.log('deleteItem - dataset:', e.currentTarget.dataset);
+    
+    if (!itemId) {
+      wx.showToast({
+        title: '商品ID不存在',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    const item = this.data.soldItems.find(item => item.id == itemId); // 使用 == 而不是 ===，防止类型不匹配
+    
+    if (!item) {
+      wx.showToast({
+        title: '找不到对应的商品',
+        icon: 'none'
+      });
+      return;
+    }
     
     wx.showModal({
       title: '确认删除',
@@ -293,30 +393,6 @@ Page({
         }
       }
     });
-  },
-
-  // 执行删除
-  async performDeleteItem(itemId) {
-    try {
-      // 这里调用商品管理器的删除方法
-      if (typeof itemManager !== 'undefined' && itemManager.deleteItem) {
-        await itemManager.deleteItem(itemId);
-      }
-      
-      wx.showToast({
-        title: '删除成功',
-        icon: 'success'
-      });
-      
-      // 重新加载数据
-      this.loadSoldItems();
-      
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '删除失败',
-        icon: 'none'
-      });
-    }
   },
 
   // 标记为已售出
@@ -337,28 +413,6 @@ Page({
     });
   },
 
-  // 执行标记已售出
-  async performMarkAsSold(itemId) {
-    try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'sold'); // 传递原始状态值
-      }
-      
-      wx.showToast({
-        title: '标记成功，交易完成！',
-        icon: 'success'
-      });
-      
-      this.loadSoldItems();
-      
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '操作失败',
-        icon: 'none'
-      });
-    }
-  },
-
   // 标记为已下架
   markAsWithdrawn(e) {
     if (e && e.stopPropagation) {
@@ -375,28 +429,6 @@ Page({
         }
       }
     });
-  },
-
-  // 执行标记已下架
-  async performMarkAsWithdrawn(itemId) {
-    try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'withdrawn'); // 传递原始状态值
-      }
-      
-      wx.showToast({
-        title: '商品已下架',
-        icon: 'success'
-      });
-      
-      this.loadSoldItems();
-      
-    } catch (error) {
-      wx.showToast({
-        title: error.message || '操作失败',
-        icon: 'none'
-      });
-    }
   },
 
   // 重新上架（从已下架状态恢复到在售）
@@ -416,27 +448,104 @@ Page({
       }
     });
   },
+  
+  // 显示价格编辑弹窗
+  showEditPrice(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const itemId = e.currentTarget.dataset.itemId;
+    const item = this.data.soldItems.find(item => item.id === itemId);
+    
+    this.setData({
+      showPriceModal: true,
+      editingItemId: itemId,
+      editingPrice: priceProcess.formatPriceDisplay(item.price), // 使用统一的格式化方法
+      originalPrice: priceProcess.formatPriceDisplay(item.price)
+    });
+  },
 
-  // 执行重新上架
-  async performMarkAsActive(itemId) {
+  // 隐藏价格修改弹窗
+  hidePriceModal() {
+    this.setData({
+      showPriceModal: false,
+      editingItemId: null,
+      editingPrice: '',
+      originalPrice: ''
+    });
+  },
+
+  // 价格输入处理 - 使用统一的价格处理方法
+  onPriceInput(e) {
+    const result = priceProcess.formatPriceInput(e.detail.value, this.data.priceConfig.max);
+    
+    if (!result.isValid && result.error) {
+      wx.showToast({
+        title: result.error,
+        icon: 'none',
+        duration: 1000
+      });
+      return; // 保持原值不变
+    }
+    
+    this.setData({
+      editingPrice: result.value
+    });
+  },
+
+  // 确认价格修改
+  async confirmPriceEdit() {
+    const { editingPrice, originalPrice, editingItemId } = this.data;
+    
+    // 验证价格
+    const validation = priceProcess.validatePrice(editingPrice, this.data.priceConfig.max);
+    if (!validation.isValid) {
+      wx.showToast({
+        title: validation.error,
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 如果价格没有变化，直接关闭弹窗
+    if (priceProcess.comparePrices(editingPrice, originalPrice)) {
+      this.hidePriceModal();
+      return;
+    }
+
     try {
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemStatus) {
-        await itemManager.updateItemStatus(itemId, 'selling'); // 传递原始状态值
-      }
+      // 执行更新
+      const result = await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
+      console.log('价格更新成功:', result);
       
       wx.showToast({
-        title: '商品已重新上架',
+        title: '价格修改成功',
         icon: 'success'
       });
       
-      this.loadSoldItems();
+      // 关闭弹窗
+      this.hidePriceModal();
+      
+      // 重新加载数据
+      await this.loadSoldItems();
       
     } catch (error) {
+      console.error('修改价格失败:', error);
       wx.showToast({
-        title: error.message || '操作失败',
+        title: error.message || '修改失败，请重试',
         icon: 'none'
       });
     }
+  },
+
+  // 取消价格修改
+  cancelPriceEdit() {
+    this.hidePriceModal();
+  },
+
+  // 阻止事件冒泡
+  stopPropagation() {
+    // 什么都不做，只是阻止事件冒泡
   },
 
   // 下拉刷新
@@ -452,113 +561,5 @@ Page({
       title: '看看我在校园二手市场卖的好物',
       path: '/pages/index/index'
     };
-  },
-  // 添加这些方法：
-  showEditPrice(e) {
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    const itemId = e.currentTarget.dataset.itemId;
-    const item = this.data.soldItems.find(item => item.id === itemId);
-    
-    this.setData({
-      showPriceModal: true,
-      editingItemId: itemId,
-      editingPrice: item.price.toString(),
-      originalPrice: item.price.toString()
-    });
-  },
-
-  hidePriceModal() {
-    this.setData({
-      showPriceModal: false,
-      editingItemId: null,
-      editingPrice: '',
-      originalPrice: ''
-    });
-  },
-
-  // 改进的价格输入验证
-  onPriceInput(e) {
-    let value = e.detail.value;
-    
-    // 只允许数字和小数点
-    value = value.replace(/[^\d.]/g, '');
-    
-    // 确保只有一个小数点
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    // 限制小数点后两位
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
-    // 防止以小数点开头
-    if (value.startsWith('.')) {
-      value = '0' + value;
-    }
-    
-    this.setData({
-      editingPrice: value
-    });
-  },
-
-  async confirmPriceEdit() {
-    const { editingPrice, editingItemId, originalPrice } = this.data;
-    
-    // 验证价格
-    if (!editingPrice || editingPrice <= 0) {
-      wx.showToast({
-        title: '请输入有效价格',
-        icon: 'none'
-      });
-      return;
-    }
-    
-    // 如果价格没有变化，直接关闭弹窗
-    if (parseFloat(editingPrice) === parseFloat(originalPrice)) {
-      this.hidePriceModal();
-      return;
-    }
-    
-    try {
-      // 调用商品管理器的更新价格方法
-      if (typeof itemManager !== 'undefined' && itemManager.updateItemPrice) {
-        await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
-      } else {
-        // 如果没有专门的更新价格方法，可能需要调用通用的更新方法
-        // 这里需要根据你的 itemManager 实际方法来调整
-        throw new Error('价格更新方法不存在');
-      }
-      
-      wx.showToast({
-        title: '价格修改成功',
-        icon: 'success'
-      });
-      
-      // 关闭弹窗
-      this.hidePriceModal();
-      
-      // 重新加载数据
-      this.loadSoldItems();
-      
-    } catch (error) {
-      console.error('修改价格失败:', error);
-      wx.showToast({
-        title: error.message || '修改失败，请重试',
-        icon: 'none'
-      });
-    }
-  },
-
-  cancelPriceEdit() {
-    this.hidePriceModal();
-  },
-
-  stopPropagation() {
-    // 什么都不做，只是阻止事件冒泡
-  },
+  }
 });

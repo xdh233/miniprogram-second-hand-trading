@@ -1,6 +1,7 @@
 const postManager = require('../../utils/postManager');
 const userManager = require('../../utils/userManager');
 const commentManager = require('../../utils/commentManager');
+const sharedTools = require('../../utils/sharedTools');
 
 Page({
   data: {
@@ -37,6 +38,9 @@ Page({
       const postId = parseInt(options.id);
       console.log('设置postId:', postId);
       this.setData({ postId: postId });
+      
+      // 修复1: 添加登录状态检查
+      this.checkLoginStatus();
       this.loadPostDetail();
       this.loadComments();
     } else {
@@ -51,20 +55,43 @@ Page({
     }
   },
 
-  // 检查登录状态
+  // 修复2: 改进登录状态检查
   checkLoginStatus() {
-    if (!userManager.isLoggedIn()) {
-      wx.redirectTo({
+    try {
+      const isLoggedIn = userManager.isLoggedIn();
+      console.log('登录状态:', isLoggedIn);
+      
+      if (!isLoggedIn) {
+        console.log('未登录，跳转到登录页');
+        wx.reLaunch({
+          url: '/pages/login/login'
+        });
+        return false;
+      }
+
+      const userInfo = userManager.getCurrentUser();
+      console.log('当前用户:', userInfo);
+      
+      if (userInfo) {
+        this.setData({ userInfo });
+        return true;
+      } else {
+        console.log('用户信息为空，跳转登录页');
+        wx.reLaunch({
+          url: '/pages/login/login'
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('检查登录状态出错:', error);
+      wx.reLaunch({
         url: '/pages/login/login'
       });
-      return;
+      return false;
     }
-
-    const userInfo = userManager.getCurrentUser();
-    this.setData({ userInfo });
   },
 
-  // 加载帖子详情
+  // 修复3: 改进帖子详情加载
   async loadPostDetail() {
     // 先检查postId是否存在
     if (!this.data.postId) {
@@ -75,6 +102,7 @@ Page({
       });
       return;
     }
+    
     try {
       this.setData({ loading: true });
       console.log('正在加载帖子的ID:', this.data.postId);
@@ -85,6 +113,10 @@ Page({
       if (!post) {
         throw new Error('未获取到帖子数据');
       }
+      
+      // 修复4: 添加数据格式化
+      post.timeAgo = sharedTools.formatTimeAgo(post.createTime);
+      post.isLiked = Boolean(post.isLiked);
       
       this.setData({ 
         post,
@@ -133,6 +165,12 @@ Page({
 
       console.log('获取到的评论:', comments);
 
+      // 修复5: 为评论添加时间格式化
+      comments.forEach(comment => {
+        comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
+        comment.isLiked = Boolean(comment.isLiked);
+      });
+
       // 组织评论为嵌套结构
       const organizedComments = this.organizeCommentsWithReplies(comments);
       
@@ -156,6 +194,8 @@ Page({
 
   // 组织评论为嵌套结构
   organizeCommentsWithReplies(allComments) {
+    console.log('开始组织评论数据:', allComments);
+    
     const commentMap = new Map();
     const rootComments = [];
     
@@ -163,31 +203,55 @@ Page({
     allComments.forEach(comment => {
       comment.replies = [];
       comment.showAllReplies = false; // 控制是否显示所有回复
+      
+      // 为评论添加时间格式化
+      comment.timeAgo = sharedTools.formatTimeAgo(comment.createTime);
+      comment.isLiked = Boolean(comment.isLiked);
+      comment.isAuthor = comment.userId === this.data.post.userId;
       commentMap.set(comment.id, comment);
+      
+      console.log(`处理评论 ID: ${comment.id}, parentId: ${comment.parentId}, 用户: ${comment.userNickname}`);
       
       // 如果没有parentId，说明是主评论
       if (!comment.parentId) {
         rootComments.push(comment);
+        console.log(`添加主评论: ${comment.id} - ${comment.userNickname}`);
       }
     });
+    
+    console.log('主评论数量:', rootComments.length);
+    console.log('评论映射:', commentMap);
     
     // 然后将回复分配到对应的主评论下
     allComments.forEach(comment => {
       if (comment.parentId) {
         const parentComment = commentMap.get(comment.parentId);
+        console.log(`处理回复 ID: ${comment.id}, 查找父评论 ID: ${comment.parentId}, 找到父评论:`, parentComment ? '是' : '否');
+        
         if (parentComment) {
           parentComment.replies.push(comment);
+          console.log(`将回复 ${comment.id} 添加到主评论 ${parentComment.id} 下，当前回复数: ${parentComment.replies.length}`);
+        } else {
+          console.warn(`找不到父评论 ID: ${comment.parentId} 对应的评论`);
         }
       }
     });
     
     // 对每个主评论的回复按时间排序，并初始化显示状态
     rootComments.forEach(comment => {
+      console.log(`主评论 ${comment.id} 的回复数量: ${comment.replies.length}`);
+      
       if (comment.replies.length > 0) {
         comment.replies.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+        
+        // 为每个回复添加时间格式化
+        comment.replies.forEach(reply => {
+          reply.timeAgo = sharedTools.formatTimeAgo(reply.createTime);
+          reply.isLiked = Boolean(reply.isLiked);
+        });
       }
       
-      // 关键修复：强制重新初始化 displayReplies
+      // 关键修复：正确初始化 displayReplies
       if (comment.replies.length <= 2) {
         comment.displayReplies = [...comment.replies];
       } else {
@@ -198,7 +262,14 @@ Page({
       console.log(`评论 ${comment.userNickname}: 总回复=${comment.replies.length}, 显示回复=${comment.displayReplies.length}, 展开状态=${comment.showAllReplies}`);
     });
     
-    console.log('组织后的评论结构:', rootComments);
+    console.log('组织后的评论结构:');
+    rootComments.forEach(comment => {
+      console.log(`主评论: ${comment.userNickname} (${comment.replies.length}条回复)`);
+      comment.replies.forEach(reply => {
+        console.log(`  ├─ 回复: ${reply.userNickname} - ${reply.content}`);
+      });
+    });
+    
     return rootComments;
   },
 
@@ -434,16 +505,32 @@ Page({
     }
   },
 
-  // 点赞/取消点赞
+  // 修复7: 改进点赞功能
   async onLikePost() {
+    // 添加防抖处理
+    if (this.data.post.liking) {
+      return;
+    }
+    
     try {
+      // 设置点赞状态，防止重复点击
+      this.setData({
+        'post.liking': true
+      });
+      
       const result = await postManager.toggleLike(this.data.postId);
+      
       this.setData({
         'post.isLiked': result.isLiked,
-        'post.likes': result.likes
+        'post.likes': result.likes,
+        'post.liking': false
       });
+      
     } catch (error) {
       console.error('点赞操作失败:', error);
+      this.setData({
+        'post.liking': false
+      });
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
@@ -519,12 +606,11 @@ Page({
     const userId = e.currentTarget.dataset.userId;
     console.log('跳转到用户空间:', userId);
     
-    // 检查是否是当前用户自己
-    const currentUser = userManager.getCurrentUser();
-    // 跳转到其他用户的个人空间
-    wx.navigateTo({
-      url: `/pages/user-profile/user-profile?userId=${userId}`
-    });
+    if (userId) {
+      wx.navigateTo({
+        url: `/pages/user-profile/user-profile?userId=${userId}`
+      });
+    }
   },
 
   // 键盘高度变化处理

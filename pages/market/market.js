@@ -1,7 +1,7 @@
-// market.js - 修复版本：过滤已售出商品
+// market.js - 清理版本：移除调试代码
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
-const categoryConfig = require('../../utils/categoryConfig'); // 引入统一分类配置
+const categoryConfig = require('../../utils/categoryConfig');
 
 Page({
   data: {
@@ -9,7 +9,7 @@ Page({
     items: [],
     leftItems: [],
     rightItems: [],
-    categories: [ ],
+    categories: [],
     currentCategory: 'all',
     // 交易类型筛选，默认显示卖的商品
     currentTradeType: 'sell', // 'sell' | 'buy'
@@ -20,13 +20,38 @@ Page({
     searchKeyword: '',
     confirmKeyword: ''
   },
-
   onLoad() {
     console.log('闲置市场页面加载');
     this.setData({
       categories: categoryConfig.getMarketCategories()
     });
     this.checkLoginStatus();
+    
+    // 临时测试API数据
+    setTimeout(() => {
+      this.testAPI();
+    }, 1000);
+  },
+  
+  // 新增测试方法
+  async testAPI() {
+    try {
+      console.log('=== 开始API测试 ===');
+      const result = await itemManager.getItems(1, 10);
+      console.log('API返回数据:', result);
+      console.log('商品数量:', result.items?.length);
+      
+      if (result.items) {
+        result.items.forEach((item, index) => {
+          console.log(`商品${index + 1}: ID=${item.id}, 标题=${item.title}`);
+        });
+        
+        const hasXbox = result.items.some(item => item.title.includes('xbox'));
+        console.log('是否包含xbox手柄:', hasXbox);
+      }
+    } catch (error) {
+      console.error('API测试失败:', error);
+    }
   },
 
   onShow() {
@@ -72,7 +97,6 @@ Page({
     }
   },
 
-  // ===== 修复：添加状态筛选逻辑 =====
   // 过滤可展示的商品
   filterDisplayableItems(items) {
     if (!Array.isArray(items)) {
@@ -96,7 +120,7 @@ Page({
     });
   },
 
-  // 统一的加载方法 - 添加状态筛选
+  // 统一的加载方法
   async loadItems(refresh = false) {
     if (this.data.loading) return;
     
@@ -152,7 +176,7 @@ Page({
         result = await itemManager.getItems(page, 10);
         console.log('获取原始商品数量:', result.items?.length || 0);
         
-        // ✅ 应用筛选逻辑：交易类型 + 状态
+        // 应用筛选逻辑：交易类型 + 状态
         let filteredItems = this.filterDisplayableItems(result.items || []);
         console.log('筛选后商品数量:', filteredItems.length);
         
@@ -198,7 +222,7 @@ Page({
       });
     }
   },
- 
+
   // 分配商品到左右两列的辅助函数
   distributeItems(items) {
     const leftItems = [];

@@ -4,14 +4,18 @@ page {
   margin: 0;
   padding: 0;
 }
+.type-tag.item-like {
+  background: #52c41a;
+}
 
 .container {
   background: #f8f9fa;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  margin: 0;
+  margin-top: -40rpx;
   padding: 0;
+  min-width: 50vh;
 }
 
 .content-container {
@@ -55,19 +59,6 @@ page {
   color: #666;
 }
 
-.action-section {
-  display: flex;
-  align-items: center;
-}
-
-.mark-all-read {
-  font-size: 26rpx;
-  color: #007aff;
-  padding: 8rpx 16rpx;
-  background: #f0f8ff;
-  border-radius: 16rpx;
-}
-
 /* 点赞容器 */
 .likes-container {
   flex: 1;
@@ -108,7 +99,7 @@ page {
   height: 88rpx;
   border-radius: 50%;
 }
-
+/* 修改点赞图标样式 */
 .like-icon {
   position: absolute;
   bottom: -6rpx;
@@ -198,13 +189,16 @@ page {
   text-align: center;
 }
 
+/* 空状态图标 */
 .empty-icon {
   width: 120rpx;
   height: 120rpx;
   margin-bottom: 30rpx;
   opacity: 0.3;
 }
-
+.type-tag.item-like {
+  background: #52c41a;
+}
 .empty-title {
   font-size: 32rpx;
   color: #333;

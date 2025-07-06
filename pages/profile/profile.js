@@ -1,17 +1,29 @@
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
 const itemManager = require('../../utils/itemManager');
+const apiConfig = require('../../utils/apiConfig');
+const { priceProcess, PriceMixin, PRICE_CONFIG } = require('../../utils/priceProcess'); // 引入价格处理工具
 
 Page({
+  // 混入价格处理方法
+  ...PriceMixin,
+
   data: {
     userInfo: null,
     balance: 0.00,  // 用户余额
-    formattedBalance: '0.00', //格式化
+    formattedBalance: '0.00', // 格式化
     showFeedbackModal: false,
     showRechargeModal: false,  // 充值弹窗
     feedbackContent: '',
     rechargeAmount: '',        // 充值金额
-    maxLength: 200
+    maxLength: 200,
+    
+    // 充值配置
+    rechargeConfig: {
+      min: 0.01,      // 最小充值金额 1分钱
+      max: 10000,     // 最大充值金额 1万元
+      quickAmounts: [10, 20, 50, 100, 200, 500] // 快速充值金额选项
+    }
   },
 
   onLoad() {
@@ -19,8 +31,52 @@ Page({
     this.initializePage();
   },
 
+  // 在 onShow() 方法中添加刷新用户信息的逻辑
   onShow() {
     console.log('个人中心页面显示');
+    // 如果已登录，尝试从服务器刷新用户信息
+    if (userManager.isLoggedIn()) {
+      this.refreshUserInfo();
+    } else {
+      this.initializePage();
+    }
+  },
+
+  // 刷新用户信息
+  async refreshUserInfo() {
+    try {
+      const currentUser = userManager.getCurrentUser();
+      if (currentUser && currentUser.id) {
+        console.log('正在从服务器获取最新用户信息...');
+        
+        // 从服务器获取最新用户信息
+        const apiConfig = require('../../utils/apiConfig');
+        const response = await apiConfig.get(`/users/${currentUser.id}`);
+        
+        if (response.success) {
+          const latestUserInfo = response.data;
+          console.log('从服务器获取的最新用户信息:', latestUserInfo);
+          
+          // 更新本地缓存
+          userManager.updateUserInfo(latestUserInfo);
+          
+          // 更新页面显示
+          this.setData({ 
+            userInfo: latestUserInfo,
+            avatarUrl: apiConfig.getAvatarUrl(latestUserInfo.avatar)
+          }, () => {
+            // 在用户信息更新后重新加载余额
+            this.loadUserBalance();
+          });
+          
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('从服务器刷新用户信息失败:', error);
+    }
+    
+    // 如果服务器获取失败，使用本地缓存
     this.initializePage();
   },
 
@@ -78,9 +134,6 @@ Page({
     }
   },
 
-  // 优化1：删除不必要的 saveUserBalance 方法
-  // 因为直接使用 userManager.updateUserBalance 就够了
-
   // 显示余额详情和充值选项（直接进入充值弹窗）
   showBalanceDetail() {
     console.log('点击余额详情，当前余额:', this.data.balance);
@@ -98,97 +151,191 @@ Page({
     });
   },
 
-  // 充值金额输入
+  // 充值金额输入 - 使用统一的价格处理方法
   onRechargeInput(e) {
-    let amount = e.detail.value;
-    // 只允许输入数字和小数点
-    amount = amount.replace(/[^\d.]/g, '');
-    // 只允许一个小数点
-    const dotIndex = amount.indexOf('.');
-    if (dotIndex !== -1) {
-      amount = amount.substring(0, dotIndex + 1) + amount.substring(dotIndex + 1).replace(/\./g, '');
+    const result = priceProcess.formatPriceInput(e.detail.value, this.data.rechargeConfig.max);
+    
+    if (!result.isValid && result.error) {
+      wx.showToast({
+        title: result.error.replace('价格', '充值金额'),
+        icon: 'none',
+        duration: 1000
+      });
+      return; // 保持原值不变
     }
-    // 最多两位小数
-    if (dotIndex !== -1 && amount.length - dotIndex > 3) {
-      amount = amount.substring(0, dotIndex + 3);
-    }
-    this.setData({ rechargeAmount: amount });
+    
+    this.setData({
+      rechargeAmount: result.value
+    });
   },
 
   // 快速充值金额选择
   selectQuickAmount(e) {
     const amount = e.currentTarget.dataset.amount;
-    this.setData({ rechargeAmount: amount });
+    this.setData({ rechargeAmount: amount.toString() });
   },
 
-  // 优化2：简化充值逻辑
-  async confirmRecharge() {
-    const amount = parseFloat(this.data.rechargeAmount);
+  // 验证充值金额
+  validateRechargeAmount(amount) {
+    const { rechargeConfig } = this.data;
     
-    if (!amount || amount <= 0) {
+    if (!amount || amount === '') {
       wx.showToast({
-        title: '请输入有效金额',
+        title: '请输入充值金额',
         icon: 'none'
       });
+      return false;
+    }
+
+    const numericAmount = parseFloat(amount);
+    
+    if (isNaN(numericAmount)) {
+      wx.showToast({
+        title: '请输入有效的充值金额',
+        icon: 'none'
+      });
+      return false;
+    }
+
+    if (numericAmount < rechargeConfig.min) {
+      wx.showToast({
+        title: `充值金额不能低于¥${rechargeConfig.min}`,
+        icon: 'none'
+      });
+      return false;
+    }
+
+    if (numericAmount > rechargeConfig.max) {
+      wx.showToast({
+        title: `单次充值不能超过¥${rechargeConfig.max.toLocaleString()}`,
+        icon: 'none'
+      });
+      return false;
+    }
+
+    // 检查小数位数
+    const decimalPlaces = (amount.split('.')[1] || '').length;
+    if (decimalPlaces > 2) {
+      wx.showToast({
+        title: '充值金额最多支持两位小数',
+        icon: 'none'
+      });
+      return false;
+    }
+
+    return true;
+  },
+
+  // 优化后的充值逻辑
+  async confirmRecharge() {
+    const { rechargeAmount } = this.data;
+    
+    // 使用统一的验证方法
+    if (!this.validateRechargeAmount(rechargeAmount)) {
       return;
     }
 
-    if (amount > 10000) {
-      wx.showToast({
-        title: '单次充值不能超过10000元',
-        icon: 'none'
+    const amount = parseFloat(rechargeAmount);
+
+    // 显示确认弹窗
+    const confirmResult = await new Promise((resolve) => {
+      wx.showModal({
+        title: '确认充值',
+        content: `确定要充值 ¥${amount.toFixed(2)} 吗？`,
+        success: (res) => {
+          resolve(res.confirm);
+        },
+        fail: () => {
+          resolve(false);
+        }
       });
+    });
+
+    if (!confirmResult) {
       return;
     }
 
-    // 模拟充值过程
+    // 显示加载中
     wx.showLoading({
       title: '充值中...',
       mask: true
     });
 
-    setTimeout(async () => {
-      wx.hideLoading();
+    try {
+      // 使用userManager的充值方法
+      const result = await userManager.updateUserBalanceById(
+        this.data.userInfo.id, 
+        amount, 
+        'add', 
+        `充值 ¥${amount.toFixed(2)}`
+      );
       
-      try {
-        // 使用userManager的充值方法
-        const result = await userManager.updateUserBalanceById(this.data.userInfo.id,amount, 'add', `充值 ¥${amount}`);
-        console.log('充值结果:', result);
-        
-        const newBalance = result.data.newBalance;
-        
-        // 更新页面显示
-        this.setData({ 
-          balance: newBalance,
-          formattedBalance: newBalance.toFixed(2),
-          showRechargeModal: false,
-          rechargeAmount: ''
-        });
-        
-        // 刷新用户信息
-        const updatedUserInfo = userManager.getCurrentUser();
-        this.setData({ userInfo: updatedUserInfo });
-        
-        wx.showToast({
-          title: `充值成功！`,
-          icon: 'success',
-          duration: 2000
-        });
-        
-      } catch (error) {
-        console.error('充值失败:', error);
-        wx.showToast({
-          title: error.message || '充值失败，请重试',
-          icon: 'error'
-        });
+      console.log('充值结果:', result);
+      
+      // 从正确的字段获取余额
+      let newBalance;
+      if (result.data && typeof result.data.balance !== 'undefined') {
+        newBalance = result.data.balance;
+      } else if (result.data && typeof result.data.newBalance !== 'undefined') {
+        newBalance = result.data.newBalance;
+      } else {
+        // 如果没有返回余额，从当前余额计算
+        newBalance = this.data.balance + amount;
       }
-    }, 1500);
+      
+      // 确保newBalance是数字类型
+      newBalance = parseFloat(newBalance) || 0;
+      
+      console.log('新余额:', newBalance, '类型:', typeof newBalance);
+      
+      // 更新页面显示
+      this.setData({ 
+        balance: newBalance,
+        formattedBalance: newBalance.toFixed(2),
+        showRechargeModal: false,
+        rechargeAmount: ''
+      });
+      
+      // 更新本地存储的用户信息
+      const currentUser = userManager.getCurrentUser();
+      if (currentUser) {
+        currentUser.balance = newBalance;
+        wx.setStorageSync('current_user', currentUser);
+        this.setData({ userInfo: currentUser });
+      }
+      
+      wx.hideLoading();
+      wx.showToast({
+        title: `充值成功！余额：¥${newBalance.toFixed(2)}`,
+        icon: 'success',
+        duration: 2000
+      });
+      
+    } catch (error) {
+      wx.hideLoading();
+      console.error('充值失败:', error);
+      
+      // 更详细的错误处理
+      let errorMessage = '充值失败，请重试';
+      if (error.message) {
+        if (error.message.includes('404')) {
+          errorMessage = '接口不存在，请联系管理员';
+        } else if (error.message.includes('403')) {
+          errorMessage = '权限不足';
+        } else if (error.message.includes('401')) {
+          errorMessage = '请重新登录';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      wx.showToast({
+        title: errorMessage,
+        icon: 'error',
+        duration: 3000
+      });
+    }
   },
-
-  // 优化3：可以删除调试方法（生产环境不需要）
-  // debugBalance() {
-  //   // 调试用，可以删除
-  // },
 
   // 取消充值
   cancelRecharge() {
@@ -230,11 +377,11 @@ Page({
     });
   },
 
-  // 优化4：修正路径名称（如果页面路径是 sold-items）
+  // 我卖出的
   navigateToMySold() {
     console.log('查看我卖出的');
     wx.navigateTo({
-      url: '/pages/sold-items/sold-items'  // 确认路径正确
+      url: '/pages/sold-items/sold-items'  // 使用正确的路径
     });
   },
 
@@ -242,17 +389,9 @@ Page({
   navigateToMyBought() {
     console.log('查看我买到的');
     wx.navigateTo({
-      url: '/pages/bought-items/bought-items'  // 确认路径正确
+      url: '/pages/bought-items/bought-items'  // 使用正确的路径
     });
   },
-
-  // 我的收藏
-  // navigateToFavorites() {
-  //   console.log('查看我的收藏');
-  //   wx.navigateTo({
-  //     url: '/pages/my-favorites/my-favorites'
-  //   });
-  // },
 
   // 意见反馈方法
   navigateToFeedback() {
@@ -298,6 +437,7 @@ Page({
     this.hideFeedbackModal();
   },
 
+  // 关于开发者
   navigateToAbout() {
     console.log('关于开发者');
 
@@ -309,19 +449,69 @@ Page({
     });
   },
 
+  // 获取充值金额显示文本
+  getRechargeAmountDisplay() {
+    const { rechargeAmount } = this.data;
+    if (!rechargeAmount) return '';
+    
+    return priceProcess.formatPriceDisplay(rechargeAmount);
+  },
+
   // 退出登录
   logout() {
-    wx.showModal({
-      title: '确认退出',
-      content: '确定要退出登录吗？',
-      success: (res) => {
-        if (res.confirm) {
-          userManager.logout();
-          wx.reLaunch({
-            url: '/pages/login/login'
-          });
+    try {
+      console.log('开始退出登录...');
+      
+      // 🔧 1. 停止所有轮询和定时器
+      try {
+        const chatManager = require('./chatManager');
+        if (chatManager && typeof chatManager.cleanup === 'function') {
+          console.log('清理聊天管理器');
+          chatManager.cleanup();
         }
+      } catch (e) {
+        console.log('清理聊天管理器失败:', e);
       }
-    });
+      
+      // 🔧 2. 清理API配置状态 - 这会停止轮询并清理状态
+      console.log('清理API配置');
+      apiConfig.clearToken();
+      
+      // 🔧 3. 清理本地存储
+      console.log('清理本地存储');
+      wx.removeStorageSync(this.CURRENT_USER_KEY);
+      wx.removeStorageSync('userToken');
+      wx.removeStorageSync('currentUser');
+      wx.removeStorageSync('userInfo');
+      
+      // 🔧 4. 清理TabBar角标
+      console.log('清理TabBar角标');
+      try {
+        wx.removeTabBarBadge({ 
+          index: 3,
+          success: () => console.log('清理消息角标成功'),
+          fail: (e) => console.log('清理消息角标失败:', e)
+        });
+      } catch (e) {
+        console.log('清理角标异常:', e);
+      }
+      
+      console.log('退出登录完成');
+      return true;
+      
+    } catch (error) {
+      console.error('退出登录失败:', error);
+      
+      // 即使出错也要清理基本状态
+      try {
+        apiConfig.clearToken();
+        wx.removeStorageSync(this.CURRENT_USER_KEY);
+        wx.removeStorageSync('userToken');
+      } catch (e) {
+        console.error('强制清理失败:', e);
+      }
+      
+      return false;
+    }
   }
 });

@@ -4,10 +4,7 @@
     <view class="header">
       <view class="title-section">
         <text class="page-title">评论通知</text>
-        <text class="count-text" wx:if="{{commentList.length > 0}}">{{commentList.length}}条新通知</text>
-      </view>
-      <view class="action-section">
-        <text class="mark-all-read" bindtap="markAllAsRead" wx:if="{{commentList.length > 0}}">全部已读</text>
+        <text class="count-text" wx:if="{{commentList.length > 0}}">{{commentList.length}}条通知</text>
       </view>
     </view>
 
@@ -27,12 +24,13 @@
           wx:key="id"
           data-item="{{item}}"
           bindtap="navigateToContent"
-          bindlongpress="onLongPressComment"
         >
           <view class="comment-main">
             <!-- 头像区域 -->
             <view class="avatar-container">
               <image class="avatar" src="{{item.userAvatar}}" mode="aspectFill"/>
+              <!-- 评论图标 -->
+              <image class="comment-icon" src="../../images/comment.png" mode="aspectFit" />
             </view>
             
             <view class="comment-info">
@@ -44,23 +42,22 @@
               <view class="comment-content">
                 <!-- 评论类型标识 -->
                 <view class="comment-type">
-                  <text wx:if="{{item.commentType === 'post_comment'}}" class="type-tag post-comment">评论了你的动态</text>
-                  <text wx:elif="{{item.commentType === 'comment_reply'}}" class="type-tag comment-reply">回复了你的评论</text>
+                  <!-- 帖子评论 -->
+                  <text wx:if="{{item.commentType === 'post'}}" class="type-tag post-comment">评论了你的动态</text>
+                  <!-- 商品评论 -->
+                  <text wx:elif="{{item.commentType === 'item'}}" class="type-tag item-comment">评论了你的商品</text>
+                  <!-- 评论回复 -->
+                  <text wx:elif="{{item.parent_id}}" class="type-tag comment-reply">回复了你的评论</text>
                 </view>
                 
                 <!-- 评论内容 -->
-                <text class="comment-text">{{item.content}}</text>
-                
-                <!-- 原始内容 -->
-                <view class="original-content" wx:if="{{item.originalContent}}">
-                  <text class="original-label">你的评论:</text>
-                  <text class="original-text">{{item.originalContent}}</text>
+                <view class="target-content">
+                  <text class="content-text">{{item.commentContent}}</text>
                 </view>
                 
-                <!-- 帖子内容预览 -->
-                <view class="post-preview">
-                  <text class="post-label">动态:</text>
-                  <text class="post-text">{{item.postContent}}</text>
+                <!-- 原始内容 -->
+                <view class="original-content" wx:if="{{item.targetContent}}">
+                  <text class="content-text">{{item.targetContent}}</text>
                 </view>
               </view>
             </view>
@@ -70,9 +67,9 @@
 
       <!-- 空状态 -->
       <view class="empty-state" wx:if="{{commentList.length === 0 && !loading}}">
-        <image class="empty-icon" src="../../images/comment.png" mode="aspectFit" />
+        <image class="empty-icon" src="../../images/comment_empty.png" mode="aspectFit" />
         <text class="empty-title">暂无评论通知</text>
-        <text class="empty-subtitle">当有人评论你的动态时会显示在这里</text>
+        <text class="empty-subtitle">当有人评论你的动态或商品时会显示在这里</text>
       </view>
 
       <!-- 加载状态 -->

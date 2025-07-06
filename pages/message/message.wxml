@@ -97,12 +97,9 @@
 
       <!-- 空状态 -->
       <view class="empty-state" wx:if="{{chatList.length === 0 && !refreshing}}">
-        <view class="empty-icon">💬</view>
+        <image class="empty-icon" src="/images/comment_empty.png" mode="aspectFit" />
         <text class="empty-title">暂无聊天记录</text>
         <text class="empty-subtitle">开始你的第一个对话吧</text>
-        <view class="start-chat-btn" bindtap="navigateToComments">
-          <text>查看评论消息</text>
-        </view>
       </view>
 
       <!-- 搜索无结果 -->

@@ -1,45 +1,31 @@
-// pages/chat/chat.js - 聊天页面
+// chat.js - 修复版本（基于现有结构）
 const userManager = require('../../utils/userManager');
-const messageManager = require('../../utils/messageManager');
-const itemManager = require('../../utils/itemManager');
+const chatManager = require('../../utils/chatManager');
+const apiConfig = require('../../utils/apiConfig');
 
 Page({
   data: {
     userInfo: null,
     otherUser: null,
+    chatId: null,
+    userId: null,          // 目标用户ID
+    itemId: null,          // 商品ID（来自item详情页）
+    postId: null,          // 动态ID（来自post详情页）
     messages: [],
     inputText: '',
-    scrollTop: 999999,
-    page: 1,
-    hasMore: true,
+    showItemCard: false,   // 是否显示商品卡片
+    relatedItem: null,     // 商品信息
+    scrollTop: 0,
     loading: false,
-    sending: false,
-    chatId: '',
-    relatedItem: null,
-    showItemCard: false,
-    // 输入框相关
-    inputBottom: 0,
-    keyboardHeight: 0,
+    inputBottom: 0
   },
 
   onLoad(options) {
-    console.log('聊天页面加载，参数:', options);
-
-    // 检查登录状态
-    if (!userManager.isLoggedIn()) {
-      wx.redirectTo({
-        url: '/pages/login/login'
-      });
-      return;
-    }
-
-    const userInfo = userManager.getCurrentUser();
-    this.setData({ userInfo });
-
-    // 获取聊天参数
-    const { userId, itemId, postId } = options;
+    console.log('聊天页面加载, options:', options);
     
-    if (!userId) {
+    // 验证必要参数
+    if (!options.userId) {
+      console.error('缺少目标用户ID');
       wx.showToast({
         title: '参数错误',
         icon: 'none'
@@ -48,269 +34,378 @@ Page({
       return;
     }
 
-    this.initChat(parseInt(userId), itemId, postId);
-  },
-
-  onShow() {
-    // 标记消息为已读
-    if (this.data.chatId) {
-      messageManager.markMessagesAsRead(this.data.chatId, this.data.userInfo.id);
+    const userId = parseInt(options.userId);
+    if (isNaN(userId)) {
+      console.error('用户ID格式错误:', options.userId);
+      wx.showToast({
+        title: '用户ID错误',
+        icon: 'none'
+      });
+      wx.navigateBack();
+      return;
     }
+
+    // 确定场景和参数
+    let itemId = null;
+    let postId = null;
+    let showItemCard = false;
+
+    if (options.itemId) {
+      // 来自商品详情页的场景
+      itemId = parseInt(options.itemId);
+      showItemCard = true;
+      console.log('场景：商品聊天，itemId:', itemId);
+    } else if (options.postId) {
+      // 来自动态详情页的场景  
+      postId = parseInt(options.postId);
+      showItemCard = false;
+      console.log('场景：动态聊天，postId:', postId);
+    } else {
+      // 纯聊天场景（可能来自聊天列表）
+      showItemCard = false;
+      console.log('场景：纯聊天');
+    }
+
+    this.setData({
+      userId: userId,
+      itemId: itemId,
+      postId: postId,
+      showItemCard: showItemCard
+    });
+    console.log('调试数据:', {
+      showItemCard: this.data.showItemCard,
+      relatedItem: this.data.relatedItem,
+      itemId: this.data.itemId
+    });
+    // 初始化
+    this.initializePage();
   },
 
-  onUnload() {
-    // 页面卸载时也标记为已读
-    if (this.data.chatId) {
-      messageManager.markMessagesAsRead(this.data.chatId, this.data.userInfo.id);
+  // 初始化页面
+  async initializePage() {
+    try {
+      // 1. 检查登录状态
+      if (!userManager.isLoggedIn()) {
+        wx.redirectTo({
+          url: '/pages/login/login'
+        });
+        return;
+      }
+
+      // 2. 获取当前用户信息
+      const userInfo = userManager.getCurrentUser();
+      if (!userInfo) {
+        wx.showToast({
+          title: '获取用户信息失败',
+          icon: 'none'
+        });
+        return;
+      }
+      if (userInfo.avatar) {
+        userInfo.avatar = apiConfig.getAvatarUrl(userInfo.avatar);
+      }
+      this.setData({ userInfo });
+
+      // 3. 初始化聊天
+      await this.initChat();
+
+    } catch (error) {
+      console.error('页面初始化失败:', error);
+      wx.showToast({
+        title: '初始化失败',
+        icon: 'none'
+      });
     }
   },
 
   // 初始化聊天
-  async initChat(otherUserId, itemId, postId) {
+  async initChat() {
+    console.log('开始初始化聊天');
+    
     try {
-      console.log('初始化聊天，参数:', { otherUserId, itemId, postId });
-      
-      const otherUser = await userManager.getUserInfo(otherUserId);
-      console.log('获取对方用户信息:', otherUser);
-      
-      // 检查用户信息是否有效
-      if (!otherUser || !otherUser.data || !otherUser.data.userInfo) {
-        throw new Error('无法获取用户信息');
+      wx.showLoading({ title: '加载中...' });
+
+      // 1. 获取目标用户信息
+      const otherUser = await userManager.getUserInfo(this.data.userId);
+      console.log('目标用户信息:', otherUser);
+      if (otherUser.avatar) {
+        otherUser.avatar = apiConfig.getAvatarUrl(otherUser.avatar);
       }
-      
-      // 检查是否已存在聊天
-      const existingChat = messageManager.findExistingChat(
+
+      // 2. 如果是商品聊天，获取商品信息
+      let relatedItem = null;
+      if (this.data.showItemCard && this.data.itemId) {
+        try {
+          relatedItem = await this.getItemInfo(this.data.itemId);
+          console.log('商品信息:', relatedItem);
+        } catch (error) {
+          console.error('获取商品信息失败:', error);
+          // 商品获取失败不影响聊天，但隐藏商品卡片
+          this.setData({ showItemCard: false });
+        }
+      }
+
+      // 3. 获取或创建聊天
+      const chat = await chatManager.getOrCreateChat(
         this.data.userInfo.id,
-        otherUserId
+        this.data.userId,
+        this.data.itemId // 商品聊天传itemId，动态聊天传null
       );
-      
-      let chatData;
-      if (existingChat) {
-        // 如果已存在聊天，使用原有的聊天信息
-        chatData = existingChat;
-        console.log('使用已存在的聊天:', chatData);
+      console.log('聊天信息:', chat);
 
-        // 如果传入了新的itemId，更新商品卡片
-        if (itemId && itemId != existingChat.relatedItem?.id) {
-          console.log('需要更新商品，原商品ID:', existingChat.relatedItem?.id, '新商品ID:', itemId);
-          try {
-            const newItem = await this.getItemInfo(itemId);
-            if (newItem) {
-              chatData.relatedItem = newItem;
-              
-              // 更新聊天记录中的商品信息
-              const updateResult = messageManager.updateChatItem(chatData.chatId, newItem);
-              console.log('更新结果:', updateResult);
-            }
-          } catch (itemError) {
-            console.error('获取商品信息失败:', itemError);
-            // 商品获取失败不影响聊天初始化
-          }
-        }
-
-      } else {
-        // 如果不存在，创建新聊天
-        let relatedItem = null;
-        if (itemId) {
-          try {
-            relatedItem = await this.getItemInfo(itemId);
-          } catch (itemError) {
-            console.error('获取商品信息失败:', itemError);
-            // 商品获取失败不影响聊天创建
-          }
-        }
-        
-        chatData = messageManager.getOrCreateChat(
-          this.data.userInfo.id,
-          otherUserId,
-          otherUser.data.userInfo,
-          relatedItem
-        );
-      }
-      
+      // 4. 更新页面数据
       this.setData({
-        otherUser: otherUser.data.userInfo,
-        chatId: chatData.chatId,
-        relatedItem: chatData.relatedItem, // 使用原有的商品信息
-        showItemCard: !!chatData.relatedItem
+        otherUser: otherUser,
+        chatId: chat.id,
+        relatedItem: relatedItem
       });
-      
-      // 设置对方名称 - 添加安全检查
-      const title = otherUser.data.userInfo.nickname || 
-                    otherUser.data.userInfo.name || 
-                    '聊天';
-      wx.setNavigationBarTitle({
-        title: title
-      });
-      
-      this.loadMessages();
+
+      wx.hideLoading();
+
+      // 5. 加载消息历史
+      await this.loadMessages();
+
+      // 6. 开始轮询
+      this.startPolling();
 
     } catch (error) {
+      wx.hideLoading();
       console.error('初始化聊天失败:', error);
       wx.showToast({
-        title: '初始化聊天失败',
+        title: '聊天初始化失败',
         icon: 'none'
       });
-      
-      // 延迟返回上一页
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1500);
     }
   },
 
-  // 修复 getItemInfo 方法
+  // 获取商品信息
   async getItemInfo(itemId) {
-    console.log('获取商品信息, itemId:', itemId);
-    
     try {
-      if (!itemId) {
-        throw new Error('商品ID为空');
+      console.log('开始获取商品信息，itemId:', itemId);
+      const response = await apiConfig.get(`/items/${itemId}`);
+      console.log('商品API响应:', response);
+      console.log('响应类型:', typeof response);
+      console.log('响应的keys:', Object.keys(response));
+      
+      // 🔧 修复：检查不同的响应格式
+      let item = null;
+      
+      if (response && response.success && response.data) {
+        // 格式1: {success: true, data: {...}}
+        item = response.data;
+        console.log('使用格式1，商品数据:', item);
+      } else if (response && response.id) {
+        // 格式2: 直接返回商品对象 {id: 12, title: "..."}
+        item = response;
+        console.log('使用格式2，商品数据:', item);
+      } else {
+        console.error('未知的响应格式:', response);
+        throw new Error('商品数据格式错误');
       }
       
-      const item = itemManager.getItemById(parseInt(itemId));
-      
-      if (!item) {
-        throw new Error('商品不存在');
+      if (!item || !item.id) {
+        throw new Error('商品数据无效');
       }
       
-      console.log('返回商品信息:', item);
+      // 处理图片URL
+      if (item.images && Array.isArray(item.images)) {
+        item.images = item.images.map(img => apiConfig.getImageUrl(img));
+      }
+      
+      console.log('最终商品信息:', item);
       return item;
-      
     } catch (error) {
-      console.error('获取商品信息失败:', error);
+      console.error('获取商品信息详细错误:', error);
+      console.error('错误堆栈:', error.stack);
       throw error;
     }
   },
-
   // 加载消息
-  loadMessages() {
-    if (this.data.loading || !this.data.hasMore) return;
+  async loadMessages() {
+    if (!this.data.chatId) return;
 
-    this.setData({ loading: true });
+    try {
+      console.log('加载聊天历史消息:', this.data.chatId);
+      
+      // 重置消息状态
+      this.setData({
+        messages: [],
+        messageIds: new Set()
+      });
+      
+      const result = await chatManager.getChatMessages(this.data.chatId, 1, 50);
+      console.log('消息加载结果:', result);
+      
+      // 处理消息数据，添加显示需要的字段
+      const processedMessages = this.processMessages(result.messages || []);
 
-    const result = messageManager.getChatMessages(
-      this.data.chatId,
-      this.data.page,
-      20
-    );
+      // 记录消息ID
+      const messageIds = new Set();
+      processedMessages.forEach(msg => messageIds.add(msg.id));
 
-    let newMessages = result.messages.map(msg => ({
-      ...msg,
-      isSelf: msg.senderId === this.data.userInfo.id
-    }));
+      this.setData({
+        messages: processedMessages,
+        messageIds: messageIds,
+        loading: false
+      });
 
-    // 添加时间显示逻辑
-    newMessages = this.addTimeDisplays(newMessages);
+      // 标记为已读
+      try {
+        await chatManager.markAsRead(this.data.chatId);
+      } catch (error) {
+        console.log('标记已读失败:', error);
+      }
 
-    this.setData({
-      messages: this.data.page === 1 ? newMessages : [...newMessages, ...this.data.messages],
-      hasMore: result.hasMore,
-      loading: false,
-      page: this.data.page + 1
-    });
-
-    // 滚动到底部（首次加载）
-    if (this.data.page === 2) {
+      // 滚动到底部
       this.scrollToBottom();
+
+    } catch (error) {
+      console.error('加载消息失败:', error);
+      this.setData({ 
+        loading: false,
+        messages: [],
+        messageIds: new Set()
+      });
+      
+      wx.showToast({
+        title: '消息加载失败',
+        icon: 'none'
+      });
     }
   },
 
-  // 添加时间显示逻辑（类似微信）
-  addTimeDisplays(messages) {
-    if (!messages || messages.length === 0) return [];
+  // 处理消息数据
+  processMessages(messages) {
+    const currentUserId = this.data.userInfo.id;
     
-    const processedMessages = [];
-    let lastShowTime = 0;
-    const TIME_INTERVAL = 5 * 60 * 1000; // 5分钟间隔显示时间
-
-    // 按时间顺序处理消息
-    const sortedMessages = [...messages].sort((a, b) => 
-      new Date(a.timestamp) - new Date(b.timestamp)
-    );
-
-    sortedMessages.forEach((msg, index) => {
-      const currentTime = new Date(msg.timestamp).getTime();
+    return messages.map((msg, index) => {
+      const isSelf = msg.sender_id === currentUserId;
       
-      // 如果是第一条消息，或者距离上次显示时间超过5分钟，则显示时间
-      if (index === 0 || (currentTime - lastShowTime) > TIME_INTERVAL) {
-        msg.showTime = true;
-        msg.timeDisplay = this.formatDetailTime(msg.timestamp);
-        lastShowTime = currentTime;
+      // 判断是否显示时间
+      let showTime = false;
+      if (index === 0) {
+        showTime = true;
       } else {
-        msg.showTime = false;
+        const prevMsg = messages[index - 1];
+        const timeDiff = new Date(msg.created_at) - new Date(prevMsg.created_at);
+        showTime = timeDiff > 5 * 60 * 1000; // 5分钟间隔显示时间
       }
-      
-      processedMessages.push(msg);
-    });
 
-    return processedMessages;
+      let imageUrl = null;
+      if (msg.image_url) {
+        imageUrl = apiConfig.getImageUrl(msg.image_url);
+      }
+  
+      // 处理商品卡片中的图片
+      let itemData = msg.item_data;
+      if (itemData && itemData.image) {
+        itemData = {
+          ...itemData,
+          image: apiConfig.getImageUrl(itemData.image)
+        };
+      }
+      return {
+        ...msg,
+        isSelf: isSelf,
+        showTime: showTime,
+        timeDisplay: this.formatMessageTime(msg.created_at),
+        imageUrl: imageUrl || null,
+        itemData: itemData || null,
+      };
+    });
   },
 
-  // 格式化详细时间（用于时间标签）
-  formatDetailTime(timestamp) {
+  // 格式化消息时间
+  formatMessageTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
     const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-    if (messageDate.getTime() === today.getTime()) {
-      return timeStr; // 今天只显示时间
-    } else if (messageDate.getTime() === yesterday.getTime()) {
-      return `昨天 ${timeStr}`;
-    } else if (date.getFullYear() === now.getFullYear()) {
-      return `${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
+    if (msgDate.getTime() === today.getTime()) {
+      return timeStr;
     } else {
-      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
+      return `${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
     }
   },
 
-  // 判断是否应该显示时间
-  shouldShowTime(timestamp) {
-    const messages = this.data.messages;
-    if (messages.length === 0) return true;
-    
-    const lastMessage = messages[messages.length - 1];
-    const timeDiff = new Date(timestamp).getTime() - new Date(lastMessage.timestamp).getTime();
-    
-    return timeDiff > 5 * 60 * 1000; // 超过5分钟显示时间
+  // 开始轮询
+  startPolling() {
+    if (!this.data.chatId) return;
+
+    chatManager.startPolling(this.data.chatId, (newMessages) => {
+      console.log('收到新消息:', newMessages);
+      
+      // 过滤掉已存在的消息
+      const currentMessageIds = this.data.messageIds;
+      const filteredNewMessages = newMessages.filter(msg => !currentMessageIds.has(msg.id));
+      
+      if (filteredNewMessages.length === 0) {
+        console.log('没有真正的新消息');
+        return;
+      }
+      
+      console.log('处理新消息:', filteredNewMessages.length, '条');
+      
+      const processedNewMessages = this.processMessages(filteredNewMessages);
+      const currentMessages = this.data.messages;
+      
+      // 更新消息ID集合
+      const updatedMessageIds = new Set(currentMessageIds);
+      processedNewMessages.forEach(msg => updatedMessageIds.add(msg.id));
+      
+      this.setData({
+        messages: [...currentMessages, ...processedNewMessages],
+        messageIds: updatedMessageIds
+      });
+
+      // 自动滚动到底部
+      this.scrollToBottom();
+
+      // 标记为已读
+      chatManager.markAsRead(this.data.chatId);
+    });
   },
 
   // 发送文本消息
   async sendTextMessage() {
     const content = this.data.inputText.trim();
-    if (!content || this.data.sending) return;
-
-    this.setData({ 
-      sending: true,
-      inputText: ''
-    });
+    if (!content || !this.data.chatId) return;
 
     try {
-      const result = await messageManager.sendMessage(
-        this.data.userInfo.id,
-        this.data.otherUser.id,
+      // 清空输入框
+      this.setData({ inputText: '' });
+
+      // 发送消息
+      const message = await chatManager.sendMessage(
+        this.data.chatId,
+        this.data.userId,
         {
           type: 'text',
           content: content
         }
       );
 
-      const newMessage = {
-        ...result.data,
-        isSelf: true,
-        showTime: this.shouldShowTime(result.data.timestamp),
-        timeDisplay: this.formatDetailTime(result.data.timestamp)
-      };
+      // 检查消息是否已存在
+      if (this.data.messageIds.has(message.id)) {
+        console.log('消息已存在，跳过添加');
+        return;
+      }
 
+      // 添加到消息列表
+      const processedMessage = this.processMessages([message]);
+      const currentMessages = this.data.messages;
+      const updatedMessageIds = new Set(this.data.messageIds);
+      updatedMessageIds.add(message.id);
+      
       this.setData({
-        messages: [...this.data.messages, newMessage]
+        messages: [...currentMessages, ...processedMessage],
+        messageIds: updatedMessageIds
       });
 
-      // 强制滚动到底部
+      // 滚动到底部
       this.scrollToBottom();
 
     } catch (error) {
@@ -319,202 +414,48 @@ Page({
         title: '发送失败',
         icon: 'none'
       });
-    } finally {
-      this.setData({ sending: false });
     }
   },
 
-  // 修复发送图片消息的方法
-  sendImageMessage() {
-    wx.chooseMedia({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      mediaType: ['image'], // 明确指定只选择图片
-      success: async (res) => {
-        console.log('选择图片成功，返回数据:', res);
-        
-        let tempFilePath = '';
-        
-        // 兼容不同的返回格式
-        if (res.tempFilePaths && res.tempFilePaths.length > 0) {
-          // 旧版本格式
-          tempFilePath = res.tempFilePaths[0];
-        } else if (res.tempFiles && res.tempFiles.length > 0) {
-          // 新版本格式
-          tempFilePath = res.tempFiles[0].tempFilePath;
-        } else {
-          console.error('未找到有效的图片路径:', res);
-          wx.showToast({
-            title: '选择图片失败',
-            icon: 'none'
-          });
-          return;
-        }
-        
-        console.log('图片路径:', tempFilePath);
-        wx.showLoading({ title: '发送中...' });
-
-        try {
-          // 这里应该上传图片到服务器，暂时使用本地路径
-          const imageUrl = tempFilePath;
-
-          const result = await messageManager.sendMessage(
-            this.data.userInfo.id,
-            this.data.otherUser.id,
-            {
-              type: 'image',
-              content: '[图片]',
-              imageUrl: imageUrl
-            }
-          );
-
-          const newMessage = {
-            ...result.data,
-            isSelf: true,
-            showTime: this.shouldShowTime(result.data.timestamp),
-            timeDisplay: this.formatDetailTime(result.data.timestamp)
-          };
-
-          this.setData({
-            messages: [...this.data.messages, newMessage]
-          });
-
-          // 强制滚动到底部
-          this.scrollToBottom();
-
-        } catch (error) {
-          console.error('发送图片失败:', error);
-          wx.showToast({
-            title: '发送失败',
-            icon: 'none'
-          });
-        } finally {
-          wx.hideLoading();
-        }
-      },
-      fail: (error) => {
-        console.error('选择图片失败:', error);
-        if (error.errMsg && !error.errMsg.includes('cancel')) {
-          wx.showToast({
-            title: '选择图片失败',
-            icon: 'none'
-          });
-        }
-      }
-    });
-  },
-
-  // 抽取图片处理逻辑
-  async processSelectedImage(tempFilePath) {
-    wx.showLoading({ title: '发送中...' });
-
+  // 发送图片消息
+  async sendImageMessage() {
     try {
-      // 这里应该上传图片到服务器，暂时使用本地路径
-      const imageUrl = tempFilePath;
-
-      const result = await messageManager.sendMessage(
-        this.data.userInfo.id,
-        this.data.otherUser.id,
-        {
-          type: 'image',
-          content: '[图片]',
-          imageUrl: imageUrl
-        }
-      );
-
-      const newMessage = {
-        ...result.data,
-        isSelf: true,
-        showTime: this.shouldShowTime(result.data.timestamp),
-        timeDisplay: this.formatDetailTime(result.data.timestamp)
-      };
-
-      this.setData({
-        messages: [...this.data.messages, newMessage]
+      const res = await wx.chooseMedia({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
       });
 
-      // 强制滚动到底部
-      this.scrollToBottom();
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        const imagePath = res.tempFilePaths[0];
+        
+        const message = await chatManager.sendImageMessage(
+          this.data.chatId,
+          this.data.userId,
+          imagePath
+        );
 
+        // 添加到消息列表
+        const processedMessage = this.processMessages([message]);
+        const currentMessages = this.data.messages;
+        
+        this.setData({
+          messages: [...currentMessages, ...processedMessage]
+        });
+
+        this.scrollToBottom();
+      }
     } catch (error) {
       console.error('发送图片失败:', error);
       wx.showToast({
-        title: '发送失败',
+        title: '发送图片失败',
         icon: 'none'
       });
-    } finally {
-      wx.hideLoading();
-    }
-  },
-  
-  // 发送商品消息
-  async sendItemMessage() {
-    if (!this.data.relatedItem) return;
-
-    this.setData({ sending: true });
-
-    try {
-      const result = await messageManager.sendMessage(
-        this.data.userInfo.id,
-        this.data.otherUser.id,
-        {
-          type: 'item',
-          content: `[商品] ${this.data.relatedItem.title}`,
-          itemData: this.data.relatedItem
-        }
-      );
-
-      const newMessage = {
-        ...result.data,
-        isSelf: true,
-        showTime: this.shouldShowTime(result.data.timestamp),
-        timeDisplay: this.formatDetailTime(result.data.timestamp)
-      };
-
-      this.setData({
-        messages: [...this.data.messages, newMessage]
-      });
-
-      // 强制滚动到底部
-      this.scrollToBottom();
-
-    } catch (error) {
-      console.error('发送商品消息失败:', error);
-      wx.showToast({
-        title: '发送失败',
-        icon: 'none'
-      });
-    } finally {
-      this.setData({ sending: false });
-    }
-  },
-
-  // 输入框内容变化
-  onInputChange(e) {
-    this.setData({
-      inputText: e.detail.value
-    });
-  },
-
-  // 键盘高度变化
-  onKeyboardHeightChange(e) {
-    this.setData({
-      keyboardHeight: e.detail.height,
-      inputBottom: e.detail.height
-    });
-    
-    // 键盘弹起时滚动到底部
-    if (e.detail.height > 0) {
-      setTimeout(() => {
-        this.scrollToBottom();
-      }, 100);
     }
   },
 
   // 滚动到底部
   scrollToBottom() {
-    // 延迟执行，确保DOM更新完成
     setTimeout(() => {
       this.setData({
         scrollTop: 999999
@@ -522,67 +463,50 @@ Page({
     }, 100);
   },
 
-  // 下拉加载更多
-  onScrollToUpper() {
-    this.loadMessages();
-  },
-
-  // 预览图片
-  previewImage(e) {
-    const url = e.currentTarget.dataset.url;
-    const urls = this.data.messages
-      .filter(msg => msg.type === 'image')
-      .map(msg => msg.imageUrl);
-    
-    wx.previewImage({
-      current: url,
-      urls: urls
+  // 事件处理方法
+  onInputChange(e) {
+    this.setData({
+      inputText: e.detail.value
     });
   },
 
-  // 点击商品卡片
-  onItemCardTap(e) {
-    const itemData = e.currentTarget.dataset.item;
-    // 跳转到商品详情页
-    wx.navigateTo({
-      url: `/pages/item-detail/item-detail?id=${itemData.id}`
+  onKeyboardHeightChange(e) {
+    this.setData({
+      inputBottom: e.detail.height
     });
   },
 
-  // 长按消息
-  onLongPressMessage(e) {
-    const messageId = e.currentTarget.dataset.id;
-    const message = this.data.messages.find(msg => msg.id === messageId);
-    
-    if (!message || !message.isSelf) return;
-
-    wx.showActionSheet({
-      itemList: ['删除消息'],
-      success: async (res) => {
-        if (res.tapIndex === 0) {
-          try {
-            await messageManager.deleteMessage(messageId, this.data.userInfo.id);
-            
-            const messages = this.data.messages.filter(msg => msg.id !== messageId);
-            this.setData({ messages });
-            
-            wx.showToast({
-              title: '删除成功',
-              icon: 'success'
-            });
-          } catch (error) {
-            wx.showToast({
-              title: error.message || '删除失败',
-              icon: 'none'
-            });
-          }
-        }
-      }
-    });
-  },
-
-  // 返回上一页
   onBackTap() {
     wx.navigateBack();
+  },
+
+  onItemCardTap() {
+    if (this.data.relatedItem) {
+      wx.navigateTo({
+        url: `/pages/item-detail/item-detail?id=${this.data.relatedItem.id}`
+      });
+    }
+  },
+
+  previewImage(e) {
+    const url = e.currentTarget.dataset.url;
+    wx.previewImage({
+      current: url,
+      urls: [url]
+    });
+  },
+
+  // 页面生命周期
+  onShow() {
+    console.log('聊天页面显示');
+  },
+
+  onHide() {
+    console.log('聊天页面隐藏');
+    chatManager.stopPolling();
+  },
+  // 页面卸载时重置状态
+  onUnload() {
+    console.log('聊天页面卸载');
   }
 });

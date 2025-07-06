@@ -306,7 +306,6 @@
 }
 
 /* 主评论 */
-/* 主评论 */
 .comment-item {
   display: flex;
   padding: 24rpx 0 0 0;
@@ -452,15 +451,16 @@
 .reply-btn:active .reply-text {
   color: #0096c3;
 }
-/* 回复容器 - 减少底部内边距 */
+
+/* 回复容器 - 修正版本 */
 .replies-container {
   margin: 16rpx 0 0 84rpx;
   background: #f8f9fa;
   border-radius: 12rpx;
-  padding: 16rpx 16rpx 8rpx 16rpx; /* 减少底部内边距 */
+  padding: 16rpx;
 }
 
-/* 单个回复项 - 恢复原来的样式 */
+/* 单个回复项 - 新的结构 */
 .reply-item {
   margin-bottom: 16rpx;
   padding-bottom: 12rpx;
@@ -473,6 +473,26 @@
   padding-bottom: 0;
 }
 
+/* 回复主体布局 */
+.reply-main {
+  display: flex;
+  align-items: flex-start;
+}
+
+.reply-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  margin-right: 12rpx;
+  border: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.reply-content-wrapper {
+  flex: 1;
+}
+
+/* 回复内容区域 */
 .reply-content {
   margin-bottom: 8rpx;
   line-height: 1.4;
@@ -556,8 +576,8 @@
 }
 
 .reply-like-icon {
-  width: 24rpx;
-  height: 24rpx;
+  width: 20rpx;
+  height: 20rpx;
   transition: all 0.3s ease;
 }
 
@@ -593,15 +613,14 @@
   transform: scale(0.95);
 }
 
-/* 展开更多回复 - 专门针对按钮位置 */
+/* 展开更多回复按钮 */
 .show-more-replies {
-  margin-top: -8rpx; /* 用更大的负边距向上拉 */
-  padding-top: 0rpx;
+  margin-top: 8rpx;
+  text-align: center;
 }
 
 .show-more-btn {
-  text-align: center;
-  padding: 6rpx 4rpx; /* 只减少垂直内边距 */
+  padding: 8rpx 16rpx;
   color: #0096c3;
   font-size: 24rpx;
   background: transparent;
@@ -609,7 +628,6 @@
   border-radius: 8rpx;
   transition: all 0.3s ease;
   width: 100%;
-  transform: translateY(-4rpx); /* 使用transform向上移动 */
 }
 
 .show-more-btn:active {

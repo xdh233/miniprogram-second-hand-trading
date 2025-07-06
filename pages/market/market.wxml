@@ -1,4 +1,4 @@
-<!-- market.wxml - 闲置市场页面，仿照index页面结构 -->
+<!-- market.wxml - 闲置市场页面，修复版本 -->
 <view class="container">
   <!-- 统一内容容器 -->
   <view class="content-container">
@@ -59,13 +59,15 @@
             bindtap="navigateToItemDetail" 
             data-id="{{item.id}}"
           >
-            <!-- 商品图片 -->
+            <!-- 商品图片 - 修复：添加默认图片处理 -->
             <view class="item-image-container">
               <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-              <!-- 商品状态标签 -->
-              <view class="status-tag" wx:if="{{item.status !== 'available'}}">
+              <!-- 商品状态标签 - 修复：更新状态判断条件 -->
+              <view class="status-tag" wx:if="{{item.status !== 'selling'}}">
                 <text wx:if="{{item.status === 'sold'}}">已售出</text>
-                <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+                <text wx:if="{{item.status === 'seeking'}}">求购中</text>
+                <text wx:if="{{item.status === 'bought'}}">已买到</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已下架</text>
               </view>
             </view>
             
@@ -79,8 +81,8 @@
               
               <!-- 发布人信息 -->
               <view class="seller-info">
-                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
-                <text class="seller-name">{{item.sellerNickname}}</text>
+                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+                <text class="seller-name">{{item.sellerNickname || item.sellerName}}</text>
                 <!-- 卖/收标签 -->
                 <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
                   {{item.tradeType === 'sell' ? '卖' : '收'}}
@@ -102,10 +104,12 @@
             <!-- 商品图片 -->
             <view class="item-image-container">
               <image class="item-image" src="{{item.images[0] || '/images/placeholder.png'}}" mode="aspectFill" />
-              <!-- 商品状态标签 -->
-              <view class="status-tag" wx:if="{{item.status !== 'available'}}">
+              <!-- 商品状态标签 - 修复：更新状态判断条件 -->
+              <view class="status-tag" wx:if="{{item.status !== 'selling'}}">
                 <text wx:if="{{item.status === 'sold'}}">已售出</text>
-                <text wx:if="{{item.status === 'reserved'}}">已预定</text>
+                <text wx:if="{{item.status === 'seeking'}}">求购中</text>
+                <text wx:if="{{item.status === 'bought'}}">已买到</text>
+                <text wx:if="{{item.status === 'withdrawn'}}">已下架</text>
               </view>
             </view>
             
@@ -119,8 +123,8 @@
               
               <!-- 发布人信息 -->
               <view class="seller-info">
-                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" />
-                <text class="seller-name">{{item.sellerNickname}}</text>
+                <image class="seller-avatar" src="{{item.sellerAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+                <text class="seller-name">{{item.sellerNickname || item.sellerName}}</text>
                 <!-- 卖/收标签 -->
                 <view class="trade-type {{item.tradeType === 'sell' ? 'sell' : 'buy'}}">
                   {{item.tradeType === 'sell' ? '卖' : '收'}}
@@ -141,9 +145,9 @@
         <text>没有更多商品了</text>
       </view>
 
-      <!-- 空状态 -->
+      <!-- 空状态 - 修复：使用本地图片路径 -->
       <view class="empty-state" wx:if="{{items.length === 0 && !loading}}">
-        <image class="empty-icon" src="../../images/empty-box.png" mode="aspectFit" />
+        <image class="empty-icon" src="/images/empty-box.png" mode="aspectFit" />
         <view class="empty-text">暂无闲置商品</view>
         <view class="empty-desc">快来发布第一个商品吧</view>
       </view>

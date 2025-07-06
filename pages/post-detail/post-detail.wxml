@@ -119,7 +119,8 @@
           
           <!-- 主评论项 -->
           <view class="comment-item main-comment">
-            <image class="comment-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+            <!-- 修正：使用正确的字段名 -->
+            <image class="comment-avatar" src="{{item.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
             <view class="comment-main">
               <!-- 第一行：昵称+楼主标签 -->
               <view class="comment-header">
@@ -158,41 +159,51 @@
               </view>
             </view>
           </view>
+          
           <!-- 子回复列表 -->
           <view wx:if="{{item.replies && item.replies.length > 0}}" class="replies-container">
             
             <!-- 显示的回复 - 使用 displayReplies -->
             <view wx:for="{{item.displayReplies}}" 
-              wx:for-item="reply" 
-              wx:for-index="replyIndex"
-              wx:key="id">  <!-- 正确：直接写字段名 -->
-                      
-              <view class="reply-content">
-                <text class="reply-author" bindtap="goToUserProfile" data-user-id="{{reply.userId}}">{{reply.userNickname}}</text>
-                <text wx:if="{{reply.isAuthor}}" class="author-tag-small">楼主</text>
-                <text wx:if="{{reply.replyToUserName}}" class="reply-to">回复 @<text class="reply-target" bindtap="goToUserProfile" data-user-id="{{reply.replyToUserId}}">{{reply.replyToUserName}}</text></text>
-                <text class="reply-text-content">：{{reply.content}}</text>
-              </view>
+                  wx:for-item="reply" 
+                  wx:for-index="replyIndex"
+                  wx:key="id" 
+                  class="reply-item">
               
-              <view class="reply-meta">
-                <text class="reply-time">{{reply.timeAgo}}</text>
-                <view class="reply-actions">
-                  <!-- 回复的点赞 -->
-                  <view class="reply-like-btn {{reply.isLiked ? 'liked' : ''}}" 
-                        bindtap="onLikeComment"
-                        data-id="{{reply.id}}"
-                        data-is-reply="{{true}}">
-                    <image class="reply-like-icon" 
-                           src="{{reply.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
-                           mode="aspectFit" />
-                    <text wx:if="{{reply.likes > 0}}" class="reply-like-count">{{reply.likes}}</text>
+              <!-- 回复头像和内容 -->
+              <view class="reply-main">
+                <image class="reply-avatar" src="{{reply.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+                <view class="reply-content-wrapper">
+                  <view class="reply-content">
+                    <text class="reply-author" bindtap="goToUserProfile" data-user-id="{{reply.userId}}">{{reply.userNickname}}</text>
+                    <text wx:if="{{reply.isAuthor}}" class="author-tag-small">楼主</text>
+                    <text wx:if="{{reply.replyToUserName}}" class="reply-to">
+                      回复 @<text class="reply-target" bindtap="goToUserProfile" data-user-id="{{reply.replyToUserId}}">{{reply.replyToUserName}}</text>
+                    </text>
+                    <text class="reply-text-content">：{{reply.content}}</text>
                   </view>
-                  <!-- 回复按钮 -->
-                  <view class="reply-reply-btn" bindtap="showReplyInput" 
-                        data-comment="{{item}}" 
-                        data-reply-to="{{reply}}"
-                        data-is-reply="{{true}}">
-                    <text>回复</text>
+                  
+                  <view class="reply-meta">
+                    <text class="reply-time">{{reply.timeAgo}}</text>
+                    <view class="reply-actions">
+                      <!-- 回复的点赞 -->
+                      <view class="reply-like-btn {{reply.isLiked ? 'liked' : ''}}" 
+                            bindtap="onLikeComment"
+                            data-id="{{reply.id}}"
+                            data-is-reply="{{true}}">
+                        <image class="reply-like-icon" 
+                               src="{{reply.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                               mode="aspectFit" />
+                        <text wx:if="{{reply.likes > 0}}" class="reply-like-count">{{reply.likes}}</text>
+                      </view>
+                      <!-- 回复按钮 -->
+                      <view class="reply-reply-btn" bindtap="showReplyInput" 
+                            data-comment="{{item}}" 
+                            data-reply-to="{{reply}}"
+                            data-is-reply="{{true}}">
+                        <text>回复</text>
+                      </view>
+                    </view>
                   </view>
                 </view>
               </view>

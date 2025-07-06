@@ -50,28 +50,28 @@
 
     <!-- 价格信息 -->
     <view class="form-section">
-      <view class="section-title">{{tradeType === 'sell' ? '价格信息' : '预算信息'}} <text class="required">*</text></view>
-      <view class="price-row">
-        <view class="price-item">
-          <text class="price-label">{{tradeType === 'sell' ? '出售价格' : '预算价格'}}</text>
-          <view class="price-input-wrapper">
-            <text class="currency">¥</text>
-            <input class="price-input"
-                  placeholder="{{tradeType === 'sell' ? '请输入出售价格' : '请输入预算价格'}}"
-                  placeholder-class="input-placeholder"
-                  value="{{price}}"
-                  bindinput="onPriceInput"
-                  type="digit"
-                  maxlength="8"/>
+          <view class="section-title">{{tradeType === 'sell' ? '价格信息' : '预算信息'}} <text class="required">*</text></view>
+          <view class="price-row">
+            <view class="price-item">
+              <text class="price-label">{{tradeType === 'sell' ? '出售价格' : '预算价格'}}</text>
+              <view class="price-input-wrapper">
+                <text class="currency">¥</text>
+                <input class="price-input"
+                      placeholder="{{tradeType === 'sell' ? '请输入出售价格' : '请输入预算价格'}}"
+                      placeholder-class="input-placeholder"
+                      value="{{price}}"
+                      bindinput="onPriceInput"
+                      type="digit"
+                      maxlength="8"/>
+              </view>
+              <!-- 价格提示 - 使用动态配置 -->
+              <view class="price-hints">
+                <text class="hint-text">• 价格范围：¥{{priceConfig.min}} - ¥{{priceConfig.max}}</text>
+                <text class="hint-text">• 最多支持{{priceConfig.decimalPlaces}}位小数</text>
+                <text class="hint-text">• 请输入真实合理的价格</text>
+              </view>
+            </view>
           </view>
-          <!-- 价格提示 -->
-          <view class="price-hints">
-            <text class="hint-text">• 价格范围：¥0.01 - ¥50,000</text>
-            <text class="hint-text">• 最多支持两位小数</text>
-            <text class="hint-text">• 请输入真实合理的价格</text>
-          </view>
-        </view>
-      </view>
     </view>
 
     <!-- 商品分类 -->

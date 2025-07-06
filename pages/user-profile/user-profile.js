@@ -2,6 +2,7 @@ const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
 const itemManager = require('../../utils/itemManager');
 const sharedTools = require('../../utils/sharedTools');
+const apiConfig = require('../../utils/apiConfig'); // 引入API配置
 
 Page({
   data: {
@@ -63,9 +64,54 @@ Page({
     try {
       this.setData({ loading: true, error: null });
       
-      // 获取用户基本信息
-      const userResult = await userManager.getUserInfo(this.data.targetUserId);
-      const userInfo = userResult.data.userInfo;
+      // 获取用户基本信息 - 参考settings页面的成功实现
+      let userInfo;
+      
+      if (this.data.isCurrentUser) {
+        // 如果是当前用户，直接获取本地用户信息，然后刷新
+        userInfo = userManager.getCurrentUser();
+        
+        // 从服务器获取最新信息
+        try {
+          const response = await apiConfig.get(`/users/${this.data.targetUserId}`);
+          if (response && response.success && response.data) {
+            userInfo = response.data;
+            // 更新本地缓存
+            userManager.updateUserInfo(userInfo);
+          }
+        } catch (refreshError) {
+          console.warn('刷新用户信息失败，使用本地缓存:', refreshError);
+        }
+      } else {
+        // 如果是其他用户，直接从服务器获取
+        try {
+          const response = await apiConfig.get(`/users/${this.data.targetUserId}`);
+          if (response && response.success && response.data) {
+            userInfo = response.data;
+          } else {
+            throw new Error('用户不存在');
+          }
+        } catch (error) {
+          // 如果API调用失败，尝试使用旧的方法
+          console.warn('新API失败，尝试旧方法:', error);
+          const userResult = await userManager.getUserInfo(this.data.targetUserId);
+          userInfo = userResult.data ? userResult.data.userInfo || userResult.data : userResult;
+        }
+      }
+      
+      if (!userInfo) {
+        throw new Error('无法获取用户信息');
+      }
+      
+      console.log('获取到的用户信息:', userInfo);
+      
+      // 处理头像URL - 参考settings页面的实现
+      if (userInfo.avatar) {
+        // 如果已经是完整URL，直接使用；否则使用apiConfig处理
+        if (!userInfo.avatar.startsWith('http')) {
+          userInfo.avatar = apiConfig.getAvatarUrl(userInfo.avatar);
+        }
+      }
       
       // 加载用户发布的内容
       await this.loadUserContent(this.data.targetUserId);
@@ -77,7 +123,7 @@ Page({
       
       // 设置页面标题
       wx.setNavigationBarTitle({
-        title: userInfo.nickname || userInfo.name
+        title: userInfo.nickname || userInfo.name || '用户空间'
       });
       
     } catch (error) {
@@ -94,44 +140,62 @@ Page({
     try {
       console.log('开始加载用户内容，userId:', userId, '类型:', typeof userId);
       
-      // 从实际的数据管理器获取数据
       let userPosts = [];
       let allUserItems = [];
       
-      // 获取用户发布的帖子
-      if (typeof postManager !== 'undefined' && postManager.getAll) {
-        const allPosts = postManager.getAll();
-        console.log('所有帖子:', allPosts);
+      // 获取用户发布的帖子 - 优先使用API
+      try {
+        if (typeof postManager !== 'undefined' && postManager.getUserPosts) {
+          // 使用专门的getUserPosts方法
+          const postsResult = await postManager.getUserPosts(userId, 1, 50);
+          userPosts = postsResult.posts || [];
+        } else if (typeof postManager !== 'undefined' && postManager.getAll) {
+          // 回退到getAll方法
+          const allPosts = postManager.getAll();
+          console.log('所有帖子:', allPosts);
+          
+          userPosts = allPosts.filter(post => {
+            console.log('对比帖子userId:', post.userId, '目标userId:', userId);
+            return post.userId === userId;
+          });
+        }
         
-        // 使用 userId 而不是 authorId
-        userPosts = allPosts.filter(post => {
-          console.log('对比帖子userId:', post.userId, '目标userId:', userId);
-          return post.userId === userId;
-        });
-        
-        // 格式化帖子时间 - 添加这部分
+        // 格式化帖子时间
         userPosts = userPosts.map(post => ({
           ...post,
-          // 添加格式化的时间显示
           formattedTime: sharedTools.formatTimeAgo(post.createTime),
-          // 保留原始时间
           originalTime: post.createTime
         }));
         
         console.log('筛选并格式化后的用户帖子:', userPosts);
+      } catch (postError) {
+        console.error('获取用户帖子失败:', postError);
+        userPosts = [];
       }
       
-      // 获取用户发布的商品的部分保持不变
-      if (typeof itemManager !== 'undefined' && itemManager.getAll) {
-        const allItems = itemManager.getAll();
-        console.log('所有商品:', allItems);
-        
-        allUserItems = allItems.filter(item => {
-          console.log('对比商品sellerId:', item.sellerId, '目标userId:', userId);
-          return item.sellerId === userId;
-        });
+      // 获取用户发布的商品
+      try {
+        if (typeof itemManager !== 'undefined') {
+          // 检查是否有getUserItems方法
+          if (itemManager.getUserItems) {
+            const itemsResult = await itemManager.getUserItems(userId);
+            allUserItems = itemsResult.data || itemsResult || [];
+          } else if (itemManager.getAll) {
+            // 回退到getAll方法
+            const allItems = itemManager.getAll();
+            console.log('所有商品:', allItems);
+            
+            allUserItems = allItems.filter(item => {
+              console.log('对比商品sellerId:', item.sellerId, '目标userId:', userId);
+              return item.sellerId === userId;
+            });
+          }
+        }
         
         console.log('筛选后的用户商品:', allUserItems);
+      } catch (itemError) {
+        console.error('获取用户商品失败:', itemError);
+        allUserItems = [];
       }
   
       // 按交易类型和状态分类商品
@@ -184,6 +248,55 @@ Page({
         rightBuyItems: []
       });
     }
+  },
+
+  // 删除动态（直接处理，使用catchtap）
+  async deletePost(e) {
+    const postId = e.currentTarget.dataset.postId;
+    console.log('删除动态:', postId);
+    
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这条动态吗？删除后无法恢复。',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            // 显示加载提示
+            wx.showLoading({
+              title: '删除中...',
+              mask: true
+            });
+
+            // 调用postManager删除动态
+            if (typeof postManager !== 'undefined' && postManager.deletePost) {
+              await postManager.deletePost(postId);
+              
+              wx.hideLoading();
+              wx.showToast({
+                title: '删除成功',
+                icon: 'success'
+              });
+              
+              // 重新加载用户内容
+              this.loadUserContent(this.data.targetUserId);
+            } else {
+              wx.hideLoading();
+              wx.showToast({
+                title: '删除功能暂不可用',
+                icon: 'error'
+              });
+            }
+          } catch (error) {
+            wx.hideLoading();
+            console.error('删除动态失败:', error);
+            wx.showToast({
+              title: error.message || '删除失败',
+              icon: 'error'
+            });
+          }
+        }
+      }
+    });
   },
 
   // 分配商品到左右两列

@@ -1,6 +1,7 @@
-// pages/publish-post/publish-post.js - 发布动态页面
+// pages/publish-post/publish-post.js - 修复后的发布动态页面
 const userManager = require('../../utils/userManager');
 const postManager = require('../../utils/postManager');
+const apiConfig = require('../../utils/apiConfig');
 
 Page({
   data: {
@@ -12,12 +13,10 @@ Page({
   },
 
   onLoad() {
-    // 设置导航栏标题
     wx.setNavigationBarTitle({
       title: '发布动态'
     });
 
-    // 检查登录状态
     if (!userManager.isLoggedIn()) {
       wx.redirectTo({
         url: '/pages/login/login'
@@ -26,17 +25,16 @@ Page({
     }
 
     const userInfo = userManager.getCurrentUser();
+    userInfo.avatar = apiConfig.getAvatarUrl(userInfo.avatar);
     this.setData({ userInfo });
   },
 
-  // 输入内容变化
   onContentInput(e) {
     this.setData({
       content: e.detail.value
     });
   },
 
-  // 选择图片
   chooseImages() {
     const currentCount = this.data.images.length;
     const remainCount = this.data.maxImages - currentCount;
@@ -52,7 +50,7 @@ Page({
     wx.chooseMedia({
       count: remainCount,
       mediaType: ['image'],
-      sourceType: ['album'], // 只保留相册选择，删除拍照功能
+      sourceType: ['album'],
       sizeType: ['compressed'],
       success: (res) => {
         const newImages = res.tempFiles.map(file => ({
@@ -67,7 +65,6 @@ Page({
     });
   },
 
-  // 预览图片
   previewImage(e) {
     const index = e.currentTarget.dataset.index;
     const urls = this.data.images.map(img => img.url);
@@ -78,7 +75,6 @@ Page({
     });
   },
 
-  // 删除图片
   deleteImage(e) {
     const index = e.currentTarget.dataset.index;
     const images = this.data.images;
@@ -87,13 +83,12 @@ Page({
     this.setData({ images });
   },
 
-  // 发布动态
   async publishPost() {
     const content = this.data.content.trim();
     
     if (!content) {
       wx.showToast({
-        title: '请输入内容或选择图片',
+        title: '请输入内容',
         icon: 'none'
       });
       return;
@@ -111,6 +106,7 @@ Page({
     try {
       // 上传图片
       const imageUrls = await this.uploadImages();
+      console.log('上传成功的图片URLs:', imageUrls);
 
       // 使用 postManager 发布动态
       await postManager.publishPost(content, imageUrls);
@@ -121,19 +117,11 @@ Page({
         icon: 'success'
       });
 
-      // 延迟返回，让用户看到成功提示
       setTimeout(() => {
         wx.switchTab({
           url: '/pages/index/index'
         });
       }, 1500);
-
-// 改为
-setTimeout(() => {
-  wx.switchTab({
-    url: '/pages/moments/moments'  // 替换为你的动态页面路径
-  });
-}, 1500);
 
     } catch (error) {
       console.error('发布失败:', error);
@@ -147,17 +135,33 @@ setTimeout(() => {
     }
   },
 
-  // 上传图片
+  // 🔧 修复上传图片方法
   async uploadImages() {
     if (this.data.images.length === 0) return [];
-
-    // 模拟上传过程
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // 实际项目中这里应该调用上传API
-        const urls = this.data.images.map(img => img.url);
-        resolve(urls);
-      }, 1000);
-    });
+    
+    wx.showLoading({ title: '图片上传中...', mask: true });
+    
+    try {
+      const filePaths = this.data.images.map(img => img.url);
+      console.log('准备上传的文件路径:', filePaths);
+      
+      // 🔧 修复：调用正确的上传方法
+      const uploadResults = await apiConfig.uploadMultipleFiles(
+        '/upload/single',
+        filePaths,
+        'image'
+      );
+      
+      console.log('上传结果:', uploadResults);
+      
+      // 🔧 修复：确保返回正确的URL数组
+      return uploadResults;
+      
+    } catch (error) {
+      console.error('图片上传失败:', error);
+      throw new Error('图片上传失败: ' + error.message);
+    } finally {
+      wx.hideLoading();
+    }
   }
 });

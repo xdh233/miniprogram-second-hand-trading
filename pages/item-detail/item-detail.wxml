@@ -66,7 +66,6 @@
     <view class="comments-container">
       <!-- 评论输入区域（保持原位置） -->
       <view class="comment-input-section">
-        <image class="user-avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
         <view class="input-container">
           <input class="comment-input-field"
                 placeholder="写评论..."
@@ -113,42 +112,42 @@
       <!-- 嵌套评论列表 -->
       <view class="comments-list">
         <!-- 主评论 -->
-        <view wx:for="{{organizedComments}}" wx:key="id" class="comment-thread">
+        <view wx:for="{{organizedComments}}" wx:key="id" wx:for-item="comment" class="comment-thread">
           
           <!-- 主评论项 -->
           <view class="comment-item main-comment">
-            <image class="comment-avatar" src="{{item.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+            <image class="comment-avatar" src="{{comment.userAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
             <view class="comment-main">
               <!-- 第一行：昵称+楼主标签 -->
               <view class="comment-header">
                 <view class="comment-user-left">
-                  <text class="comment-username" bindtap="goToUserProfile" data-user-id="{{item.userId}}">{{item.userNickname}}</text>
-                  <text wx:if="{{item.isAuthor}}" class="author-tag">楼主</text>
+                  <text class="comment-username" bindtap="goToUserProfile" data-user-id="{{comment.userId}}">{{comment.userNickname}}</text>
+                  <text wx:if="{{comment.isAuthor}}" class="author-tag">楼主</text>
                 </view>
               </view>
               
               <!-- 第二行：评论内容 -->
               <view class="comment-content-wrapper">
-                <text class="comment-content">{{item.content}}</text>
+                <text class="comment-content">{{comment.content}}</text>
               </view>
               
               <!-- 第三行：时间 | 点赞+回复 -->
               <view class="comment-footer">
-                <text class="comment-time">{{item.timeAgo}}</text>
+                <text class="comment-time">{{comment.timeAgo}}</text>
                 <view class="comment-actions">
                   <!-- 点赞按钮 -->
-                  <view class="comment-like-btn {{item.isLiked ? 'liked' : ''}}" 
+                  <view class="comment-like-btn {{comment.isLiked ? 'liked' : ''}}" 
                         bindtap="onLikeComment"
-                        data-id="{{item.id}}"
+                        data-id="{{comment.id}}"
                         data-is-reply="{{false}}">
                     <image class="comment-like-icon" 
-                           src="{{item.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
+                           src="{{comment.isLiked ? '/images/like-active.png' : '/images/like.png'}}" 
                            mode="aspectFit" />
-                    <text class="comment-like-count" wx:if="{{item.likes > 0}}">{{item.likes}}</text>
+                    <text class="comment-like-count" wx:if="{{comment.likes > 0}}">{{comment.likes}}</text>
                   </view>
                   <!-- 回复按钮 -->
                   <view class="reply-btn" bindtap="showReplyInput" 
-                        data-comment="{{item}}" 
+                        data-comment="{{comment}}" 
                         data-is-reply="{{false}}">
                     <text class="reply-text">回复</text>
                   </view>
@@ -158,13 +157,13 @@
           </view>
 
           <!-- 子回复列表 -->
-          <view wx:if="{{item.replies && item.replies.length > 0}}" class="replies-container">
+          <view wx:if="{{comment.replies && comment.replies.length > 0}}" class="replies-container">
             
             <!-- 显示的回复 - 使用 displayReplies -->
-            <view wx:for="{{item.displayReplies}}" 
+            <view wx:for="{{comment.displayReplies}}" 
                   wx:for-item="reply" 
                   wx:for-index="replyIndex"
-                  wx:key="{{id}}"
+                  wx:key="id"
                   class="reply-item">
               
               <view class="reply-content">
@@ -189,7 +188,7 @@
                   </view>
                   <!-- 回复按钮 -->
                   <view class="reply-reply-btn" bindtap="showReplyInput" 
-                        data-comment="{{item}}" 
+                        data-comment="{{comment}}" 
                         data-reply-to="{{reply}}"
                         data-is-reply="{{true}}">
                     <text>回复</text>
@@ -199,10 +198,10 @@
             </view>
             
             <!-- 展开/收起更多回复 -->
-            <view wx:if="{{item.replies.length > 2}}" class="show-more-replies">
+            <view wx:if="{{comment.replies.length > 2}}" class="show-more-replies">
               <view class="show-more-btn" bindtap="toggleReplies" data-index="{{index}}">
-                <text wx:if="{{!item.showAllReplies}}">
-                  展开更多回复 ({{item.replies.length - 2}}条)
+                <text wx:if="{{!comment.showAllReplies}}">
+                  展开更多回复 ({{comment.replies.length - 2}}条)
                 </text>
                 <text wx:else>收起回复</text>
               </view>

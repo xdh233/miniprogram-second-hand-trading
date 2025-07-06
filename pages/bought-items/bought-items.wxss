@@ -98,6 +98,7 @@
 .items-container {
   padding: 20rpx;
   margin-top: -90rpx; /* 为四个tab留出空间 */
+  min-width: 600rpx;
 }
 
 /* 空状态 */
@@ -130,6 +131,7 @@
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  min-width: 50vh;
 }
 
 .item-card {
@@ -138,6 +140,7 @@
   overflow: hidden;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+  min-width: 50vh;
 }
 
 .item-card:active {
@@ -584,7 +587,7 @@
 /* ===== 响应式调整 ===== */
 @media (max-width: 375px) {
   .items-container {
-    margin-top: 120rpx; /* 小屏幕调整 */
+    margin-top: 120rpx;/* 小屏幕调整*/
     padding: 15rpx;
   }
   

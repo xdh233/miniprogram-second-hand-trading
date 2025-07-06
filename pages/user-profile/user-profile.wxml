@@ -16,13 +16,15 @@
     <view class="user-header">
       <view class="user-info">
         <view class="avatar-wrapper" bindtap="onAvatarTap">
-          <image class="avatar" src="{{userInfo.avatar || 'https://picsum.photos/120/120?random=avatar'}}" />
+          <image class="avatar" src="{{userInfo.avatar ? userInfo.avatar : 'https://picsum.photos/120/120?random=avatar'}}" mode="aspectFill" />
         </view>
         
         <view class="user-details">
           <view class="user-name">
             <text class="nickname">{{userInfo.nickname || userInfo.name}}</text>
-            <view class="gender female">♀</view>
+            <view wx:if="{{userInfo.gender === '男'}}" class="gender male">♂</view>
+            <view wx:elif="{{userInfo.gender === '女'}}" class="gender female">♀</view>
+            <!-- 如果是"未设置"或其他值，不显示图标 -->
           </view>
           <text wx:if="{{userInfo.bio}}" class="user-bio">{{userInfo.bio}}</text>
           <text wx:else class="user-bio">这个人很懒，什么都没有留下~</text>
@@ -76,9 +78,21 @@
           bindtap="onPostTap"
         >
           <view class="post-header">
-            <text class="post-title">{{item.title}}</text>
-            <!-- 修改这里：使用格式化后的时间 -->
-            <text class="post-time">{{item.formattedTime}}</text>
+            <view class="post-title-wrapper">
+              <text class="post-title">{{item.title}}</text>
+              <text class="post-time">{{item.formattedTime}}</text>
+            </view>
+            <!-- 只有当前用户才能看到删除按钮 -->
+            <view wx:if="{{isCurrentUser}}" class="post-actions-btn">
+              <view 
+                class="delete-btn" 
+                data-post-id="{{item.id}}"
+                bindtap="onDeleteBtnTap"
+                catchtap="onDeleteBtnTap"
+              >
+                <image class="delete-icon" src="/images/delete.png" />
+              </view>
+            </view>
           </view>
           <view wx:if="{{item.content}}" class="post-content">
             {{item.content}}
@@ -92,16 +106,6 @@
               src="{{img}}" 
               mode="aspectFill"
             />
-          </view>
-          <view class="post-actions">
-            <text class="action-item">
-              <text class="icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
-              {{item.likeCount}}
-            </text>
-            <text class="action-item">
-              <text class="icon">💬</text>
-              {{item.commentCount}}
-            </text>
           </view>
         </view>
       </view>

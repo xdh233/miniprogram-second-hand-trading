@@ -43,11 +43,10 @@
 
       <!-- 消息列表 -->
       <view class="message-item {{item.isSelf ? 'self' : 'other'}}" 
-            wx:for="{{messages}}" 
-            wx:key="id"
-            data-id="{{item.id}}"
-            bindlongpress="onLongPressMessage">
-        
+        wx:for="{{messages}}" 
+        wx:key="unique"
+        data-id="{{item.id}}"
+        bindlongpress="onLongPressMessage">
         <!-- 时间显示 -->
         <view class="message-time" wx:if="{{item.showTime}}">
           <text>{{item.timeDisplay}}</text>
@@ -72,16 +71,6 @@
                    data-url="{{item.imageUrl}}"
                    bindtap="previewImage"/>
             
-            <!-- 商品消息 -->
-            <view wx:elif="{{item.type === 'item'}}" class="message-item-card"
-                  data-item="{{item.itemData}}" bindtap="onItemCardTap">
-              <image class="item-card-image" src="{{item.itemData.image}}" mode="aspectFill"/>
-              <view class="item-card-info">
-                <text class="item-card-title">{{item.itemData.title}}</text>
-                <text class="item-card-price">￥{{item.itemData.price}}</text>
-              </view>
-            </view>
-            
             <!-- 系统消息 -->
             <text wx:elif="{{item.type === 'system'}}" class="system-message">{{item.content}}</text>
           </view>
@@ -104,7 +93,6 @@
       <!-- 附加功能按钮 -->
       <view class="input-extra">
         <text class="extra-btn" bindtap="sendImageMessage">📷</text>
-        <text class="extra-btn" wx:if="{{relatedItem}}" bindtap="sendItemMessage">🏷️</text>
       </view>
       
       <!-- 文本输入框 -->

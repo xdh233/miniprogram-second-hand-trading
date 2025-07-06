@@ -1,9 +1,14 @@
 // pages/my-bought-items/my-bought-items.js
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
-const transactionManager = require('../../utils/transactionManager'); // 新增
+const transactionManager = require('../../utils/transactionManager');
+const sharedTools = require('../../utils/sharedTools');
+const { priceProcess, PriceMixin } = require('../../utils/priceProcess'); // 引入价格处理工具
 
 Page({
+  // 混入价格处理方法
+  ...PriceMixin,
+
   data: {
     currentUser: null,
     boughtItems: [],
@@ -16,7 +21,7 @@ Page({
       { key: 'all', label: '全部', count: 0 },
       { key: 'seeking', label: '求购中', count: 0 },
       { key: 'bought', label: '已买到', count: 0 },
-      { key: 'withdrawn', label: '已下架', count: 0 } // 修改：inactive -> withdrawn
+      { key: 'withdrawn', label: '已下架', count: 0 }
     ],
     
     // 筛选后的商品列表
@@ -26,7 +31,13 @@ Page({
     showPriceModal: false,
     editingItemId: null,
     editingPrice: '',
-    originalPrice: ''
+    originalPrice: '',
+    
+    // 价格配置
+    priceConfig: {
+      max: 99999,
+      min: 0.01
+    }
   },
 
   onLoad() {
@@ -58,7 +69,7 @@ Page({
     this.loadBoughtItems();
   },
 
-  // ===== 修改：混合数据获取逻辑 =====
+  // 混合数据获取逻辑
   async loadBoughtItems() {
     try {
       this.setData({ loading: true, error: null });
@@ -67,67 +78,89 @@ Page({
       let allBoughtItems = [];
       
       // 1. 获取求购发布的（从 items 表）
-      const myDemandItems = itemManager.getUserItems(currentUserId)
-        .filter(item => item.tradeType === 'buy') // 只要求购类型的
-        .map(item => ({
-          ...item,
-          sourceType: 'demand', // 标记为求购发布的
-          isDirect: false
-        }));
+      try {
+        console.log('获取用户求购商品...');
+        const allUserItems = await itemManager.getUserItems(currentUserId);
+        
+        const myDemandItems = allUserItems
+          .filter(item => (item.tradeType === 'buy' || item.trade_type === 'buy'))
+          .map(item => ({
+            ...item,
+            sourceType: 'demand',
+            isDirect: false,
+            tradeType: item.tradeType || item.trade_type,
+            createTime: item.createTime || item.created_at,
+            updateTime: item.updateTime || item.updated_at,
+            sellerId: item.sellerId || item.seller_id
+          }));
+        
+        console.log('求购商品数量:', myDemandItems.length);
+        allBoughtItems = [...myDemandItems];
+        
+      } catch (error) {
+        console.error('获取求购商品失败:', error);
+        allBoughtItems = [];
+      }
       
       // 2. 获取直接购买的（从 transactions 表）
       let directPurchases = [];
       if (typeof transactionManager !== 'undefined' && transactionManager.getTransactionsByBuyer) {
         try {
-          const transactions = transactionManager.getTransactionsByBuyer(currentUserId);
+          console.log('获取交易记录...');
+          const transactions = await transactionManager.getTransactionsByBuyer(currentUserId);
           
-          // 关联商品信息
           directPurchases = await Promise.all(
             transactions.map(async (transaction) => {
-              const item = itemManager.getItemById(transaction.item_id);
-              if (item) {
-                return {
-                  ...item,
-                  sourceType: 'purchase', // 标记为直接购买的
-                  isDirect: true,
-                  purchasePrice: transaction.amount,
-                  purchaseDate: transaction.created_at,
-                  transactionId: transaction.id,
-                  sellerInfo: {
-                    id: transaction.seller_id,
-                    name: item.sellerName || item.sellerNickname
-                  }
-                };
+              try {
+                const item = await itemManager.getItemDetail(transaction.item_id);
+                if (item) {
+                  return {
+                    ...item,
+                    sourceType: 'purchase',
+                    isDirect: true,
+                    purchasePrice: transaction.amount,
+                    purchaseDate: transaction.created_at,
+                    transactionId: transaction.id,
+                    sellerInfo: {
+                      id: transaction.seller_id,
+                      name: item.sellerName || item.sellerNickname || '卖家'
+                    }
+                  };
+                }
+                return null;
+              } catch (error) {
+                console.error('获取商品详情失败:', error);
+                return null;
               }
-              return null;
             })
           );
           
-          // 过滤掉空值
           directPurchases = directPurchases.filter(item => item !== null);
+          console.log('直接购买记录数量:', directPurchases.length);
+          
         } catch (error) {
           console.error('获取交易记录失败:', error);
           directPurchases = [];
         }
+      } else {
+        console.log('transactionManager 不可用，跳过交易记录获取');
       }
       
       // 3. 合并两种类型的数据
       allBoughtItems = [
-        ...myDemandItems,
+        ...allBoughtItems,
         ...directPurchases
       ];
       
       // 4. 转换和标准化数据
       allBoughtItems = allBoughtItems.map(item => {
-        let status = '求购中'; // 默认状态
-        let statusType = 'demand'; // 状态类型：demand（求购）或 purchase（购买）
+        let status = '求购中';
+        let statusType = 'demand';
         
         if (item.isDirect) {
-          // 直接购买的都是已买到
           status = '已买到';
           statusType = 'purchase';
         } else {
-          // 求购发布的根据状态判断
           statusType = 'demand';
           if (item.status === 'seeking') {
             status = '求购中';
@@ -141,22 +174,23 @@ Page({
         return {
           ...item,
           status: status,
-          statusType: statusType, // 新增：区分状态类型
+          statusType: statusType,
           displayPrice: item.isDirect ? item.purchasePrice : item.price,
           displayDate: item.isDirect ? item.purchaseDate : item.createTime,
-          createTime: item.createTime,
-          updateTime: item.updateTime || item.createTime
+          createTime: sharedTools.formatTime(item.createTime) || sharedTools.formatTime(item.created_at),
+          updateTime: sharedTools.formatTime(item.updateTime) || sharedTools.formatTime(item.updated_at) || item.createTime || item.created_at
         };
       });
       
-      // 5. 按时间排序（最新的在前面）
+      // 5. 按时间排序
       allBoughtItems.sort((a, b) => {
         const timeA = a.isDirect ? a.purchaseDate : a.updateTime || a.createTime;
         const timeB = b.isDirect ? b.purchaseDate : b.updateTime || b.createTime;
         return new Date(timeB) - new Date(timeA);
       });
       
-      // 统计各状态数量
+      console.log('最终求购/购买记录数量:', allBoughtItems.length);
+      
       this.updateStatusCounts(allBoughtItems);
       
       this.setData({
@@ -164,7 +198,6 @@ Page({
         loading: false
       });
       
-      // 应用当前筛选
       this.filterItems();
       
     } catch (error) {
@@ -172,46 +205,11 @@ Page({
       this.setData({
         error: '加载失败，请重试',
         loading: false,
-        boughtItems: this.generateMockData() // 加载失败时使用模拟数据
+        boughtItems: []
       });
       this.updateStatusCounts(this.data.boughtItems);
       this.filterItems();
     }
-  },
-
-  // 生成模拟数据（用于测试和降级）
-  generateMockData() {
-    return [
-      {
-        id: 'seeking_1',
-        title: '求购 MacBook Pro 13寸',
-        description: '预算8000-10000，要求9成新以上，性能良好',
-        price: 9000,
-        displayPrice: 9000,
-        images: ['/images/macbook.jpg'],
-        status: '求购中',
-        createTime: '2025-06-25',
-        tradeType: 'buy',
-        sourceType: 'demand',
-        isDirect: false
-      },
-      {
-        id: 'transaction_1', 
-        title: '购买的 iPhone 13',
-        description: 'iPhone 13 Pro 128GB 深空灰色，九成新',
-        price: 4500,
-        displayPrice: 4500,
-        purchasePrice: 4500,
-        images: ['/images/phone1.jpg'],
-        status: '已买到',
-        createTime: '2025-06-20',
-        purchaseDate: '2025-06-28',
-        sellerInfo: { name: '张三' },
-        sourceType: 'purchase',
-        isDirect: true,
-        transactionId: 1001
-      }
-    ];
   },
 
   // 更新状态统计
@@ -261,19 +259,17 @@ Page({
     const item = this.data.filteredItems.find(item => item.id === itemId);
     
     if (item && item.isDirect) {
-      // 直接购买的商品，跳转到商品详情页
       wx.navigateTo({
         url: `/pages/item-detail/item-detail?id=${itemId}`
       });
     } else {
-      // 求购发布的，跳转到求购详情页（如果有的话）
       wx.navigateTo({
         url: `/pages/item-detail/item-detail?id=${itemId}`
       });
     }
   },
 
-  // ===== 修改：删除商品逻辑 =====
+  // 删除商品逻辑
   deleteItem(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
@@ -303,17 +299,18 @@ Page({
   // 执行删除
   async performDeleteItem(itemId) {
     try {
-      await itemManager.deleteItem(itemId);
+      const result = await itemManager.deleteItem(itemId);
+      console.log('删除求购成功:', result);
       
       wx.showToast({
         title: '删除成功',
         icon: 'success'
       });
       
-      // 重新加载数据
-      this.loadBoughtItems();
+      await this.loadBoughtItems();
       
     } catch (error) {
+      console.error('删除失败:', error);
       wx.showToast({
         title: error.message || '删除失败',
         icon: 'none'
@@ -321,7 +318,7 @@ Page({
     }
   },
 
-  // ===== 修改：标记为已买到（只对求购有效）=====
+  // 标记为已买到
   markAsBought(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
@@ -351,16 +348,18 @@ Page({
   // 执行标记已买到
   async performMarkAsBought(itemId) {
     try {
-      await itemManager.updateItemStatus(itemId, 'bought');
+      const result = await itemManager.updateItemStatus(itemId, 'bought');
+      console.log('标记已买到成功:', result);
       
       wx.showToast({
         title: '标记成功，求购完成！',
         icon: 'success'
       });
       
-      this.loadBoughtItems();
+      await this.loadBoughtItems();
       
     } catch (error) {
+      console.error('标记已买到失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
@@ -368,7 +367,7 @@ Page({
     }
   },
 
-  // ===== 修改：下架逻辑（只对求购有效）=====
+  // 下架逻辑
   markAsWithdrawn(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
@@ -398,16 +397,18 @@ Page({
   // 执行标记已下架
   async performMarkAsWithdrawn(itemId) {
     try {
-      await itemManager.updateItemStatus(itemId, 'withdrawn');
+      const result = await itemManager.updateItemStatus(itemId, 'withdrawn');
+      console.log('下架求购成功:', result);
       
       wx.showToast({
         title: '求购已下架',
         icon: 'success'
       });
       
-      this.loadBoughtItems();
+      await this.loadBoughtItems();
       
     } catch (error) {
+      console.error('下架失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
@@ -415,7 +416,7 @@ Page({
     }
   },
 
-  // 重新上架（从已下架状态恢复到求购中）
+  // 重新上架
   markAsActive(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
@@ -445,16 +446,18 @@ Page({
   // 执行重新上架
   async performMarkAsActive(itemId) {
     try {
-      await itemManager.updateItemStatus(itemId, 'seeking');
+      const result = await itemManager.updateItemStatus(itemId, 'seeking');
+      console.log('重新上架求购成功:', result);
       
       wx.showToast({
         title: '求购已重新上架',
         icon: 'success'
       });
       
-      this.loadBoughtItems();
+      await this.loadBoughtItems();
       
     } catch (error) {
+      console.error('重新上架失败:', error);
       wx.showToast({
         title: error.message || '操作失败',
         icon: 'none'
@@ -462,7 +465,7 @@ Page({
     }
   },
 
-  // ===== 修改：价格编辑（只对求购有效）=====
+  // 显示价格编辑弹窗
   showEditPrice(e) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
@@ -481,8 +484,8 @@ Page({
     this.setData({
       showPriceModal: true,
       editingItemId: itemId,
-      editingPrice: item.price.toString(),
-      originalPrice: item.price.toString()
+      editingPrice: priceProcess.formatPriceDisplay(item.price), // 使用统一的格式化方法
+      originalPrice: priceProcess.formatPriceDisplay(item.price)
     });
   },
 
@@ -496,58 +499,51 @@ Page({
     });
   },
 
-  // 价格输入处理
+  // 价格输入处理 - 使用统一的价格处理方法
   onPriceInput(e) {
-    let value = e.detail.value;
+    const result = priceProcess.formatPriceInput(e.detail.value, this.data.priceConfig.max);
     
-    // 只允许数字和小数点
-    value = value.replace(/[^\d.]/g, '');
-    
-    // 确保只有一个小数点
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    // 限制小数点后两位
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
-    // 防止以小数点开头
-    if (value.startsWith('.')) {
-      value = '0' + value;
+    if (!result.isValid && result.error) {
+      wx.showToast({
+        title: result.error,
+        icon: 'none',
+        duration: 1000
+      });
+      return; // 保持原值不变
     }
     
     this.setData({
-      editingPrice: value
+      editingPrice: result.value
     });
   },
 
   // 确认价格修改
   async confirmPriceEdit() {
-    const { editingPrice, editingItemId, originalPrice } = this.data;
+    const { editingPrice, originalPrice, editingItemId } = this.data;
     
     // 验证价格
-    if (!editingPrice || editingPrice <= 0) {
+    const validation = priceProcess.validatePrice(editingPrice, this.data.priceConfig.max);
+    if (!validation.isValid) {
       wx.showToast({
-        title: '请输入有效预算',
+        title: validation.error,
         icon: 'none'
       });
       return;
     }
-    
+
     // 如果价格没有变化，直接关闭弹窗
-    if (parseFloat(editingPrice) === parseFloat(originalPrice)) {
+    if (priceProcess.comparePrices(editingPrice, originalPrice)) {
       this.hidePriceModal();
       return;
     }
-    
+
     try {
-      await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
+      // 执行更新
+      const result = await itemManager.updateItemPrice(editingItemId, parseFloat(editingPrice));
+      console.log('价格更新成功:', result);
       
       wx.showToast({
-        title: '预算修改成功',
+        title: '价格修改成功',
         icon: 'success'
       });
       
@@ -555,10 +551,10 @@ Page({
       this.hidePriceModal();
       
       // 重新加载数据
-      this.loadBoughtItems();
+      await this.loadBoughtItems();
       
     } catch (error) {
-      console.error('修改预算失败:', error);
+      console.error('修改价格失败:', error);
       wx.showToast({
         title: error.message || '修改失败，请重试',
         icon: 'none'

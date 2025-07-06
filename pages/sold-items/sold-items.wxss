@@ -130,6 +130,7 @@
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  min-width: 50vh;
 }
 
 .item-card {

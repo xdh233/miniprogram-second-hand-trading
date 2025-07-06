@@ -29,6 +29,17 @@ page {
   margin: 0;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.loading-indicator {
+  font-size: 24rpx;
+  color: #999;
+  background: #f0f0f0;
+  padding: 8rpx 16rpx;
+  border-radius: 16rpx;
 }
 
 .section-content {
@@ -50,6 +61,7 @@ page {
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  transition: background-color 0.2s ease;
 }
 
 .setting-item:last-child {
@@ -93,6 +105,7 @@ page {
   height: 60rpx;
   border-radius: 50%;
   margin-right: 16rpx;
+  border: 2rpx solid #f0f0f0;
 }
 
 .arrow-icon {
@@ -138,6 +151,7 @@ page {
   max-width: 600rpx;
   position: relative;
   z-index: 10000;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.1);
 }
 
 .modal-title {
@@ -158,6 +172,12 @@ page {
   background: #fafafa;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.modal-input:focus {
+  border-color: #0096c3;
+  background: #fff;
 }
 
 .modal-input.input-error {
@@ -175,14 +195,15 @@ page {
 .modal-textarea {
   width: 100%;
   min-height: 120rpx;
-  max-height: 200rpx; /* 设置最大高度 */
+  max-height: 200rpx;
   border: 2rpx solid #e5e5e5;
   border-radius: 8rpx;
   padding: 20rpx;
   font-size: 28rpx;
   box-sizing: border-box;
   background: #fafafa;
-  resize: none; /* 禁止手动调整大小 */
+  resize: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .modal-textarea:focus {
@@ -197,6 +218,7 @@ page {
   margin-top: 10rpx;
   margin-bottom: 20rpx;
 }
+
 .modal-buttons {
   display: flex;
   gap: 20rpx;
@@ -211,6 +233,7 @@ page {
   font-weight: 500;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
 .modal-button.cancel {
@@ -218,14 +241,27 @@ page {
   color: #666;
 }
 
+.modal-button.cancel:active {
+  background: #e8e8e8;
+}
+
 .modal-button.confirm {
   background: #0096c3;
   color: #fff;
 }
 
+.modal-button.confirm:active {
+  background: #007a9c;
+}
+
 .modal-button.confirm.disabled {
   background: #d9d9d9;
   color: #999;
+  cursor: not-allowed;
+}
+
+.modal-button.confirm.disabled:active {
+  background: #d9d9d9;
 }
 
 /* 性别选择 */
@@ -249,10 +285,18 @@ page {
   transition: all 0.2s ease;
 }
 
+.gender-option:active {
+  background: #f0f0f0;
+}
+
 .gender-option.selected {
   background: #0096c3;
   color: #fff;
   border-color: #0096c3;
+}
+
+.gender-option.selected:active {
+  background: #007a9c;
 }
 
 /* Switch 组件样式调整 */
@@ -260,7 +304,41 @@ switch {
   transform: scale(0.8);
 }
 
+switch[disabled] {
+  opacity: 0.5;
+}
+
 /* 设置项悬停效果 */
 .setting-item:active {
   background: #f8f9fa;
+}
+
+/* 网络错误提示样式 */
+.network-error {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 20rpx 40rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  z-index: 10001;
+}
+
+/* 加载动画 */
+@keyframes loading-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #0096c3;
+  border-radius: 50%;
+  animation: loading-spin 1s linear infinite;
+  margin-right: 16rpx;
 }
