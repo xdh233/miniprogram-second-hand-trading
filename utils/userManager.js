@@ -82,14 +82,14 @@ class UserManager {
         reject({ code: 400, message: '请填写学号和密码' });
         return;
       }
-
+  
       // 调用后端API登录
       apiConfig.post('/auth/login', {
-        studentId: studentId,  // 使用studentId而不是phone
+        studentId: studentId,
         password: password
       })
       .then(result => {
-        // 【关键】登录成功后设置token
+        // 登录成功后设置token
         if (result.token) {
           apiConfig.setToken(result.token);
         }
@@ -100,12 +100,33 @@ class UserManager {
           studentId: result.user.studentId,
           name: result.user.name,
           nickname: result.user.nickname,
-          avatar: result.user.avatar ? apiConfig.getAvatarUrl(result.user.avatar) : null, // 🔧 处理头像
+          avatar: result.user.avatar ? apiConfig.getAvatarUrl(result.user.avatar) : null,
           balance: result.user.balance || 0,
           loginTime: new Date().toISOString()
         };
-
+  
         wx.setStorageSync(this.CURRENT_USER_KEY, loginInfo);
+        
+        // 🔧 关键修复：强制重新连接WebSocket
+        try {
+          const webSocketManager = require('./webSocketManager');
+          console.log('用户切换，重新连接WebSocket...');
+          
+          // 先断开现有连接
+          webSocketManager.disconnect();
+          
+          // 短暂延迟后重新连接，确保使用新的token
+          setTimeout(() => {
+            webSocketManager.connect().then(() => {
+              console.log('WebSocket重新连接成功');
+            }).catch(error => {
+              console.error('WebSocket重新连接失败:', error);
+            });
+          }, 500);
+          
+        } catch (error) {
+          console.error('WebSocket重连过程出错:', error);
+        }
         
         resolve({
           code: 200,
@@ -237,9 +258,20 @@ class UserManager {
   // 退出登录
   logout() {
     try {
-      // 【关键】清除token
+      // 🔧 修复：退出时断开WebSocket
+      try {
+        const webSocketManager = require('./webSocketManager');
+        console.log('用户退出，断开WebSocket连接');
+        webSocketManager.disconnect();
+      } catch (error) {
+        console.error('断开WebSocket失败:', error);
+      }
+      
+      // 清除token和用户信息
       apiConfig.clearToken();
       wx.removeStorageSync(this.CURRENT_USER_KEY);
+      
+      console.log('退出登录成功');
       return true;
     } catch (error) {
       console.error('退出登录失败:', error);

@@ -11,7 +11,8 @@ Page({
     likeCount: 0,
     chatList: [],
     searchText: '',
-    refreshing: false
+    refreshing: false,
+    navigating: false
   },
 
   onLoad() {

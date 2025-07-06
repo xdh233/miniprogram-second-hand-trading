@@ -87,8 +87,7 @@
               <view 
                 class="delete-btn" 
                 data-post-id="{{item.id}}"
-                bindtap="onDeleteBtnTap"
-                catchtap="onDeleteBtnTap"
+                catchtap="deletePost"
               >
                 <image class="delete-icon" src="/images/delete.png" />
               </view>
