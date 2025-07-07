@@ -10,7 +10,7 @@ class UserManager {
   // 用户注册
   register(userData) {
     return new Promise((resolve, reject) => {
-      const { studentId, name, password, phone, email } = userData;
+      const { studentId, name, password} = userData;
 
       // 基本参数验证
       if (!studentId || !name || !password) {
@@ -35,25 +35,11 @@ class UserManager {
         return;
       }
 
-      // 手机号格式验证
-      if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
-        reject({ code: 400, message: '手机号格式不正确' });
-        return;
-      }
-
-      // 邮箱格式验证
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        reject({ code: 400, message: '邮箱格式不正确' });
-        return;
-      }
-
       // 调用后端API注册
       apiConfig.post('/auth/register', {
         studentId: studentId,
         name: name,
         password: password,
-        phone: phone || '',
-        email: email || ''
       })
       .then(result => {
         // 【关键】注册成功后设置token

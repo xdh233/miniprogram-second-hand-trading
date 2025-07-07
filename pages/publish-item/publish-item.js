@@ -1,9 +1,9 @@
-// pages/publish-item/publish-item.js - 修复后的发布商品页面
+// pages/publish-item/publish-item.js - 修复分类ID获取逻辑
 const userManager = require('../../utils/userManager');
 const itemManager = require('../../utils/itemManager');
 const categoryConfig = require('../../utils/categoryConfig');
 const apiConfig = require('../../utils/apiConfig');
-const { priceProcess, PriceMixin, PRICE_CONFIG } = require('../../utils/priceProcess'); // 引入价格处理工具
+const { priceProcess, PriceMixin, PRICE_CONFIG } = require('../../utils/priceProcess');
 
 Page({
   // 混入价格处理方法
@@ -16,6 +16,7 @@ Page({
     description: '',
     price: '',
     category: '',
+    categoryId: null, // 新增：存储分类ID
     categoryName: '',
     categoryIndex: 0,
     tempCategoryIndex: 0,
@@ -24,9 +25,9 @@ Page({
     
     // 分类选项
     categories: [],
-    tradeType: 'sell', // 默认为出售，可能的值：'sell', 'buy'
+    tradeType: 'sell',
     
-    // 价格配置 - 使用统一的价格配置
+    // 价格配置
     priceConfig: {
       min: PRICE_CONFIG.min,
       max: PRICE_CONFIG.max,
@@ -38,12 +39,48 @@ Page({
     showPicker: false
   },
 
-  onLoad(options) {
+  async onLoad(options) {
     console.log('发布商品/求购页面加载', options);
+    
     // 初始化分类数据
-    this.setData({
-      categories: categoryConfig.getAllCategoriesForPicker()
-    });
+    try {
+      const categories = await categoryConfig.getAllCategoriesForPicker();
+      console.log('获取到的分类数据:', categories);
+      
+      this.setData({
+        categories: categories
+      });
+      
+      // 设置默认分类（第一个分类）
+      if (categories.length > 0) {
+        this.setData({
+          category: categories[0].value,
+          categoryId: categories[0].id,
+          categoryName: categories[0].name,
+          categoryIndex: 0
+        });
+      }
+      
+      console.log('分类加载成功:', categories);
+    } catch (error) {
+      console.error('分类加载失败:', error);
+      // 使用默认分类作为备用
+      const defaultCategories = categoryConfig.getDefaultCategories();
+      const formattedCategories = defaultCategories.map(cat => ({
+        name: cat.name,
+        id: cat.id,
+        value: cat.value || cat.id.toString()
+      }));
+      
+      this.setData({
+        categories: formattedCategories,
+        category: formattedCategories[0].value,
+        categoryId: formattedCategories[0].id,
+        categoryName: formattedCategories[0].name,
+        categoryIndex: 0
+      });
+    }
+    
     // 检查传入的类型参数
     if (options.type) {
       this.setData({
@@ -82,7 +119,7 @@ Page({
     });
   },
 
-  // 输入价格 - 使用统一的价格处理方法
+  // 输入价格
   onPriceInput(e) {
     const result = priceProcess.formatPriceInput(e.detail.value, this.data.priceConfig.max);
     
@@ -93,7 +130,7 @@ Page({
         icon: 'none',
         duration: 1000
       });
-      return; // 保持原值不变
+      return;
     }
     
     this.setData({
@@ -152,9 +189,14 @@ Page({
     this.setData({ images });
   },
 
-  // 发布商品 - 使用统一的价格验证
+  // 发布商品 - 修复分类ID获取逻辑
   async publishItem() {
-    const { title, price, category, description, images, tradeType } = this.data;
+    const { title, price, categoryId, description, images, tradeType } = this.data;
+    
+    console.log('准备发布，当前数据:', {
+      title, price, categoryId, description, 
+      imageCount: images.length, tradeType
+    });
   
     if (!title.trim()) {
       wx.showToast({
@@ -165,14 +207,15 @@ Page({
     }
   
     // 使用统一的价格验证方法
-    const priceLabel = tradeType === 'sell' ? '价格' : '预算';
     if (!this.validatePrice(price, tradeType)) {
-      return; // validatePrice 方法已经显示了错误提示
+      return;
     }
   
-    if (!category) {
+    // 验证分类ID - 确保是有效的数字
+    if (!categoryId || typeof categoryId !== 'number' || categoryId <= 0) {
+      console.error('分类ID无效:', categoryId);
       wx.showToast({
-        title: `请选择${tradeType === 'sell' ? '商品' : '求购'}分类`,
+        title: '分类选择有误，请重新选择',
         icon: 'none'
       });
       return;
@@ -211,25 +254,19 @@ Page({
       const imageUrls = await this.uploadImages();
       console.log('上传成功的图片URLs:', imageUrls);
       
-      // 获取分类ID，确保与后端一致
-      const categoryId = categoryConfig.getCategoryIdByValue ? 
-        categoryConfig.getCategoryIdByValue(category) : 
-        category; // 如果没有这个方法，直接使用category值
-      
-      console.log('选择的分类ID:', categoryId, '分类值:', category);
-      
       // 创建符合后端期望的商品数据
       const itemData = {
         title: title.trim(),
         description: description.trim(),
         price: parseFloat(price), // 确保为数字类型
         images: imageUrls, // 已上传的图片URL数组
-        categoryId: categoryId, // 确保字段名与后端一致
+        categoryId: categoryId, // 直接使用存储的数字ID
         status: tradeType === 'sell' ? 'selling' : 'seeking',
         tradeType: tradeType
       };
       
       console.log('发布商品数据:', itemData);
+      console.log('分类ID类型检查:', typeof itemData.categoryId, itemData.categoryId);
   
       // 调用 itemManager.publishItem
       const result = await itemManager.publishItem(itemData);
@@ -260,7 +297,7 @@ Page({
     }
   },
 
-  // 上传图片方法 - 与动态发布保持一致
+  // 上传图片方法
   async uploadImages() {
     if (this.data.images.length === 0) return [];
     
@@ -270,7 +307,6 @@ Page({
       const filePaths = this.data.images.map(img => img.url);
       console.log('准备上传的文件路径:', filePaths);
       
-      // 使用与动态发布相同的上传逻辑
       const uploadResults = await apiConfig.uploadMultipleFiles(
         '/upload/single',
         filePaths,
@@ -278,8 +314,6 @@ Page({
       );
       
       console.log('上传结果:', uploadResults);
-      
-      // 直接返回URL数组，与动态发布保持一致
       return uploadResults;
       
     } catch (error) {
@@ -290,15 +324,34 @@ Page({
     }
   },
 
-  // 选择分类
+  // 选择分类 - 修复分类选择逻辑
   onCategoryChange(e) {
     const index = e.detail.value;
     const selectedCategory = this.data.categories[index];
-    this.setData({
-      category: selectedCategory.value,
-      categoryName: selectedCategory.name,
-      categoryIndex: index
-    });
+    
+    console.log('选择的分类:', selectedCategory, '索引:', index);
+    
+    // 确保选择的分类数据完整
+    if (selectedCategory && selectedCategory.id) {
+      this.setData({
+        category: selectedCategory.value,
+        categoryId: selectedCategory.id, // 存储数字ID
+        categoryName: selectedCategory.name,
+        categoryIndex: index
+      });
+      
+      console.log('分类选择完成:', {
+        category: selectedCategory.value,
+        categoryId: selectedCategory.id,
+        categoryName: selectedCategory.name
+      });
+    } else {
+      console.error('选择的分类数据不完整:', selectedCategory);
+      wx.showToast({
+        title: '分类选择出错，请重试',
+        icon: 'none'
+      });
+    }
   },
 
   // 显示自定义选择器
@@ -323,18 +376,36 @@ Page({
     });
   },
 
-  // 确认选择
+  // 确认选择 - 修复确认选择逻辑
   confirmPicker() {
     const selectedCategory = this.data.categories[this.data.tempCategoryIndex];
-    this.setData({
-      category: selectedCategory.value,
-      categoryName: selectedCategory.name,
-      categoryIndex: this.data.tempCategoryIndex,
-      showPicker: false
-    });
+    
+    console.log('确认选择的分类:', selectedCategory);
+    
+    if (selectedCategory && selectedCategory.id) {
+      this.setData({
+        category: selectedCategory.value,
+        categoryId: selectedCategory.id, // 存储数字ID
+        categoryName: selectedCategory.name,
+        categoryIndex: this.data.tempCategoryIndex,
+        showPicker: false
+      });
+      
+      console.log('分类确认完成:', {
+        category: selectedCategory.value,
+        categoryId: selectedCategory.id,
+        categoryName: selectedCategory.name
+      });
+    } else {
+      console.error('确认选择的分类数据不完整:', selectedCategory);
+      wx.showToast({
+        title: '分类选择出错，请重试',
+        icon: 'none'
+      });
+    }
   },
 
-  // 获取价格显示文本（用于界面显示）
+  // 获取价格显示文本
   getPriceDisplayText() {
     const { price, tradeType } = this.data;
     if (!price) return '';

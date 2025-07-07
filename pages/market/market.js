@@ -20,17 +20,21 @@ Page({
     searchKeyword: '',
     confirmKeyword: ''
   },
-  onLoad() {
+  async onLoad() {
     console.log('闲置市场页面加载');
-    this.setData({
-      categories: categoryConfig.getMarketCategories()
-    });
-    this.checkLoginStatus();
     
-    // 临时测试API数据
-    setTimeout(() => {
-      this.testAPI();
-    }, 1000);
+    try {
+      const categories = await categoryConfig.getMarketCategories();
+      this.setData({ categories });
+    } catch (error) {
+      console.error('加载分类失败:', error);
+      // 使用默认分类
+      this.setData({ 
+        categories: categoryConfig.getDefaultCategories() 
+      });
+    }
+    
+    this.checkLoginStatus();
   },
   
   // 新增测试方法
@@ -100,27 +104,52 @@ Page({
   // 过滤可展示的商品
   filterDisplayableItems(items) {
     if (!Array.isArray(items)) {
+      console.log('items 不是数组:', items);
       return [];
     }
     
-    return items.filter(item => {
-      // 1. 按交易类型筛选
-      if (item.tradeType !== this.data.currentTradeType) {
-        return false;
-      }
-      
-      // 2. 按状态筛选 - 只显示活跃状态的商品
+    console.log('=== 筛选商品详细日志 ===');
+    console.log('原始商品数量:', items.length);
+    console.log('当前交易类型:', this.data.currentTradeType);
+    
+    // 先按交易类型筛选
+    const tradeTypeFiltered = items.filter(item => item.tradeType === this.data.currentTradeType);
+    console.log(`${this.data.currentTradeType} 类型商品数量:`, tradeTypeFiltered.length);
+    
+    if (this.data.currentTradeType === 'buy') {
+      console.log('所有求购商品详情:');
+      tradeTypeFiltered.forEach((item, index) => {
+        console.log(`${index + 1}. ID:${item.id}, 标题:${item.title}, 状态:${item.status}, 分类:${item.categoryId}`);
+      });
+    }
+    
+    // 再按状态筛选
+    const finalFiltered = tradeTypeFiltered.filter(item => {
       if (this.data.currentTradeType === 'sell') {
-        // 卖品：只显示在售的，排除已售出、已下架的
         return item.status === 'selling';
       } else {
-        // 求购：只显示求购中的，排除已买到、已下架的
         return item.status === 'seeking';
+
+        const isValid = item.status === 'seeking';
+        if (!isValid) {
+          console.log(`商品 ${item.id}(${item.title}) 被状态筛选过滤，状态: ${item.status}`);
+        }
+        return isValid;
       }
     });
+    
+    console.log('最终筛选结果数量:', finalFiltered.length);
+    
+    if (this.data.currentTradeType === 'buy') {
+      console.log('最终显示的求购商品:');
+      finalFiltered.forEach((item, index) => {
+        console.log(`${index + 1}. ID:${item.id}, 标题:${item.title}`);
+      });
+    }
+    
+    return finalFiltered;
   },
-
-  // 统一的加载方法
+  
   async loadItems(refresh = false) {
     if (this.data.loading) return;
     
@@ -131,6 +160,7 @@ Page({
       const keyword = this.data.confirmKeyword.trim();
       const categoryId = this.data.currentCategory;
       
+      console.log('=== loadItems 详细日志 ===');
       console.log('加载参数:', { 
         page, 
         keyword, 
@@ -142,21 +172,25 @@ Page({
       let result;
       
       if (keyword || categoryId !== 'all') {
-        // 有搜索词或选择了特定分类，使用搜索方法
+        // 搜索逻辑
         const filters = {};
         if (categoryId !== 'all') {
           filters.categoryId = categoryId;
         }
         
-        // 获取所有搜索结果
         let allResults = await itemManager.searchItems(keyword, filters);
         console.log('搜索原始结果数量:', allResults.length);
+        console.log('搜索原始结果前3个:', allResults.slice(0, 3).map(item => ({
+          id: item.id,
+          title: item.title,
+          tradeType: item.tradeType,
+          status: item.status
+        })));
         
-        // 应用筛选逻辑：交易类型 + 状态
         allResults = this.filterDisplayableItems(allResults);
-        console.log('筛选后结果数量:', allResults.length);
+        console.log('搜索筛选后结果数量:', allResults.length);
         
-        // 手动实现分页
+        // 手动分页
         const pageSize = 10;
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
@@ -172,13 +206,18 @@ Page({
         };
         
       } else {
-        // 无搜索词且在"全部"分类，获取所有商品
-        result = await itemManager.getItems(page, 10);
-        console.log('获取原始商品数量:', result.items?.length || 0);
+        // 获取所有商品
+        result = await itemManager.getItems(page, 50);
+        console.log('getItems 原始商品数量:', result.items?.length || 0);
+        console.log('getItems 原始结果前3个:', (result.items || []).slice(0, 3).map(item => ({
+          id: item.id,
+          title: item.title,
+          tradeType: item.tradeType,
+          status: item.status
+        })));
         
-        // 应用筛选逻辑：交易类型 + 状态
         let filteredItems = this.filterDisplayableItems(result.items || []);
-        console.log('筛选后商品数量:', filteredItems.length);
+        console.log('getItems 筛选后商品数量:', filteredItems.length);
         
         const currentItems = refresh ? [] : (this.data.items || []);
         const items = refresh ? filteredItems : [...currentItems, ...filteredItems];
@@ -192,7 +231,7 @@ Page({
       
       // 更新显示
       const { leftItems, rightItems } = this.distributeItems(result.items || []);
-
+  
       this.setData({
         items: result.items || [],
         leftItems: leftItems,
@@ -203,12 +242,11 @@ Page({
         ...(refresh && { refreshing: false })
       });
       
-      console.log('加载完成:', {
-        显示商品数: result.items?.length || 0,
-        交易类型: this.data.currentTradeType,
-        hasMore: result.hasMore,
-        currentPage: this.data.currentPage
-      });
+      console.log('=== 最终加载结果 ===');
+      console.log('显示商品数:', result.items?.length || 0);
+      console.log('交易类型:', this.data.currentTradeType);
+      console.log('hasMore:', result.hasMore);
+      console.log('currentPage:', this.data.currentPage);
       
     } catch (error) {
       console.error('加载商品失败:', error);
@@ -222,6 +260,7 @@ Page({
       });
     }
   },
+  
 
   // 分配商品到左右两列的辅助函数
   distributeItems(items) {

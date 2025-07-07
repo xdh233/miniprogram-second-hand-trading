@@ -1,4 +1,4 @@
-// app.js - 添加WebSocket初始化
+// app.js - 完整修复版本
 const apiConfig = require('./utils/apiConfig');
 const categoryConfig = require('./utils/categoryConfig');
 const webSocketManager = require('./utils/webSocketManager');
@@ -94,8 +94,6 @@ App({
 
   // 更新消息角标
   updateMessageBadge() {
-    // 这里可以调用chatManager获取未读总数
-    // 或者维护一个全局的未读数计数器
     try {
       const chatManager = require('./utils/chatManager');
       const unreadCount = chatManager.getTotalUnreadCount();
@@ -120,80 +118,106 @@ App({
     try {
       console.log('开始初始化分类数据...');
       
-      const categories = categoryConfig.getCategories();
+      const categories = await categoryConfig.getAllCategories();
       this.globalData.categories = categories;
       console.log('基础分类数据已加载，共', categories.length, '个分类');
       
-      this.checkCategoriesSync();
-      
     } catch (error) {
       console.error('分类数据初始化失败:', error);
-      this.globalData.categories = categoryConfig.getCategories();
+      this.globalData.categories = categoryConfig.getDefaultCategories();
     }
   },
 
-  async checkCategoriesSync() {
-    try {
-      const updatedCategories = await categoryConfig.checkAndSync();
-      
-      if (updatedCategories.length !== this.globalData.categories.length) {
-        this.globalData.categories = updatedCategories;
-        console.log('分类数据已更新');
+  // 🌐 小程序显示时 - 修复版本
+  onShow() {
+    console.log('小程序前台显示');
+    this.handleAppShow();
+  },
+
+  // 🌑 小程序隐藏时 - 修复版本
+  onHide() {
+    console.log('小程序后台隐藏');
+    this.handleAppHide();
+  },
+
+  // 🔥 处理小程序显示的核心逻辑
+  handleAppShow() {
+    // 延迟处理，确保小程序完全激活
+    setTimeout(() => {
+      try {
+        console.log('处理小程序显示事件');
         
-        const pages = getCurrentPages();
-        if (pages.length > 0) {
-          const currentPage = pages[pages.length - 1];
-          if (currentPage.onCategoriesUpdated) {
-            currentPage.onCategoriesUpdated(updatedCategories);
+        // 检查登录状态
+        if (userManager.isLoggedIn()) {
+          // 通知WebSocket管理器小程序已显示
+          if (webSocketManager && typeof webSocketManager.handleAppShow === 'function') {
+            console.log('通知WebSocket管理器：小程序显示');
+            webSocketManager.handleAppShow();
           }
+          
+          // 检查WebSocket连接状态
+          const wsStatus = webSocketManager.getStatus();
+          console.log('当前WebSocket状态:', wsStatus);
+          
+          // 如果WebSocket断开，尝试重连
+          if (!wsStatus.isConnected) {
+            console.log('WebSocket已断开，尝试重连');
+            webSocketManager.connect().catch(error => {
+              console.error('重连WebSocket失败:', error);
+            });
+          }
+          
+          // 更新全局连接状态
+          this.globalData.webSocketConnected = wsStatus.isConnected;
+          
+        } else {
+          console.log('用户未登录，跳过WebSocket处理');
         }
+        
+      } catch (error) {
+        console.error('处理小程序显示失败:', error);
+      }
+    }, 500); // 延迟500ms确保小程序完全激活
+  },
+
+  // 🔥 处理小程序隐藏的核心逻辑
+  handleAppHide() {
+    try {
+      console.log('处理小程序隐藏事件');
+      
+      // 通知WebSocket管理器小程序已隐藏
+      if (webSocketManager && typeof webSocketManager.handleAppHide === 'function') {
+        console.log('通知WebSocket管理器：小程序隐藏');
+        webSocketManager.handleAppHide();
       }
       
     } catch (error) {
-      console.log('分类同步检查失败，继续使用本地数据:', error.message);
+      console.error('处理小程序隐藏失败:', error);
     }
-  },
-
-  // 🌐 小程序显示时
-  onShow() {
-    console.log('小程序前台显示');
-    
-    // 检查登录状态
-    if (userManager.isLoggedIn()) {
-      // 如果WebSocket断开，尝试重连
-      if (!this.globalData.webSocketConnected) {
-        console.log('尝试重连WebSocket');
-        webSocketManager.connect();
-      }
-    }
-  },
-
-  // 🌑 小程序隐藏时
-  onHide() {
-    console.log('小程序后台隐藏');
-    
-    // 可以选择保持WebSocket连接以接收后台通知
-    // 或者断开连接以节省资源
-    // 这里选择保持连接
   },
 
   // 💥 小程序错误处理
   onError(error) {
     console.error('小程序全局错误:', error);
     
-    // 可以添加错误上报逻辑
-    // 或者重置某些状态
+    // 如果是WebSocket相关错误，尝试重连
+    if (error && error.message && error.message.includes('WebSocket')) {
+      console.log('检测到WebSocket错误，尝试重连');
+      setTimeout(() => {
+        if (userManager.isLoggedIn()) {
+          webSocketManager.connect().catch(err => {
+            console.error('错误恢复时重连失败:', err);
+          });
+        }
+      }, 2000);
+    }
   },
 
   // 获取分类数据的便捷方法
   getCategories() {
-    return this.globalData.categories || categoryConfig.getCategories();
+    return this.globalData.categories || categoryConfig.getAllCategories();
   },
-
-  getMarketCategories() {
-    return categoryConfig.getMarketCategories();
-  },
-
+  
   // 🔌 获取WebSocket状态
   getWebSocketStatus() {
     return {
@@ -202,13 +226,28 @@ App({
     };
   },
 
-  // 🔄 手动重连WebSocket
+  // 🔄 手动重连WebSocket - 增强版本
   reconnectWebSocket() {
     console.log('手动重连WebSocket');
-    webSocketManager.disconnect();
-    setTimeout(() => {
-      webSocketManager.connect();
-    }, 1000);
+    
+    return new Promise((resolve, reject) => {
+      // 先断开现有连接
+      webSocketManager.disconnect();
+      
+      // 等待1秒后重连
+      setTimeout(async () => {
+        try {
+          await webSocketManager.connect();
+          this.globalData.webSocketConnected = true;
+          console.log('手动重连WebSocket成功');
+          resolve();
+        } catch (error) {
+          console.error('手动重连WebSocket失败:', error);
+          this.globalData.webSocketConnected = false;
+          reject(error);
+        }
+      }, 1000);
+    });
   },
 
   // 🚪 用户登出时的清理
@@ -220,10 +259,13 @@ App({
     
     // 清理全局状态
     this.globalData.webSocketConnected = false;
+    this.globalData.messageUnreadCount = 0;
     
     // 清理消息角标
     wx.removeTabBarBadge({
       index: 3
+    }).catch(() => {
+      // 忽略清理角标的错误
     });
   },
 
@@ -235,10 +277,53 @@ App({
     this.initWebSocket();
   },
 
+  // 🔥 获取应用实例的工具方法
+  getCurrentWebSocketStatus() {
+    try {
+      const status = webSocketManager.getStatus();
+      return {
+        ...status,
+        globalConnected: this.globalData.webSocketConnected
+      };
+    } catch (error) {
+      console.error('获取WebSocket状态失败:', error);
+      return {
+        isConnected: false,
+        globalConnected: false,
+        error: error.message
+      };
+    }
+  },
+
+  // 🔥 检查网络状态
+  checkNetworkStatus() {
+    return new Promise((resolve) => {
+      wx.getNetworkType({
+        success: (res) => {
+          console.log('当前网络类型:', res.networkType);
+          resolve({
+            networkType: res.networkType,
+            isConnected: res.networkType !== 'none'
+          });
+        },
+        fail: (error) => {
+          console.error('获取网络状态失败:', error);
+          resolve({
+            networkType: 'unknown',
+            isConnected: false,
+            error: error.message
+          });
+        }
+      });
+    });
+  },
+
   globalData: {
     userInfo: null,
     categories: [],
     webSocketConnected: false, // WebSocket连接状态
-    messageUnreadCount: 0 // 消息未读数
+    messageUnreadCount: 0, // 消息未读数
+    appShowTime: null, // 小程序显示时间
+    appHideTime: null  // 小程序隐藏时间
   }
 })

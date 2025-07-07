@@ -203,12 +203,11 @@ Page({
     try {
       console.log('开始调用注册接口...');
       
-      // 关键修复：传递对象而不是独立参数
+      // 传递整象
       const userData = {
         studentId: trimmedStudentId,
         name: trimmedName,
         password: trimmedPassword
-        // phone 和 email 是可选的，可以不传或传空字符串
       };
       
       console.log('传递给 userManager.register 的数据:', userData);

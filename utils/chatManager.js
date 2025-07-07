@@ -1,4 +1,4 @@
-// utils/chatManager.js - WebSocket版聊天管理器
+// utils/chatManager.js - 完整修复版本
 const apiConfig = require('./apiConfig');
 const webSocketManager = require('./webSocketManager');
 const userManager = require('./userManager');
@@ -26,6 +26,7 @@ class ChatManager {
     
     console.log('ChatManager初始化完成 - WebSocket模式');
   }
+
   checkUserSwitch() {
     const currentUser = userManager.getCurrentUser();
     
@@ -41,12 +42,14 @@ class ChatManager {
     
     return false; // 用户未切换
   }
+
   // 🔌 初始化WebSocket事件监听
   initWebSocketListeners() {
     webSocketManager.on('new_message', (messageData) => {
       console.log('WebSocket收到新消息:', messageData);
-      this.handleNewMessage(messageData); // 确保this指向正确
+      this.handleNewMessage(messageData);
     });
+
     // WebSocket连接状态监听
     webSocketManager.on('connected', () => {
       console.log('WebSocket已连接，启用实时消息');
@@ -61,12 +64,6 @@ class ChatManager {
       if (this.currentChatId) {
         this.startPolling(this.currentChatId);
       }
-    });
-
-    // 新消息监听
-    webSocketManager.on('new_message', (messageData) => {
-      console.log('WebSocket收到新消息:', messageData);
-      this.handleNewMessage(messageData);
     });
 
     // 消息通知监听
@@ -171,7 +168,7 @@ class ChatManager {
     
     this.currentChatId = null;
     this.messageCallback = null;
-    this.currentUserId = null; // 🔧 新增：清除用户ID
+    this.currentUserId = null;
     
     // 停止轮询
     this.stopPolling();
@@ -308,7 +305,6 @@ class ChatManager {
     }
   }
 
-
   // 通过API发送消息
   async sendMessageViaAPI(chatId, receiverId, messageData) {
     try {
@@ -334,35 +330,75 @@ class ChatManager {
     }
   }
 
-  // 发送图片消息
+  // 🔥 修复后的发送图片消息
   async sendImageMessage(chatId, receiverId, imagePath) {
     try {
-      console.log('开始发送图片消息:', { chatId, receiverId, imagePath });
+      console.log('ChatManager: 开始发送图片消息:', { chatId, receiverId, imagePath });
       
-      // 1. 先上传图片
-      console.log('上传图片:', imagePath);
-      wx.showLoading({ title: '上传图片中...' });
+      // 🔥 强制确保WebSocket状态正确
+      webSocketManager.forceSetAppVisible();
+      console.log('已强制设置WebSocket为前台状态');
       
-      const imageUrl = await apiConfig.uploadFile('/upload/single', imagePath, 'image');
-      console.log('图片上传成功:', imageUrl);
+      // 检查参数
+      if (!chatId || !receiverId || !imagePath) {
+        throw new Error('发送图片消息参数不完整');
+      }
+
+      // 检查用户登录状态
+      const currentUser = userManager.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('用户未登录');
+      }
+      
+      // 检查用户切换
+      if (this.checkUserSwitch()) {
+        throw new Error('用户身份已变更，请刷新页面');
+      }
+
+      // 1. 上传图片
+      console.log('开始上传图片:', imagePath);
+      wx.showLoading({ title: '上传图片中...', mask: true });
+      
+      let imageUrl;
+      try {
+        imageUrl = await apiConfig.uploadFile('/upload/single', imagePath, 'image');
+        console.log('图片上传成功:', imageUrl);
+      } catch (uploadError) {
+        console.error('图片上传失败:', uploadError);
+        wx.hideLoading();
+        throw new Error('图片上传失败: ' + (uploadError.message || '未知错误'));
+      }
       
       wx.hideLoading();
-      wx.showLoading({ title: '发送中...' });
+      wx.showLoading({ title: '发送中...', mask: true });
 
-      // 2. 发送消息
+      // 2. 构造消息数据
       const messageData = {
         type: 'image',
         content: '[图片]',
-        imageUrl: typeof imageUrl === 'string' ? imageUrl : imageUrl.url
+        imageUrl: typeof imageUrl === 'string' ? imageUrl : (imageUrl.url || imageUrl)
       };
 
-      const result = await this.sendMessage(chatId, receiverId, messageData);
-      wx.hideLoading();
+      console.log('准备发送消息数据:', messageData);
+
+      // 3. 发送消息
+      let result;
+      try {
+        result = await this.sendMessage(chatId, receiverId, messageData);
+        console.log('消息发送结果:', result);
+      } catch (sendError) {
+        console.error('发送消息失败:', sendError);
+        wx.hideLoading();
+        throw new Error('发送消息失败: ' + (sendError.message || '未知错误'));
+      }
       
+      wx.hideLoading();
       return result;
+      
     } catch (error) {
       wx.hideLoading();
-      console.error('发送图片消息失败:', error);
+      console.error('发送图片消息失败 - 完整错误:', error);
+      console.error('错误堆栈:', error.stack);
       throw error;
     }
   }
